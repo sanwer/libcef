@@ -99,7 +99,7 @@ struct CefRunnableMethodTraits {
 //
 // This is different from DISALLOW_COPY_AND_ASSIGN which is declared inside the
 // class.
-#define CEF_DISABLE_RUNNABLE_METHOD_REFCOUNT(TypeName) \
+#define DISABLE_RUNNABLE_METHOD_REFCOUNT(TypeName) \
   template <>                                      \
   struct CefRunnableMethodTraits<TypeName> {          \
     void RetainCallee(TypeName* manager) {}        \
