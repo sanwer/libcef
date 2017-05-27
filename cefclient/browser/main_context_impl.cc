@@ -12,7 +12,7 @@ namespace client {
 namespace {
 
 // The default URL to load in a browser window.
-const char kDefaultUrl[] = "http://www.google.com";
+const char kDefaultUrl[] = "http://sanwer.com";
 
 }  // namespace
 

@@ -125,7 +125,7 @@ void RunNewWindowTest(CefRefPtr<CefBrowser> browser) {
 
 void RunPopupWindowTest(CefRefPtr<CefBrowser> browser) {
   browser->GetMainFrame()->ExecuteJavaScript(
-      "window.open('http://www.google.com');", "about:blank", 0);
+      "window.open('http://sanwer.com');", "about:blank", 0);
 }
 
 void RunPluginInfoTest(CefRefPtr<CefBrowser> browser) {

@@ -3,6 +3,16 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcef_dll_wrapper", "libcef_dll_wrapper.vcxproj", "{A9D6DC71-C0DC-4549-AEA0-3B15B44E86A9}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cefclient", "cefclient\cefclient.vcxproj", "{D8F901DB-40EC-310D-ADD6-5B93A9D7D689}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A9D6DC71-C0DC-4549-AEA0-3B15B44E86A9} = {A9D6DC71-C0DC-4549-AEA0-3B15B44E86A9}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cefsimple", "cefsimple\cefsimple.vcxproj", "{769BF595-3622-30E2-8789-44E99B293902}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A9D6DC71-C0DC-4549-AEA0-3B15B44E86A9} = {A9D6DC71-C0DC-4549-AEA0-3B15B44E86A9}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -19,6 +29,18 @@ Global
 		{A9D6DC71-C0DC-4549-AEA0-3B15B44E86A9}.Release|Win32.Build.0 = Release|Win32
 		{A9D6DC71-C0DC-4549-AEA0-3B15B44E86A9}.Release|x64.ActiveCfg = Release|x64
 		{A9D6DC71-C0DC-4549-AEA0-3B15B44E86A9}.Release|x64.Build.0 = Release|x64
+		{D8F901DB-40EC-310D-ADD6-5B93A9D7D689}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D8F901DB-40EC-310D-ADD6-5B93A9D7D689}.Debug|Win32.Build.0 = Debug|Win32
+		{D8F901DB-40EC-310D-ADD6-5B93A9D7D689}.Debug|x64.ActiveCfg = Debug|Win32
+		{D8F901DB-40EC-310D-ADD6-5B93A9D7D689}.Release|Win32.ActiveCfg = Release|Win32
+		{D8F901DB-40EC-310D-ADD6-5B93A9D7D689}.Release|Win32.Build.0 = Release|Win32
+		{D8F901DB-40EC-310D-ADD6-5B93A9D7D689}.Release|x64.ActiveCfg = Release|Win32
+		{769BF595-3622-30E2-8789-44E99B293902}.Debug|Win32.ActiveCfg = Debug|Win32
+		{769BF595-3622-30E2-8789-44E99B293902}.Debug|Win32.Build.0 = Debug|Win32
+		{769BF595-3622-30E2-8789-44E99B293902}.Debug|x64.ActiveCfg = Debug|Win32
+		{769BF595-3622-30E2-8789-44E99B293902}.Release|Win32.ActiveCfg = Release|Win32
+		{769BF595-3622-30E2-8789-44E99B293902}.Release|Win32.Build.0 = Release|Win32
+		{769BF595-3622-30E2-8789-44E99B293902}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
