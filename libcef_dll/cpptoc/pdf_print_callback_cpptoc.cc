@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,16 +9,19 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
+// $hash=6f723c637ef687429368a60f58037a36e5a5ce89$
+//
 
 #include "libcef_dll/cpptoc/pdf_print_callback_cpptoc.h"
-
 
 namespace {
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
 
-void CEF_CALLBACK pdf_print_callback_on_pdf_print_finished(
-    struct _cef_pdf_print_callback_t* self, const cef_string_t* path, int ok) {
+void CEF_CALLBACK
+pdf_print_callback_on_pdf_print_finished(struct _cef_pdf_print_callback_t* self,
+                                         const cef_string_t* path,
+                                         int ok) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -30,13 +33,11 @@ void CEF_CALLBACK pdf_print_callback_on_pdf_print_finished(
     return;
 
   // Execute
-  CefPdfPrintCallbackCppToC::Get(self)->OnPdfPrintFinished(
-      CefString(path),
-      ok?true:false);
+  CefPdfPrintCallbackCppToC::Get(self)->OnPdfPrintFinished(CefString(path),
+                                                           ok ? true : false);
 }
 
 }  // namespace
-
 
 // CONSTRUCTOR - Do not edit by hand.
 
@@ -44,18 +45,26 @@ CefPdfPrintCallbackCppToC::CefPdfPrintCallbackCppToC() {
   GetStruct()->on_pdf_print_finished = pdf_print_callback_on_pdf_print_finished;
 }
 
-template<> CefRefPtr<CefPdfPrintCallback> CefCppToC<CefPdfPrintCallbackCppToC,
-    CefPdfPrintCallback, cef_pdf_print_callback_t>::UnwrapDerived(
-    CefWrapperType type, cef_pdf_print_callback_t* s) {
+template <>
+CefRefPtr<CefPdfPrintCallback> CefCppToCRefCounted<
+    CefPdfPrintCallbackCppToC,
+    CefPdfPrintCallback,
+    cef_pdf_print_callback_t>::UnwrapDerived(CefWrapperType type,
+                                             cef_pdf_print_callback_t* s) {
   NOTREACHED() << "Unexpected class type: " << type;
   return NULL;
 }
 
-#ifndef NDEBUG
-template<> base::AtomicRefCount CefCppToC<CefPdfPrintCallbackCppToC,
-    CefPdfPrintCallback, cef_pdf_print_callback_t>::DebugObjCt = 0;
+#if DCHECK_IS_ON()
+template <>
+base::AtomicRefCount CefCppToCRefCounted<CefPdfPrintCallbackCppToC,
+                                         CefPdfPrintCallback,
+                                         cef_pdf_print_callback_t>::DebugObjCt =
+    0;
 #endif
 
-template<> CefWrapperType CefCppToC<CefPdfPrintCallbackCppToC,
-    CefPdfPrintCallback, cef_pdf_print_callback_t>::kWrapperType =
+template <>
+CefWrapperType CefCppToCRefCounted<CefPdfPrintCallbackCppToC,
+                                   CefPdfPrintCallback,
+                                   cef_pdf_print_callback_t>::kWrapperType =
     WT_PDF_PRINT_CALLBACK;
