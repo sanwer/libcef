@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=983c18727fdd4116f5b98eb9d1921d58f1511c76$
+// $hash=5fcac7caa6064922f745b0dc9beb5537fa3bc479$
 //
 
 #include "libcef_dll/cpptoc/render_process_handler_cpptoc.h"
@@ -19,7 +19,6 @@
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/ctocpp/list_value_ctocpp.h"
 #include "libcef_dll/ctocpp/process_message_ctocpp.h"
-#include "libcef_dll/ctocpp/request_ctocpp.h"
 #include "libcef_dll/ctocpp/v8context_ctocpp.h"
 #include "libcef_dll/ctocpp/v8exception_ctocpp.h"
 #include "libcef_dll/ctocpp/v8stack_trace_ctocpp.h"
@@ -108,41 +107,6 @@ cef_load_handler_t* CEF_CALLBACK render_process_handler_get_load_handler(
 
   // Return type: refptr_same
   return CefLoadHandlerCppToC::Wrap(_retval);
-}
-
-int CEF_CALLBACK render_process_handler_on_before_navigation(
-    struct _cef_render_process_handler_t* self,
-    cef_browser_t* browser,
-    cef_frame_t* frame,
-    struct _cef_request_t* request,
-    cef_navigation_type_t navigation_type,
-    int is_redirect) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return 0;
-  // Verify param: browser; type: refptr_diff
-  DCHECK(browser);
-  if (!browser)
-    return 0;
-  // Verify param: frame; type: refptr_diff
-  DCHECK(frame);
-  if (!frame)
-    return 0;
-  // Verify param: request; type: refptr_diff
-  DCHECK(request);
-  if (!request)
-    return 0;
-
-  // Execute
-  bool _retval = CefRenderProcessHandlerCppToC::Get(self)->OnBeforeNavigation(
-      CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-      CefRequestCToCpp::Wrap(request), navigation_type,
-      is_redirect ? true : false);
-
-  // Return type: bool
-  return _retval;
 }
 
 void CEF_CALLBACK render_process_handler_on_context_created(
@@ -307,8 +271,6 @@ CefRenderProcessHandlerCppToC::CefRenderProcessHandlerCppToC() {
   GetStruct()->on_browser_destroyed =
       render_process_handler_on_browser_destroyed;
   GetStruct()->get_load_handler = render_process_handler_get_load_handler;
-  GetStruct()->on_before_navigation =
-      render_process_handler_on_before_navigation;
   GetStruct()->on_context_created = render_process_handler_on_context_created;
   GetStruct()->on_context_released = render_process_handler_on_context_released;
   GetStruct()->on_uncaught_exception =
@@ -332,10 +294,10 @@ CefRefPtr<CefRenderProcessHandler> CefCppToCRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCppToCRefCounted<CefRenderProcessHandlerCppToC,
-                        CefRenderProcessHandler,
-                        cef_render_process_handler_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCppToCRefCounted<
+    CefRenderProcessHandlerCppToC,
+    CefRenderProcessHandler,
+    cef_render_process_handler_t>::DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

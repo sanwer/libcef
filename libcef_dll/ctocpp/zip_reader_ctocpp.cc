@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=11321ae1cfc63ec2688da39afd83b866dfd4a497$
+// $hash=d4d48397e4afa8fb246b3ee66122c90b14b67fba$
 //
 
 #include "libcef_dll/ctocpp/zip_reader_ctocpp.h"
@@ -234,9 +234,9 @@ CefCToCppRefCounted<CefZipReaderCToCpp, CefZipReader, cef_zip_reader_t>::
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount CefCToCppRefCounted<CefZipReaderCToCpp,
-                                         CefZipReader,
-                                         cef_zip_reader_t>::DebugObjCt = 0;
+base::AtomicRefCount
+    CefCToCppRefCounted<CefZipReaderCToCpp, CefZipReader, cef_zip_reader_t>::
+        DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

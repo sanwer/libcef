@@ -22,6 +22,7 @@ extern const char kShowUpdateRect[];
 extern const char kMouseCursorChangeDisabled[];
 extern const char kRequestContextPerBrowser[];
 extern const char kRequestContextSharedCache[];
+extern const char kRequestContextBlockCookies[];
 extern const char kBackgroundColor[];
 extern const char kEnableGPU[];
 extern const char kFilterURL[];
@@ -32,6 +33,7 @@ extern const char kHideTopMenu[];
 extern const char kWidevineCdmPath[];
 extern const char kSslClientCertificate[];
 extern const char kCRLSetsPath[];
+extern const char kLoadExtension[];
 
 }  // namespace switches
 }  // namespace client

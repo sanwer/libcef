@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=393260edeabe88e52ab45caee677d59fbfb3270f$
+// $hash=3135a7e1229fdd3fe6fe93580c1af3e0ac1aab32$
 //
 
 #include "libcef_dll/ctocpp/context_menu_params_ctocpp.h"
@@ -363,10 +363,10 @@ cef_context_menu_params_t* CefCToCppRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCToCppRefCounted<CefContextMenuParamsCToCpp,
-                        CefContextMenuParams,
-                        cef_context_menu_params_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCToCppRefCounted<CefContextMenuParamsCToCpp,
+                                         CefContextMenuParams,
+                                         cef_context_menu_params_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

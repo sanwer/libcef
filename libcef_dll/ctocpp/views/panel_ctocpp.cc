@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=2bb4549039d08672bb565effcda7826a192e266a$
+// $hash=5b09e7cf55b3d776febecee81bdcca240f78cc61$
 //
 
 #include "libcef_dll/ctocpp/views/panel_ctocpp.h"
@@ -902,7 +902,8 @@ CefCToCppRefCounted<CefPanelCToCpp, CefPanel, cef_panel_t>::UnwrapDerived(
 #if DCHECK_IS_ON()
 template <>
 base::AtomicRefCount
-    CefCToCppRefCounted<CefPanelCToCpp, CefPanel, cef_panel_t>::DebugObjCt = 0;
+    CefCToCppRefCounted<CefPanelCToCpp, CefPanel, cef_panel_t>::DebugObjCt
+        ATOMIC_DECLARATION;
 #endif
 
 template <>

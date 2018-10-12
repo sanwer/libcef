@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=7c600e4c245f2a601a4d9664f1661f963b5fe714$
+// $hash=469b34dad7e1f51a520166a01806f0308eb6a701$
 //
 
 #include "libcef_dll/ctocpp/sslstatus_ctocpp.h"
@@ -101,9 +101,9 @@ CefCToCppRefCounted<CefSSLStatusCToCpp, CefSSLStatus, cef_sslstatus_t>::
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount CefCToCppRefCounted<CefSSLStatusCToCpp,
-                                         CefSSLStatus,
-                                         cef_sslstatus_t>::DebugObjCt = 0;
+base::AtomicRefCount
+    CefCToCppRefCounted<CefSSLStatusCToCpp, CefSSLStatus, cef_sslstatus_t>::
+        DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

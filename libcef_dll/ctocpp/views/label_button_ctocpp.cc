@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=6ad7bcb4afded09f312d3ec082bb4df35da9beec$
+// $hash=f51da03320d7f675b627764ddca499186cf1ed5f$
 //
 
 #include "libcef_dll/ctocpp/views/label_button_ctocpp.h"
@@ -958,7 +958,8 @@ CefCToCppRefCounted<CefLabelButtonCToCpp, CefLabelButton, cef_label_button_t>::
 template <>
 base::AtomicRefCount CefCToCppRefCounted<CefLabelButtonCToCpp,
                                          CefLabelButton,
-                                         cef_label_button_t>::DebugObjCt = 0;
+                                         cef_label_button_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

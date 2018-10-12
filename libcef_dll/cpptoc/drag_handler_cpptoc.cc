@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=f56cb888482bc594b34fb05729c0cab9577c306e$
+// $hash=7d11ddbfcba12a877725995cf8fe306c275216cd$
 //
 
 #include "libcef_dll/cpptoc/drag_handler_cpptoc.h"
@@ -101,7 +101,8 @@ CefCppToCRefCounted<CefDragHandlerCppToC, CefDragHandler, cef_drag_handler_t>::
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefDragHandlerCppToC,
                                          CefDragHandler,
-                                         cef_drag_handler_t>::DebugObjCt = 0;
+                                         cef_drag_handler_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

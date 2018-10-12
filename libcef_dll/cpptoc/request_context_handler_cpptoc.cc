@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,16 +9,35 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=2bc0696da2c14f967c6b16e3f78e1e4479ed50d1$
+// $hash=5a0803ca861a822f346b49743cc5505da788135e$
 //
 
 #include "libcef_dll/cpptoc/request_context_handler_cpptoc.h"
 #include "libcef_dll/ctocpp/cookie_manager_ctocpp.h"
+#include "libcef_dll/ctocpp/request_context_ctocpp.h"
 #include "libcef_dll/ctocpp/web_plugin_info_ctocpp.h"
 
 namespace {
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
+
+void CEF_CALLBACK request_context_handler_on_request_context_initialized(
+    struct _cef_request_context_handler_t* self,
+    cef_request_context_t* request_context) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return;
+  // Verify param: request_context; type: refptr_diff
+  DCHECK(request_context);
+  if (!request_context)
+    return;
+
+  // Execute
+  CefRequestContextHandlerCppToC::Get(self)->OnRequestContextInitialized(
+      CefRequestContextCToCpp::Wrap(request_context));
+}
 
 cef_cookie_manager_t* CEF_CALLBACK request_context_handler_get_cookie_manager(
     struct _cef_request_context_handler_t* self) {
@@ -78,6 +97,8 @@ int CEF_CALLBACK request_context_handler_on_before_plugin_load(
 // CONSTRUCTOR - Do not edit by hand.
 
 CefRequestContextHandlerCppToC::CefRequestContextHandlerCppToC() {
+  GetStruct()->on_request_context_initialized =
+      request_context_handler_on_request_context_initialized;
   GetStruct()->get_cookie_manager = request_context_handler_get_cookie_manager;
   GetStruct()->on_before_plugin_load =
       request_context_handler_on_before_plugin_load;
@@ -96,10 +117,10 @@ CefRefPtr<CefRequestContextHandler> CefCppToCRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCppToCRefCounted<CefRequestContextHandlerCppToC,
-                        CefRequestContextHandler,
-                        cef_request_context_handler_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCppToCRefCounted<
+    CefRequestContextHandlerCppToC,
+    CefRequestContextHandler,
+    cef_request_context_handler_t>::DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d3d4fbf680412ca26d5803ffd269dea1e06ed388$
+// $hash=076b99c3f3065fc66408f6d2b64702a0d8534e88$
 //
 
 #include "libcef_dll/cpptoc/focus_handler_cpptoc.h"
@@ -98,7 +98,8 @@ CefRefPtr<CefFocusHandler> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefFocusHandlerCppToC,
                                          CefFocusHandler,
-                                         cef_focus_handler_t>::DebugObjCt = 0;
+                                         cef_focus_handler_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

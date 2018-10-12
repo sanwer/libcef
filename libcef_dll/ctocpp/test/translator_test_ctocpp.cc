@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=abbba0b09a8c13d342b51a2b8cfbc363fde99ca2$
+// $hash=4c23b4208c361a884f6e1b27bc578c6cc0e0412e$
 //
 
 #include "libcef_dll/ctocpp/test/translator_test_ctocpp.h"
@@ -1385,7 +1385,8 @@ cef_translator_test_t* CefCToCppRefCounted<
 template <>
 base::AtomicRefCount CefCToCppRefCounted<CefTranslatorTestCToCpp,
                                          CefTranslatorTest,
-                                         cef_translator_test_t>::DebugObjCt = 0;
+                                         cef_translator_test_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

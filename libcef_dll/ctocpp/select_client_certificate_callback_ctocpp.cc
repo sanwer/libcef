@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=843bc95ef88f74f32af2d7bc9a42d6b841b052e7$
+// $hash=c0bf236fbeef704b6b457df707726714a715a935$
 //
 
 #include "libcef_dll/ctocpp/select_client_certificate_callback_ctocpp.h"
@@ -48,11 +48,10 @@ CefCToCppRefCounted<CefSelectClientCertificateCallbackCToCpp,
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCToCppRefCounted<CefSelectClientCertificateCallbackCToCpp,
-                        CefSelectClientCertificateCallback,
-                        cef_select_client_certificate_callback_t>::DebugObjCt =
-        0;
+base::AtomicRefCount CefCToCppRefCounted<
+    CefSelectClientCertificateCallbackCToCpp,
+    CefSelectClientCertificateCallback,
+    cef_select_client_certificate_callback_t>::DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

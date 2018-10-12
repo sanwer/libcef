@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=1d8214a457c639f3b107c50c1da51c9bb90217db$
+// $hash=2dde73e06cfa172efe71528a8d6ecc8e74ea28ca$
 //
 
 #include "libcef_dll/ctocpp/views/scroll_view_ctocpp.h"
@@ -812,9 +812,9 @@ CefCToCppRefCounted<CefScrollViewCToCpp, CefScrollView, cef_scroll_view_t>::
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount CefCToCppRefCounted<CefScrollViewCToCpp,
-                                         CefScrollView,
-                                         cef_scroll_view_t>::DebugObjCt = 0;
+base::AtomicRefCount
+    CefCToCppRefCounted<CefScrollViewCToCpp, CefScrollView, cef_scroll_view_t>::
+        DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

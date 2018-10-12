@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4a2ec304178530684d11e8b97ea2cfbd209d2f1e$
+// $hash=6f56ac7fe46b02e448e6c36e09d6462784e08a59$
 //
 
 #include "libcef_dll/cpptoc/set_cookie_callback_cpptoc.h"
@@ -51,10 +51,10 @@ CefRefPtr<CefSetCookieCallback> CefCppToCRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCppToCRefCounted<CefSetCookieCallbackCppToC,
-                        CefSetCookieCallback,
-                        cef_set_cookie_callback_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCppToCRefCounted<CefSetCookieCallbackCppToC,
+                                         CefSetCookieCallback,
+                                         cef_set_cookie_callback_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

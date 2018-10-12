@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=ab912d3ba520a44af12ce5d8a1c359c29f850c87$
+// $hash=a4fd76635eaaa37d9e5d8d741eb971969c20244e$
 //
 
 #include "libcef_dll/cpptoc/keyboard_handler_cpptoc.h"
@@ -119,8 +119,8 @@ CefRefPtr<CefKeyboardHandler> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefKeyboardHandlerCppToC,
                                          CefKeyboardHandler,
-                                         cef_keyboard_handler_t>::DebugObjCt =
-    0;
+                                         cef_keyboard_handler_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

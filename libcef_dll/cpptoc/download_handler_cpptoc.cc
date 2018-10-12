@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=34d34f4a980b476678152ac69842f7d0b3a95a36$
+// $hash=43a915cff1bd973de6a00f23e1aee7a2464bc33b$
 //
 
 #include "libcef_dll/cpptoc/download_handler_cpptoc.h"
@@ -110,8 +110,8 @@ CefRefPtr<CefDownloadHandler> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefDownloadHandlerCppToC,
                                          CefDownloadHandler,
-                                         cef_download_handler_t>::DebugObjCt =
-    0;
+                                         cef_download_handler_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

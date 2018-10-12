@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=47339f94c600cd510238e5994ac25684fe82fc14$
+// $hash=e01566e28d56c6683221adb319e49f72dca23121$
 //
 
 #include "libcef_dll/cpptoc/resource_bundle_handler_cpptoc.h"
@@ -148,10 +148,10 @@ CefRefPtr<CefResourceBundleHandler> CefCppToCRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCppToCRefCounted<CefResourceBundleHandlerCppToC,
-                        CefResourceBundleHandler,
-                        cef_resource_bundle_handler_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCppToCRefCounted<
+    CefResourceBundleHandlerCppToC,
+    CefResourceBundleHandler,
+    cef_resource_bundle_handler_t>::DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

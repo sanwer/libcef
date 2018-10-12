@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=6cb42b7225acbf15f3a90243cb7d0edf55cf4f46$
+// $hash=b5571470d0f53b671bfc5c223e9e2239fb590801$
 //
 
 #include "libcef_dll/ctocpp/print_dialog_callback_ctocpp.h"
@@ -61,10 +61,10 @@ cef_print_dialog_callback_t* CefCToCppRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCToCppRefCounted<CefPrintDialogCallbackCToCpp,
-                        CefPrintDialogCallback,
-                        cef_print_dialog_callback_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCToCppRefCounted<
+    CefPrintDialogCallbackCToCpp,
+    CefPrintDialogCallback,
+    cef_print_dialog_callback_t>::DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

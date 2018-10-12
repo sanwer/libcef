@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=52f1e64598056c4e301e20277282e6fcbb67ed68$
+// $hash=ac017bad8a3c8b4e516b8f19eda347fda5ecc9fd$
 //
 
 #include "libcef_dll/ctocpp/run_context_menu_callback_ctocpp.h"
@@ -56,10 +56,10 @@ cef_run_context_menu_callback_t* CefCToCppRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCToCppRefCounted<CefRunContextMenuCallbackCToCpp,
-                        CefRunContextMenuCallback,
-                        cef_run_context_menu_callback_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCToCppRefCounted<
+    CefRunContextMenuCallbackCToCpp,
+    CefRunContextMenuCallback,
+    cef_run_context_menu_callback_t>::DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

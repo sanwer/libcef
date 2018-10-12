@@ -31,7 +31,6 @@ class ClientHandler : public CefClient,
                       public CefDownloadHandler,
                       public CefDragHandler,
                       public CefFocusHandler,
-                      public CefGeolocationHandler,
                       public CefKeyboardHandler,
                       public CefLifeSpanHandler,
                       public CefLoadHandler,
@@ -58,10 +57,13 @@ class ClientHandler : public CefClient,
     virtual void OnSetTitle(const std::string& title) = 0;
 
     // Set the Favicon image.
-    virtual void OnSetFavicon(CefRefPtr<CefImage> image){};
+    virtual void OnSetFavicon(CefRefPtr<CefImage> image) {}
 
     // Set fullscreen mode.
     virtual void OnSetFullscreen(bool fullscreen) = 0;
+
+    // Auto-resize contents.
+    virtual void OnAutoResize(const CefSize& new_size) = 0;
 
     // Set the loading state.
     virtual void OnSetLoadingState(bool isLoading,
@@ -102,9 +104,6 @@ class ClientHandler : public CefClient,
   CefRefPtr<CefDownloadHandler> GetDownloadHandler() OVERRIDE { return this; }
   CefRefPtr<CefDragHandler> GetDragHandler() OVERRIDE { return this; }
   CefRefPtr<CefFocusHandler> GetFocusHandler() OVERRIDE { return this; }
-  CefRefPtr<CefGeolocationHandler> GetGeolocationHandler() OVERRIDE {
-    return this;
-  }
   CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() OVERRIDE { return this; }
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() OVERRIDE { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE { return this; }
@@ -144,9 +143,12 @@ class ClientHandler : public CefClient,
   void OnFullscreenModeChange(CefRefPtr<CefBrowser> browser,
                               bool fullscreen) OVERRIDE;
   bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
+                        cef_log_severity_t level,
                         const CefString& message,
                         const CefString& source,
                         int line) OVERRIDE;
+  bool OnAutoResize(CefRefPtr<CefBrowser> browser,
+                    const CefSize& new_size) OVERRIDE;
 
   // CefDownloadHandler methods
   void OnBeforeDownload(CefRefPtr<CefBrowser> browser,
@@ -167,13 +169,6 @@ class ClientHandler : public CefClient,
 
   // CefFocusHandler methods
   void OnTakeFocus(CefRefPtr<CefBrowser> browser, bool next) OVERRIDE;
-
-  // CefGeolocationHandler methods
-  bool OnRequestGeolocationPermission(
-      CefRefPtr<CefBrowser> browser,
-      const CefString& requesting_url,
-      int request_id,
-      CefRefPtr<CefGeolocationCallback> callback) OVERRIDE;
 
   // CefKeyboardHandler methods
   bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
@@ -213,6 +208,7 @@ class ClientHandler : public CefClient,
   bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                       CefRefPtr<CefFrame> frame,
                       CefRefPtr<CefRequest> request,
+                      bool user_gesture,
                       bool is_redirect) OVERRIDE;
   bool OnOpenURLFromTab(
       CefRefPtr<CefBrowser> browser,
@@ -311,6 +307,7 @@ class ClientHandler : public CefClient,
   void NotifyTitle(const CefString& title);
   void NotifyFavicon(CefRefPtr<CefImage> image);
   void NotifyFullscreen(bool fullscreen);
+  void NotifyAutoResize(const CefSize& new_size);
   void NotifyLoadingState(bool isLoading, bool canGoBack, bool canGoForward);
   void NotifyDraggableRegions(const std::vector<CefDraggableRegion>& regions);
   void NotifyTakeFocus(bool next);

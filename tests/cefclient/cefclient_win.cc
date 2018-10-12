@@ -27,7 +27,11 @@
 #if defined(CEF_USE_SANDBOX)
 // The cef_sandbox.lib static library is currently built with VS2015. It may not
 // link successfully with other VS versions.
+#ifdef NDEBUG
 #pragma comment(lib, "cef_sandbox.lib")
+#else
+#pragma comment(lib, "cef_sandbox_d.lib")
+#endif
 #endif
 
 namespace client {
@@ -94,12 +98,13 @@ int RunMain(HINSTANCE hInstance, int nCmdShow) {
   // Register scheme handlers.
   test_runner::RegisterSchemeHandlers();
 
+  RootWindowConfig window_config;
+  window_config.with_controls =
+      !command_line->HasSwitch(switches::kHideControls);
+  window_config.with_osr = settings.windowless_rendering_enabled ? true : false;
+
   // Create the first window.
-  context->GetRootWindowManager()->CreateRootWindow(
-      !command_line->HasSwitch(switches::kHideControls),  // Show controls.
-      settings.windowless_rendering_enabled ? true : false,
-      CefRect(),       // Use default system size.
-      std::string());  // Use default URL.
+  context->GetRootWindowManager()->CreateRootWindow(window_config);
 
   // Run the message loop. This will block until Quit() is called by the
   // RootWindowManager after all windows have been destroyed.

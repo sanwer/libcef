@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=8df90eb582df20061513fb80264da53b9d97849b$
+// $hash=e9273278af0f7b3f66d5991d54687af2b89f14c3$
 //
 
 #include "libcef_dll/cpptoc/menu_model_delegate_cpptoc.h"
@@ -196,10 +196,10 @@ CefRefPtr<CefMenuModelDelegate> CefCppToCRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCppToCRefCounted<CefMenuModelDelegateCppToC,
-                        CefMenuModelDelegate,
-                        cef_menu_model_delegate_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCppToCRefCounted<CefMenuModelDelegateCppToC,
+                                         CefMenuModelDelegate,
+                                         cef_menu_model_delegate_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

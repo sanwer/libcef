@@ -22,6 +22,7 @@
 #include "tests/cefclient/browser/response_filter_test.h"
 #include "tests/cefclient/browser/root_window_manager.h"
 #include "tests/cefclient/browser/scheme_test.h"
+#include "tests/cefclient/browser/server_test.h"
 #include "tests/cefclient/browser/urlrequest_test.h"
 #include "tests/cefclient/browser/window_test.h"
 #include "tests/shared/browser/resource_util.h"
@@ -31,6 +32,8 @@ namespace test_runner {
 
 namespace {
 
+const char kTestHost[] = "tests";
+const char kLocalHost[] = "localhost";
 const char kTestOrigin[] = "http://tests/";
 
 // Replace all instances of |from| with |to| in |str|.
@@ -119,16 +122,15 @@ void RunRequestTest(CefRefPtr<CefBrowser> browser) {
 }
 
 void RunNewWindowTest(CefRefPtr<CefBrowser> browser) {
-  MainContext::Get()->GetRootWindowManager()->CreateRootWindow(
-      true,  // Show controls.
-      browser->GetHost()->IsWindowRenderingDisabled(),
-      CefRect(),       // Use default system size.
-      std::string());  // Use default URL.
+  RootWindowConfig config;
+  config.with_controls = true;
+  config.with_osr = browser->GetHost()->IsWindowRenderingDisabled();
+  MainContext::Get()->GetRootWindowManager()->CreateRootWindow(config);
 }
 
 void RunPopupWindowTest(CefRefPtr<CefBrowser> browser) {
   browser->GetMainFrame()->ExecuteJavaScript(
-      "window.open('http://www.baidu.com');", "about:blank", 0);
+      "window.open('http://www.google.com');", "about:blank", 0);
 }
 
 void RunPluginInfoTest(CefRefPtr<CefBrowser> browser) {
@@ -433,13 +435,12 @@ class RequestDumpResourceProvider : public CefResourceManager::Provider {
       return false;
     }
 
-    const std::string& dump = DumpRequestContents(request->request());
-    std::string str =
-        "<html><body bgcolor=\"white\"><pre>" + dump + "</pre></body></html>";
-    CefRefPtr<CefStreamReader> stream = CefStreamReader::CreateForData(
-        static_cast<void*>(const_cast<char*>(str.c_str())), str.size());
-    DCHECK(stream.get());
-    request->Continue(new CefStreamResourceHandler("text/html", stream));
+    CefResponse::HeaderMap response_headers;
+    CefRefPtr<CefStreamReader> response =
+        GetDumpResponse(request->request(), response_headers);
+
+    request->Continue(new CefStreamResourceHandler(200, "OK", "text/html",
+                                                   response_headers, response));
     return true;
   }
 
@@ -593,6 +594,49 @@ std::string DumpRequestContents(CefRefPtr<CefRequest> request) {
   return ss.str();
 }
 
+CefRefPtr<CefStreamReader> GetDumpResponse(
+    CefRefPtr<CefRequest> request,
+    CefResponse::HeaderMap& response_headers) {
+  std::string origin;
+
+  // Extract the origin request header, if any. It will be specified for
+  // cross-origin requests.
+  {
+    CefRequest::HeaderMap requestMap;
+    request->GetHeaderMap(requestMap);
+
+    CefRequest::HeaderMap::const_iterator it = requestMap.begin();
+    for (; it != requestMap.end(); ++it) {
+      std::string key = it->first;
+      std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+      if (key == "origin") {
+        origin = it->second;
+        break;
+      }
+    }
+  }
+
+  if (!origin.empty() &&
+      (origin.find("http://" + std::string(kTestHost)) == 0 ||
+       origin.find("http://" + std::string(kLocalHost)) == 0)) {
+    // Allow cross-origin XMLHttpRequests from test origins.
+    response_headers.insert(
+        std::make_pair("Access-Control-Allow-Origin", origin));
+
+    // Allow the custom header from the xmlhttprequest.html example.
+    response_headers.insert(
+        std::make_pair("Access-Control-Allow-Headers", "My-Custom-Header"));
+  }
+
+  const std::string& dump = DumpRequestContents(request);
+  std::string str =
+      "<html><body bgcolor=\"white\"><pre>" + dump + "</pre></body></html>";
+  CefRefPtr<CefStreamReader> stream = CefStreamReader::CreateForData(
+      static_cast<void*>(const_cast<char*>(str.c_str())), str.size());
+  DCHECK(stream);
+  return stream;
+}
+
 std::string GetDataURI(const std::string& data, const std::string& mime_type) {
   return "data:" + mime_type + ";base64," +
          CefURIEncode(CefBase64Encode(data.data(), data.size()), false)
@@ -680,8 +724,9 @@ void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager) {
 // Add provider for bundled resource files.
 #if defined(OS_WIN)
   // Read resources from the binary.
-  resource_manager->AddProvider(CreateBinaryResourceProvider(test_origin), 100,
-                                std::string());
+  resource_manager->AddProvider(
+      CreateBinaryResourceProvider(test_origin, std::string()), 100,
+      std::string());
 #elif defined(OS_POSIX)
   // Read resources from a directory on disk.
   std::string resource_dir;
@@ -693,6 +738,14 @@ void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager) {
 }
 
 void Alert(CefRefPtr<CefBrowser> browser, const std::string& message) {
+  if (browser->GetHost()->GetExtension()) {
+    // Alerts originating from extension hosts should instead be displayed in
+    // the active browser.
+    browser = MainContext::Get()->GetRootWindowManager()->GetActiveBrowser();
+    if (!browser)
+      return;
+  }
+
   // Escape special characters in the message.
   std::string msg = StringReplace(message, "\\", "\\\\");
   msg = StringReplace(msg, "'", "\\'");
@@ -700,6 +753,18 @@ void Alert(CefRefPtr<CefBrowser> browser, const std::string& message) {
   // Execute a JavaScript alert().
   CefRefPtr<CefFrame> frame = browser->GetMainFrame();
   frame->ExecuteJavaScript("alert('" + msg + "');", frame->GetURL(), 0);
+}
+
+bool IsTestURL(const std::string& url, const std::string& path) {
+  CefURLParts parts;
+  CefParseURL(url, parts);
+
+  const std::string& url_host = CefString(&parts.host);
+  if (url_host != kTestHost && url_host != kLocalHost)
+    return false;
+
+  const std::string& url_path = CefString(&parts.path);
+  return url_path.find(path) == 0;
 }
 
 void CreateMessageHandlers(MessageHandlerSet& handlers) {
@@ -716,6 +781,9 @@ void CreateMessageHandlers(MessageHandlerSet& handlers) {
 
   // Create the preferences test handlers.
   preferences_test::CreateMessageHandlers(handlers);
+
+  // Create the server test handlers.
+  server_test::CreateMessageHandlers(handlers);
 
   // Create the urlrequest test handlers.
   urlrequest_test::CreateMessageHandlers(handlers);

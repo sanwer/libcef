@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=2ccdc811cf83c44925c3600c0dda1e98b869690f$
+// $hash=a1799a89a5e71b6513b62b6399ed252e09cfb82f$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_REQUEST_CONTEXT_HANDLER_CPPTOC_H_
@@ -20,7 +20,9 @@
 #error This file can be included wrapper-side only
 #endif
 
+#include "include/capi/cef_request_context_capi.h"
 #include "include/capi/cef_request_context_handler_capi.h"
+#include "include/cef_request_context.h"
 #include "include/cef_request_context_handler.h"
 #include "libcef_dll/cpptoc/cpptoc_ref_counted.h"
 

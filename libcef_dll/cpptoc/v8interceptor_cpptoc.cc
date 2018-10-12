@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b77922c7e347a9371ebdba47213b23fcd62d98a8$
+// $hash=32208148506df1963b6d1a5642d80411574dae73$
 //
 
 #include "libcef_dll/cpptoc/v8interceptor_cpptoc.h"
@@ -230,7 +230,8 @@ CefRefPtr<CefV8Interceptor> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefV8InterceptorCppToC,
                                          CefV8Interceptor,
-                                         cef_v8interceptor_t>::DebugObjCt = 0;
+                                         cef_v8interceptor_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

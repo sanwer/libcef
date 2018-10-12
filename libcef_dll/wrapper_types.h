@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=6e2b488ccd8d106f6bf4a53209bb8d79848c7fb5$
+// $hash=47f1724d1f28c8295717e5df6ce8f5f8602ce1d5$
 //
 
 #ifndef CEF_LIBCEF_DLL_WRAPPER_TYPES_H_
@@ -55,14 +55,14 @@ enum CefWrapperType {
   WT_DRAG_DATA,
   WT_DRAG_HANDLER,
   WT_END_TRACING_CALLBACK,
+  WT_EXTENSION,
+  WT_EXTENSION_HANDLER,
   WT_FILE_DIALOG_CALLBACK,
   WT_FILL_LAYOUT,
   WT_FIND_HANDLER,
   WT_FOCUS_HANDLER,
   WT_FRAME,
-  WT_GEOLOCATION_CALLBACK,
-  WT_GEOLOCATION_HANDLER,
-  WT_GET_GEOLOCATION_CALLBACK,
+  WT_GET_EXTENSION_RESOURCE_CALLBACK,
   WT_IMAGE,
   WT_JSDIALOG_CALLBACK,
   WT_JSDIALOG_HANDLER,
@@ -74,6 +74,7 @@ enum CefWrapperType {
   WT_LOAD_HANDLER,
   WT_MENU_BUTTON,
   WT_MENU_BUTTON_DELEGATE,
+  WT_MENU_BUTTON_PRESSED_LOCK,
   WT_MENU_MODEL,
   WT_MENU_MODEL_DELEGATE,
   WT_NAVIGATION_ENTRY,
@@ -111,6 +112,8 @@ enum CefWrapperType {
   WT_SCHEME_REGISTRAR,
   WT_SCROLL_VIEW,
   WT_SELECT_CLIENT_CERTIFICATE_CALLBACK,
+  WT_SERVER,
+  WT_SERVER_HANDLER,
   WT_SET_COOKIE_CALLBACK,
   WT_STREAM_READER,
   WT_STREAM_WRITER,
@@ -134,6 +137,7 @@ enum CefWrapperType {
   WT_URLREQUEST,
   WT_URLREQUEST_CLIENT,
   WT_V8ACCESSOR,
+  WT_V8ARRAY_BUFFER_RELEASE_CALLBACK,
   WT_V8CONTEXT,
   WT_V8EXCEPTION,
   WT_V8HANDLER,
@@ -155,6 +159,8 @@ enum CefWrapperType {
   WT_X509CERTIFICATE,
   WT_XML_READER,
   WT_ZIP_READER,
+
+  WT_LAST
 };
 
 #endif  // CEF_LIBCEF_DLL_WRAPPER_TYPES_H_

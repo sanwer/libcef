@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=8d022d9bff90419f3c199e1ee0068945cf6329f1$
+// $hash=56e84a88921d747ee35eecc55a0a37a44ba3876d$
 //
 
 #include "libcef_dll/ctocpp/process_message_ctocpp.h"
@@ -124,7 +124,8 @@ cef_process_message_t* CefCToCppRefCounted<
 template <>
 base::AtomicRefCount CefCToCppRefCounted<CefProcessMessageCToCpp,
                                          CefProcessMessage,
-                                         cef_process_message_t>::DebugObjCt = 0;
+                                         cef_process_message_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

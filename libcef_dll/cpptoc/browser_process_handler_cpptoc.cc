@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=81332687e151af6933a729c1456dd4b3a64f82df$
+// $hash=3ae9e294146e13cdf68a6d5e08bd908b4a2e5911$
 //
 
 #include "libcef_dll/cpptoc/browser_process_handler_cpptoc.h"
@@ -129,10 +129,10 @@ CefRefPtr<CefBrowserProcessHandler> CefCppToCRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCppToCRefCounted<CefBrowserProcessHandlerCppToC,
-                        CefBrowserProcessHandler,
-                        cef_browser_process_handler_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCppToCRefCounted<
+    CefBrowserProcessHandlerCppToC,
+    CefBrowserProcessHandler,
+    cef_browser_process_handler_t>::DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

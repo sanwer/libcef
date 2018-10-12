@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=2b2e211c650612103fc46dc368fe2fa60492e6ea$
+// $hash=1eb5ac5966df1c081f6c2be44272f5dee1c55cfc$
 //
 
 #include "libcef_dll/ctocpp/scheme_registrar_ctocpp.h"
@@ -71,7 +71,8 @@ cef_scheme_registrar_t* CefCToCppScoped<
 template <>
 base::AtomicRefCount CefCToCppScoped<CefSchemeRegistrarCToCpp,
                                      CefSchemeRegistrar,
-                                     cef_scheme_registrar_t>::DebugObjCt = 0;
+                                     cef_scheme_registrar_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=04255b222eef72aeea67720233b7b0b7b9000365$
+// $hash=43308e7abe6134f04e05040c219c153eb5cfb5a8$
 //
 
 #include "libcef_dll/cpptoc/jsdialog_handler_cpptoc.h"
@@ -158,8 +158,8 @@ CefRefPtr<CefJSDialogHandler> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefJSDialogHandlerCppToC,
                                          CefJSDialogHandler,
-                                         cef_jsdialog_handler_t>::DebugObjCt =
-    0;
+                                         cef_jsdialog_handler_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

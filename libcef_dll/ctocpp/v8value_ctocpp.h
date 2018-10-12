@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b811aad20b2d74c0c8e028354163a5e68f52517e$
+// $hash=72b98313f1c00f864fd01694eb741f066ae2c5f4$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_V8VALUE_CTOCPP_H_
@@ -44,6 +44,7 @@ class CefV8ValueCToCpp
   bool IsString() OVERRIDE;
   bool IsObject() OVERRIDE;
   bool IsArray() OVERRIDE;
+  bool IsArrayBuffer() OVERRIDE;
   bool IsFunction() OVERRIDE;
   bool IsSame(CefRefPtr<CefV8Value> that) OVERRIDE;
   bool GetBoolValue() OVERRIDE;
@@ -77,6 +78,9 @@ class CefV8ValueCToCpp
   int GetExternallyAllocatedMemory() OVERRIDE;
   int AdjustExternallyAllocatedMemory(int change_in_bytes) OVERRIDE;
   int GetArrayLength() OVERRIDE;
+  CefRefPtr<CefV8ArrayBufferReleaseCallback> GetArrayBufferReleaseCallback()
+      OVERRIDE;
+  bool NeuterArrayBuffer() OVERRIDE;
   CefString GetFunctionName() OVERRIDE;
   CefRefPtr<CefV8Handler> GetFunctionHandler() OVERRIDE;
   CefRefPtr<CefV8Value> ExecuteFunction(

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=589466ca4bd3e901d903764a71a4e8b1ee10003f$
+// $hash=39ab8db08e667fac8e6dccffaa99935d8aa7d4b5$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_BROWSER_HOST_CTOCPP_H_
@@ -120,6 +120,11 @@ class CefBrowserHostCToCpp : public CefCToCppRefCounted<CefBrowserHostCToCpp,
   void DragSourceSystemDragEnded() OVERRIDE;
   CefRefPtr<CefNavigationEntry> GetVisibleNavigationEntry() OVERRIDE;
   void SetAccessibilityState(cef_state_t accessibility_state) OVERRIDE;
+  void SetAutoResizeEnabled(bool enabled,
+                            const CefSize& min_size,
+                            const CefSize& max_size) OVERRIDE;
+  CefRefPtr<CefExtension> GetExtension() OVERRIDE;
+  bool IsBackgroundHost() OVERRIDE;
 };
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_BROWSER_HOST_CTOCPP_H_

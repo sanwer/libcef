@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d520e6de025a46b26dadb74dbb55aefb956ebbcc$
+// $hash=1d3a61e03b1eee554be761d25422017842f37219$
 //
 
 #include "libcef_dll/ctocpp/v8context_ctocpp.h"
@@ -237,9 +237,9 @@ CefCToCppRefCounted<CefV8ContextCToCpp, CefV8Context, cef_v8context_t>::
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount CefCToCppRefCounted<CefV8ContextCToCpp,
-                                         CefV8Context,
-                                         cef_v8context_t>::DebugObjCt = 0;
+base::AtomicRefCount
+    CefCToCppRefCounted<CefV8ContextCToCpp, CefV8Context, cef_v8context_t>::
+        DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

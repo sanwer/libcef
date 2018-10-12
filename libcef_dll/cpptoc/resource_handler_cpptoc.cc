@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=71288eacf082e55ff7e9f827abacd855c20460e4$
+// $hash=5c40dbe1231bafa03c93f3085e90f9e51e921d98$
 //
 
 #include "libcef_dll/cpptoc/resource_handler_cpptoc.h"
@@ -213,8 +213,8 @@ CefRefPtr<CefResourceHandler> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefResourceHandlerCppToC,
                                          CefResourceHandler,
-                                         cef_resource_handler_t>::DebugObjCt =
-    0;
+                                         cef_resource_handler_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

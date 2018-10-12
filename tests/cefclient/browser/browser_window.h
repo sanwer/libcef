@@ -37,6 +37,9 @@ class BrowserWindow : public ClientHandler::Delegate {
     // Set fullscreen mode.
     virtual void OnSetFullscreen(bool fullscreen) = 0;
 
+    // Auto-resize contents.
+    virtual void OnAutoResize(const CefSize& new_size) = 0;
+
     // Set the loading state.
     virtual void OnSetLoadingState(bool isLoading,
                                    bool canGoBack,
@@ -59,8 +62,8 @@ class BrowserWindow : public ClientHandler::Delegate {
   // Retrieve the configuration that will be used when creating a popup window.
   // The popup browser will initially be parented to |temp_handle| which should
   // be a pre-existing hidden window. The native window will be created later
-  // after the browser has been created. This method may be called on any
-  // thread.
+  // after the browser has been created. This method will be called on the
+  // browser process UI thread.
   virtual void GetPopupConfig(CefWindowHandle temp_handle,
                               CefWindowInfo& windowInfo,
                               CefRefPtr<CefClient>& client,
@@ -117,6 +120,7 @@ class BrowserWindow : public ClientHandler::Delegate {
   void OnSetAddress(const std::string& url) OVERRIDE;
   void OnSetTitle(const std::string& title) OVERRIDE;
   void OnSetFullscreen(bool fullscreen) OVERRIDE;
+  void OnAutoResize(const CefSize& new_size) OVERRIDE;
   void OnSetLoadingState(bool isLoading,
                          bool canGoBack,
                          bool canGoForward) OVERRIDE;

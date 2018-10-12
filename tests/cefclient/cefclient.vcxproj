@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -27,11 +27,24 @@
   <PropertyGroup Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v100</PlatformToolset>
-    <UseDebugLibraries Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</UseDebugLibraries>
-    <UseDebugLibraries Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</UseDebugLibraries>
-    <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</WholeProgramOptimization>
-    <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <PlatformToolset>v140</PlatformToolset>
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformToolset>v140</PlatformToolset>
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <PlatformToolset>v140</PlatformToolset>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformToolset>v140</PlatformToolset>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -193,7 +206,6 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\shared\browser\resource_util.cc" />
     <ClCompile Include="browser\binding_test.cc" />
     <ClInclude Include="browser\binding_test.h" />
     <ClCompile Include="browser\browser_window.cc" />
@@ -214,6 +226,8 @@
     <ClInclude Include="browser\dialog_test.h" />
     <ClCompile Include="browser\drm_test.cc" />
     <ClInclude Include="browser\drm_test.h" />
+    <ClCompile Include="browser\image_cache.cc" />
+    <ClInclude Include="browser\image_cache.h" />
     <ClCompile Include="browser\main_context.cc" />
     <ClInclude Include="browser\main_context.h" />
     <ClCompile Include="browser\main_context_impl.cc" />
@@ -233,6 +247,8 @@
     <ClInclude Include="browser\root_window_manager.h" />
     <ClCompile Include="browser\scheme_test.cc" />
     <ClInclude Include="browser\scheme_test.h" />
+    <ClCompile Include="browser\server_test.cc" />
+    <ClInclude Include="browser\server_test.h" />
     <ClInclude Include="browser\temp_window.h" />
     <ClCompile Include="browser\test_runner.cc" />
     <ClInclude Include="browser\test_runner.h" />
@@ -244,6 +260,10 @@
     <ClInclude Include="browser\window_test_runner.h" />
     <ClCompile Include="..\shared\browser\client_app_browser.cc" />
     <ClInclude Include="..\shared\browser\client_app_browser.h" />
+    <ClCompile Include="..\shared\browser\extension_util.cc" />
+    <ClInclude Include="..\shared\browser\extension_util.h" />
+    <ClCompile Include="..\shared\browser\file_util.cc" />
+    <ClInclude Include="..\shared\browser\file_util.h" />
     <ClCompile Include="..\shared\browser\geometry_util.cc" />
     <ClInclude Include="..\shared\browser\geometry_util.h" />
     <ClCompile Include="..\shared\browser\main_message_loop.cc" />

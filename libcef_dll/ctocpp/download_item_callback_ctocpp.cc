@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d9215ae02910dd9116d40e31163cf7eea491012f$
+// $hash=835fb863ac3e5d72c5b320d0792c2537fe21bb74$
 //
 
 #include "libcef_dll/ctocpp/download_item_callback_ctocpp.h"
@@ -65,10 +65,10 @@ cef_download_item_callback_t* CefCToCppRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCToCppRefCounted<CefDownloadItemCallbackCToCpp,
-                        CefDownloadItemCallback,
-                        cef_download_item_callback_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCToCppRefCounted<
+    CefDownloadItemCallbackCToCpp,
+    CefDownloadItemCallback,
+    cef_download_item_callback_t>::DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=9a19ca77c7dad9e0c8ddd5a1f3f2c1a2073fdd84$
+// $hash=5b643634f36633304ae43cfeb9ab6f27c00e6bfb$
 //
 
 #include "libcef_dll/cpptoc/views/browser_view_delegate_cpptoc.h"
@@ -358,10 +358,10 @@ CefRefPtr<CefBrowserViewDelegate> CefCppToCRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCppToCRefCounted<CefBrowserViewDelegateCppToC,
-                        CefBrowserViewDelegate,
-                        cef_browser_view_delegate_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCppToCRefCounted<
+    CefBrowserViewDelegateCppToC,
+    CefBrowserViewDelegate,
+    cef_browser_view_delegate_t>::DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

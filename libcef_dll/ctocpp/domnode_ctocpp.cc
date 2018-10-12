@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c383834c864fc6235749c096939144303ea23af1$
+// $hash=4c70f7df52ffea2c9c4d5cea02f10614b434dd33$
 //
 
 #include "libcef_dll/ctocpp/domnode_ctocpp.h"
@@ -454,9 +454,9 @@ CefCToCppRefCounted<CefDOMNodeCToCpp, CefDOMNode, cef_domnode_t>::UnwrapDerived(
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount CefCToCppRefCounted<CefDOMNodeCToCpp,
-                                         CefDOMNode,
-                                         cef_domnode_t>::DebugObjCt = 0;
+base::AtomicRefCount
+    CefCToCppRefCounted<CefDOMNodeCToCpp, CefDOMNode, cef_domnode_t>::DebugObjCt
+        ATOMIC_DECLARATION;
 #endif
 
 template <>

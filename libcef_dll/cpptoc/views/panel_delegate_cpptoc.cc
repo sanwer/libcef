@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c918146a8bbbc5f3e93e6471f9dbab9ca74785a9$
+// $hash=62ccebbafbd739fd8afca22da1062c57238ba89b$
 //
 
 #include "libcef_dll/cpptoc/views/panel_delegate_cpptoc.h"
@@ -228,7 +228,8 @@ CefRefPtr<CefPanelDelegate> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefPanelDelegateCppToC,
                                          CefPanelDelegate,
-                                         cef_panel_delegate_t>::DebugObjCt = 0;
+                                         cef_panel_delegate_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

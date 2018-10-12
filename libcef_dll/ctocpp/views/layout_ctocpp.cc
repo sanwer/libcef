@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a519fd1a0f098ffbcfc309721e5b388a5e3b81d9$
+// $hash=77ba3fd044430b7de25f0be61260ad0d8a21aa0a$
 //
 
 #include "libcef_dll/ctocpp/views/layout_ctocpp.h"
@@ -84,8 +84,8 @@ CefCToCppRefCounted<CefLayoutCToCpp, CefLayout, cef_layout_t>::UnwrapDerived(
 #if DCHECK_IS_ON()
 template <>
 base::AtomicRefCount
-    CefCToCppRefCounted<CefLayoutCToCpp, CefLayout, cef_layout_t>::DebugObjCt =
-        0;
+    CefCToCppRefCounted<CefLayoutCToCpp, CefLayout, cef_layout_t>::DebugObjCt
+        ATOMIC_DECLARATION;
 #endif
 
 template <>

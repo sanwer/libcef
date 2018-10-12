@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=6f1cfb4286ceb605bfc6ba718d0ef1b3620bb9de$
+// $hash=3b6f504dc7f35948dff40ccfa4167c34fd279ac0$
 //
 
 #include "libcef_dll/ctocpp/x509cert_principal_ctocpp.h"
@@ -215,8 +215,8 @@ cef_x509cert_principal_t* CefCToCppRefCounted<
 template <>
 base::AtomicRefCount CefCToCppRefCounted<CefX509CertPrincipalCToCpp,
                                          CefX509CertPrincipal,
-                                         cef_x509cert_principal_t>::DebugObjCt =
-    0;
+                                         cef_x509cert_principal_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

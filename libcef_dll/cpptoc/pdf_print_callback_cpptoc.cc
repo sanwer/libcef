@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=6f723c637ef687429368a60f58037a36e5a5ce89$
+// $hash=455a18cf51de6711e6133f2ae649ddc53b16acf2$
 //
 
 #include "libcef_dll/cpptoc/pdf_print_callback_cpptoc.h"
@@ -59,8 +59,8 @@ CefRefPtr<CefPdfPrintCallback> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefPdfPrintCallbackCppToC,
                                          CefPdfPrintCallback,
-                                         cef_pdf_print_callback_t>::DebugObjCt =
-    0;
+                                         cef_pdf_print_callback_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

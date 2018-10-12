@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=0474e29257b82b777a1f7d2ba4a8fcdb5297d9a6$
+// $hash=256b2cb58a6a659d18b4a9ce1fc7c00c888ac618$
 //
 
 #include "libcef_dll/cpptoc/write_handler_cpptoc.h"
@@ -123,7 +123,8 @@ CefRefPtr<CefWriteHandler> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefWriteHandlerCppToC,
                                          CefWriteHandler,
-                                         cef_write_handler_t>::DebugObjCt = 0;
+                                         cef_write_handler_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

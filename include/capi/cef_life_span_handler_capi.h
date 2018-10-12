@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=7894d507f337ebe5f9296770e10773a4e6458f00$
+// $hash=eca8f0216a3430fad8ff3714a0ef65ed27e02f0e$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_LIFE_SPAN_HANDLER_CAPI_H_
@@ -61,7 +61,7 @@ typedef struct _cef_life_span_handler_t {
   cef_base_ref_counted_t base;
 
   ///
-  // Called on the IO thread before a new popup browser is created. The
+  // Called on the UI thread before a new popup browser is created. The
   // |browser| and |frame| values represent the source of the popup request. The
   // |target_url| and |target_frame_name| values indicate where the popup
   // browser should navigate and may be NULL if not specified with the request.

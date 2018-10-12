@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=fa15c71d8a7710d8e1c326ede770c2359b790188$
+// $hash=791734f59b54d013837777ee64b8b8d970954446$
 //
 
 #include "libcef_dll/cpptoc/completion_callback_cpptoc.h"
@@ -50,10 +50,10 @@ CefRefPtr<CefCompletionCallback> CefCppToCRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCppToCRefCounted<CefCompletionCallbackCppToC,
-                        CefCompletionCallback,
-                        cef_completion_callback_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCppToCRefCounted<CefCompletionCallbackCppToC,
+                                         CefCompletionCallback,
+                                         cef_completion_callback_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

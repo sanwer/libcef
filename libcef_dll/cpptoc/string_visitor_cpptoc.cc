@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c778771a654d82fde17dd52d7885f647945dba8f$
+// $hash=defa53d73fd8cc4e7f7ef6568370dc15fc34c743$
 //
 
 #include "libcef_dll/cpptoc/string_visitor_cpptoc.h"
@@ -53,7 +53,8 @@ CefRefPtr<CefStringVisitor> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefStringVisitorCppToC,
                                          CefStringVisitor,
-                                         cef_string_visitor_t>::DebugObjCt = 0;
+                                         cef_string_visitor_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

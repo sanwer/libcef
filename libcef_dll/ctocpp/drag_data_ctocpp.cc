@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=543054b6b4e606ea5c571ca48d2108f8ed6674ab$
+// $hash=b5e650de4800247afab5579d6e239c7853f9a1ad$
 //
 
 #include "libcef_dll/ctocpp/drag_data_ctocpp.h"
@@ -420,9 +420,9 @@ CefCToCppRefCounted<CefDragDataCToCpp, CefDragData, cef_drag_data_t>::
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount CefCToCppRefCounted<CefDragDataCToCpp,
-                                         CefDragData,
-                                         cef_drag_data_t>::DebugObjCt = 0;
+base::AtomicRefCount
+    CefCToCppRefCounted<CefDragDataCToCpp, CefDragData, cef_drag_data_t>::
+        DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

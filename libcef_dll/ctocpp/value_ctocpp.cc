@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=dce21cc429320a9d24fd80ad2bc1347b03f82808$
+// $hash=42acd100b6a5912e446c2db164813b97e8a6e59f$
 //
 
 #include "libcef_dll/ctocpp/value_ctocpp.h"
@@ -386,7 +386,8 @@ CefCToCppRefCounted<CefValueCToCpp, CefValue, cef_value_t>::UnwrapDerived(
 #if DCHECK_IS_ON()
 template <>
 base::AtomicRefCount
-    CefCToCppRefCounted<CefValueCToCpp, CefValue, cef_value_t>::DebugObjCt = 0;
+    CefCToCppRefCounted<CefValueCToCpp, CefValue, cef_value_t>::DebugObjCt
+        ATOMIC_DECLARATION;
 #endif
 
 template <>

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=ac1dfcde986921cadaa0086dc9206913a7ca91f3$
+// $hash=4647d63d23687337584192c6e6da1b50f34c1568$
 //
 
 #include "libcef_dll/ctocpp/waitable_event_ctocpp.h"
@@ -110,7 +110,8 @@ CefCToCppRefCounted<CefWaitableEventCToCpp,
 template <>
 base::AtomicRefCount CefCToCppRefCounted<CefWaitableEventCToCpp,
                                          CefWaitableEvent,
-                                         cef_waitable_event_t>::DebugObjCt = 0;
+                                         cef_waitable_event_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

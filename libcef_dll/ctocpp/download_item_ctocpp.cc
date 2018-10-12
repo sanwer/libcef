@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=8d42b80fd9a45dc0d59127e1b72ec9900d5e1679$
+// $hash=310fe4a0ca3c4853f6888bf09937aebff040a36f$
 //
 
 #include "libcef_dll/ctocpp/download_item_ctocpp.h"
@@ -284,7 +284,8 @@ CefCToCppRefCounted<CefDownloadItemCToCpp,
 template <>
 base::AtomicRefCount CefCToCppRefCounted<CefDownloadItemCToCpp,
                                          CefDownloadItem,
-                                         cef_download_item_t>::DebugObjCt = 0;
+                                         cef_download_item_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

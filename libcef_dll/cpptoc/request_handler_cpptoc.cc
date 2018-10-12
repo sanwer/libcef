@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=debd32c1e6bb7d1caca659f93e1a6fbb0e5018a9$
+// $hash=02ebd75f0920edad6a23db997a57f28fc921b045$
 //
 
 #include "libcef_dll/cpptoc/request_handler_cpptoc.h"
@@ -34,6 +34,7 @@ request_handler_on_before_browse(struct _cef_request_handler_t* self,
                                  cef_browser_t* browser,
                                  cef_frame_t* frame,
                                  cef_request_t* request,
+                                 int user_gesture,
                                  int is_redirect) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -56,7 +57,8 @@ request_handler_on_before_browse(struct _cef_request_handler_t* self,
   // Execute
   bool _retval = CefRequestHandlerCppToC::Get(self)->OnBeforeBrowse(
       CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
-      CefRequestCToCpp::Wrap(request), is_redirect ? true : false);
+      CefRequestCToCpp::Wrap(request), user_gesture ? true : false,
+      is_redirect ? true : false);
 
   // Return type: bool
   return _retval;
@@ -368,6 +370,80 @@ request_handler_get_auth_credentials(struct _cef_request_handler_t* self,
 }
 
 int CEF_CALLBACK
+request_handler_can_get_cookies(struct _cef_request_handler_t* self,
+                                cef_browser_t* browser,
+                                cef_frame_t* frame,
+                                cef_request_t* request) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return 0;
+  // Verify param: browser; type: refptr_diff
+  DCHECK(browser);
+  if (!browser)
+    return 0;
+  // Verify param: frame; type: refptr_diff
+  DCHECK(frame);
+  if (!frame)
+    return 0;
+  // Verify param: request; type: refptr_diff
+  DCHECK(request);
+  if (!request)
+    return 0;
+
+  // Execute
+  bool _retval = CefRequestHandlerCppToC::Get(self)->CanGetCookies(
+      CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
+      CefRequestCToCpp::Wrap(request));
+
+  // Return type: bool
+  return _retval;
+}
+
+int CEF_CALLBACK
+request_handler_can_set_cookie(struct _cef_request_handler_t* self,
+                               cef_browser_t* browser,
+                               cef_frame_t* frame,
+                               cef_request_t* request,
+                               const struct _cef_cookie_t* cookie) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return 0;
+  // Verify param: browser; type: refptr_diff
+  DCHECK(browser);
+  if (!browser)
+    return 0;
+  // Verify param: frame; type: refptr_diff
+  DCHECK(frame);
+  if (!frame)
+    return 0;
+  // Verify param: request; type: refptr_diff
+  DCHECK(request);
+  if (!request)
+    return 0;
+  // Verify param: cookie; type: struct_byref_const
+  DCHECK(cookie);
+  if (!cookie)
+    return 0;
+
+  // Translate param: cookie; type: struct_byref_const
+  CefCookie cookieObj;
+  if (cookie)
+    cookieObj.Set(*cookie, false);
+
+  // Execute
+  bool _retval = CefRequestHandlerCppToC::Get(self)->CanSetCookie(
+      CefBrowserCToCpp::Wrap(browser), CefFrameCToCpp::Wrap(frame),
+      CefRequestCToCpp::Wrap(request), cookieObj);
+
+  // Return type: bool
+  return _retval;
+}
+
+int CEF_CALLBACK
 request_handler_on_quota_request(struct _cef_request_handler_t* self,
                                  cef_browser_t* browser,
                                  const cef_string_t* origin_url,
@@ -603,6 +679,8 @@ CefRequestHandlerCppToC::CefRequestHandlerCppToC() {
   GetStruct()->on_resource_load_complete =
       request_handler_on_resource_load_complete;
   GetStruct()->get_auth_credentials = request_handler_get_auth_credentials;
+  GetStruct()->can_get_cookies = request_handler_can_get_cookies;
+  GetStruct()->can_set_cookie = request_handler_can_set_cookie;
   GetStruct()->on_quota_request = request_handler_on_quota_request;
   GetStruct()->on_protocol_execution = request_handler_on_protocol_execution;
   GetStruct()->on_certificate_error = request_handler_on_certificate_error;
@@ -628,7 +706,8 @@ CefRefPtr<CefRequestHandler> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefRequestHandlerCppToC,
                                          CefRequestHandler,
-                                         cef_request_handler_t>::DebugObjCt = 0;
+                                         cef_request_handler_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

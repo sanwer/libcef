@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=5d20fc88dea8dad8691f05bfb7e8c1ce5cf2bbc1$
+// $hash=f2f3acb1df9815e4ac9bf34010ce260a2496ae5a$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_RENDER_HANDLER_CAPI_H_
@@ -202,6 +202,17 @@ typedef struct _cef_render_handler_t {
       const cef_range_t* selected_range,
       size_t character_boundsCount,
       cef_rect_t const* character_bounds);
+
+  ///
+  // Called when text selection has changed for the specified |browser|.
+  // |selected_text| is the currently selected text and |selected_range| is the
+  // character range.
+  ///
+  void(CEF_CALLBACK* on_text_selection_changed)(
+      struct _cef_render_handler_t* self,
+      struct _cef_browser_t* browser,
+      const cef_string_t* selected_text,
+      const cef_range_t* selected_range);
 } cef_render_handler_t;
 
 #ifdef __cplusplus

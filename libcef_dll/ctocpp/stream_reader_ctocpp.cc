@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=0ec4ed2c33eca8b0f123dc7cec65dbdf389462d2$
+// $hash=b35c8a8c174026cbafddcfc80f3ba33a8a42bf69$
 //
 
 #include "libcef_dll/ctocpp/stream_reader_ctocpp.h"
@@ -162,7 +162,8 @@ CefCToCppRefCounted<CefStreamReaderCToCpp,
 template <>
 base::AtomicRefCount CefCToCppRefCounted<CefStreamReaderCToCpp,
                                          CefStreamReader,
-                                         cef_stream_reader_t>::DebugObjCt = 0;
+                                         cef_stream_reader_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

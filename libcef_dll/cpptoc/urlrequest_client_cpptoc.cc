@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=3e172d59ae9f9743527b0bce8c29dc7e14c48033$
+// $hash=4f1d701b71e9a49f63cc10d44167dac472f92656$
 //
 
 #include "libcef_dll/cpptoc/urlrequest_client_cpptoc.h"
@@ -164,8 +164,8 @@ CefRefPtr<CefURLRequestClient> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefURLRequestClientCppToC,
                                          CefURLRequestClient,
-                                         cef_urlrequest_client_t>::DebugObjCt =
-    0;
+                                         cef_urlrequest_client_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

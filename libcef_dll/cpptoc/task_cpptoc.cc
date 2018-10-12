@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=208bb3fedcf86b782a03fd64c527abcf05f7b297$
+// $hash=7b29ca94e5baef4397cbefb2e60e185d5c8aef0a$
 //
 
 #include "libcef_dll/cpptoc/task_cpptoc.h"
@@ -49,7 +49,8 @@ CefCppToCRefCounted<CefTaskCppToC, CefTask, cef_task_t>::UnwrapDerived(
 #if DCHECK_IS_ON()
 template <>
 base::AtomicRefCount
-    CefCppToCRefCounted<CefTaskCppToC, CefTask, cef_task_t>::DebugObjCt = 0;
+    CefCppToCRefCounted<CefTaskCppToC, CefTask, cef_task_t>::DebugObjCt
+        ATOMIC_DECLARATION;
 #endif
 
 template <>

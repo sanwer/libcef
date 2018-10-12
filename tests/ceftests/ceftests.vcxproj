@@ -1,0 +1,323 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{3468E461-95F0-353D-8343-3719FDCCD896}</ProjectGuid>
+    <RootNamespace>ceftests</RootNamespace>
+    <ProjectName>ceftests</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <PlatformToolset>v140</PlatformToolset>
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformToolset>v140</PlatformToolset>
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <PlatformToolset>v140</PlatformToolset>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformToolset>v140</PlatformToolset>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)Bin\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)Bin\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)Bin\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)Bin\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)Bin\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)Bin\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)Bin\$(Platform)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)Bin\$(Platform)\</OutDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName)_d</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectName)_d</TargetName>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4100;4127;4244;4481;4512;4701;4702;4996</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <WarningLevel>Level4</WarningLevel>
+      <PreprocessorDefinitions>DEBUG;_DEBUG;__STDC_CONSTANT_MACROS;__STDC_FORMAT_MACROS;WIN32;_WIN32;_WINDOWS;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x601;NOMINMAX;WIN32_LEAN_AND_MEAN;_HAS_EXCEPTIONS=0;PSAPI_VERSION=1;CEF_USE_ATL;UNIT_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>DEBUG;_DEBUG;__STDC_CONSTANT_MACROS;__STDC_FORMAT_MACROS;WIN32;_WIN32;_WINDOWS;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x601;NOMINMAX;WIN32_LEAN_AND_MEAN;_HAS_EXCEPTIONS=0;PSAPI_VERSION=1;CEF_USE_ATL;UNIT_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>libcef_d.lib;libcef_dll_wrapper_d.lib;cef_gtest_d.lib;comctl32.lib;rpcrt4.lib;shlwapi.lib;ws2_32.lib;glu32.lib;imm32.lib;opengl32.lib;oleacc.lib;dbghelp.lib;psapi.lib;version.lib;winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\Lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+    <Manifest>
+      <AdditionalManifestFiles>resources\win\ceftests.exe.manifest;</AdditionalManifestFiles>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4100;4127;4244;4481;4512;4701;4702;4996</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <WarningLevel>Level4</WarningLevel>
+      <PreprocessorDefinitions>DEBUG;_DEBUG;__STDC_CONSTANT_MACROS;__STDC_FORMAT_MACROS;WIN32;_WIN32;_WINDOWS;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x601;NOMINMAX;WIN32_LEAN_AND_MEAN;_HAS_EXCEPTIONS=0;PSAPI_VERSION=1;CEF_USE_ATL;UNIT_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>DEBUG;_DEBUG;__STDC_CONSTANT_MACROS;__STDC_FORMAT_MACROS;WIN32;_WIN32;_WINDOWS;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x601;NOMINMAX;WIN32_LEAN_AND_MEAN;_HAS_EXCEPTIONS=0;PSAPI_VERSION=1;CEF_USE_ATL;UNIT_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>libcef_d.lib;libcef_dll_wrapper_d.lib;cef_gtest_d.lib;comctl32.lib;rpcrt4.lib;shlwapi.lib;ws2_32.lib;glu32.lib;imm32.lib;opengl32.lib;oleacc.lib;dbghelp.lib;psapi.lib;version.lib;winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\Lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+    <Manifest>
+      <AdditionalManifestFiles>resources\win\ceftests.exe.manifest;</AdditionalManifestFiles>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4100;4127;4244;4481;4512;4701;4702;4996</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <StringPooling>true</StringPooling>
+      <WarningLevel>Level4</WarningLevel>
+      <PreprocessorDefinitions>NDEBUG;_NDEBUG;__STDC_CONSTANT_MACROS;__STDC_FORMAT_MACROS;WIN32;_WIN32;_WINDOWS;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x601;NOMINMAX;WIN32_LEAN_AND_MEAN;_HAS_EXCEPTIONS=0;PSAPI_VERSION=1;CEF_USE_ATL;UNIT_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;_NDEBUG;__STDC_CONSTANT_MACROS;__STDC_FORMAT_MACROS;WIN32;_WIN32;_WINDOWS;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x601;NOMINMAX;WIN32_LEAN_AND_MEAN;_HAS_EXCEPTIONS=0;PSAPI_VERSION=1;CEF_USE_ATL;UNIT_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;cef_gtest.lib;comctl32.lib;rpcrt4.lib;shlwapi.lib;ws2_32.lib;glu32.lib;imm32.lib;opengl32.lib;oleacc.lib;dbghelp.lib;psapi.lib;version.lib;winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\Lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+    <Manifest>
+      <AdditionalManifestFiles>resources\win\ceftests.exe.manifest;</AdditionalManifestFiles>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4100;4127;4244;4481;4512;4701;4702;4996</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <StringPooling>true</StringPooling>
+      <WarningLevel>Level4</WarningLevel>
+      <PreprocessorDefinitions>NDEBUG;_NDEBUG;__STDC_CONSTANT_MACROS;__STDC_FORMAT_MACROS;WIN32;_WIN32;_WINDOWS;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x601;NOMINMAX;WIN32_LEAN_AND_MEAN;_HAS_EXCEPTIONS=0;PSAPI_VERSION=1;CEF_USE_ATL;UNIT_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;_NDEBUG;__STDC_CONSTANT_MACROS;__STDC_FORMAT_MACROS;WIN32;_WIN32;_WINDOWS;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x601;NOMINMAX;WIN32_LEAN_AND_MEAN;_HAS_EXCEPTIONS=0;PSAPI_VERSION=1;CEF_USE_ATL;UNIT_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;cef_gtest.lib;comctl32.lib;rpcrt4.lib;shlwapi.lib;ws2_32.lib;glu32.lib;imm32.lib;opengl32.lib;oleacc.lib;dbghelp.lib;psapi.lib;version.lib;winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\Lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+    <Manifest>
+      <AdditionalManifestFiles>resources\win\ceftests.exe.manifest;</AdditionalManifestFiles>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="browser_info_map_unittest.cc" />
+    <ClCompile Include="client_app_delegates.cc" />
+    <ClCompile Include="command_line_unittest.cc" />
+    <ClCompile Include="cookie_unittest.cc" />
+    <ClCompile Include="dialog_unittest.cc" />
+    <ClCompile Include="display_unittest.cc" />
+    <ClCompile Include="dom_unittest.cc" />
+    <ClCompile Include="download_unittest.cc" />
+    <ClCompile Include="draggable_regions_unittest.cc" />
+    <ClCompile Include="file_util_unittest.cc" />
+    <ClCompile Include="frame_unittest.cc" />
+    <ClCompile Include="image_unittest.cc" />
+    <ClCompile Include="image_util.cc" />
+    <ClInclude Include="image_util.h" />
+    <ClCompile Include="jsdialog_unittest.cc" />
+    <ClCompile Include="life_span_unittest.cc" />
+    <ClCompile Include="message_router_unittest.cc" />
+    <ClCompile Include="navigation_unittest.cc" />
+    <ClCompile Include="os_rendering_unittest.cc" />
+    <ClCompile Include="osr_accessibility_unittest.cc" />
+    <ClCompile Include="osr_display_unittest.cc" />
+    <ClCompile Include="parser_unittest.cc" />
+    <ClCompile Include="plugin_unittest.cc" />
+    <ClCompile Include="preference_unittest.cc" />
+    <ClCompile Include="print_unittest.cc" />
+    <ClCompile Include="process_message_unittest.cc" />
+    <ClCompile Include="request_context_unittest.cc" />
+    <ClCompile Include="request_handler_unittest.cc" />
+    <ClCompile Include="request_unittest.cc" />
+    <ClInclude Include="resource.h" />
+    <ClCompile Include="resource_manager_unittest.cc" />
+    <ClCompile Include="routing_test_handler.cc" />
+    <ClInclude Include="routing_test_handler.h" />
+    <ClCompile Include="run_all_unittests.cc" />
+    <ClCompile Include="scheme_handler_unittest.cc" />
+    <ClCompile Include="scoped_temp_dir_unittest.cc" />
+    <ClCompile Include="server_unittest.cc" />
+    <ClCompile Include="stream_resource_handler_unittest.cc" />
+    <ClCompile Include="stream_unittest.cc" />
+    <ClCompile Include="string_unittest.cc" />
+    <ClCompile Include="task_unittest.cc" />
+    <ClCompile Include="test_handler.cc" />
+    <ClInclude Include="test_handler.h" />
+    <ClCompile Include="test_suite.cc" />
+    <ClInclude Include="test_suite.h" />
+    <ClCompile Include="test_util.cc" />
+    <ClInclude Include="test_util.h" />
+    <ClCompile Include="thread_helper.cc" />
+    <ClInclude Include="thread_helper.h" />
+    <ClCompile Include="thread_unittest.cc" />
+    <ClCompile Include="tracing_unittest.cc" />
+    <ClCompile Include="translator_unittest.cc" />
+    <ClCompile Include="urlrequest_unittest.cc" />
+    <ClCompile Include="v8_unittest.cc" />
+    <ClCompile Include="values_unittest.cc" />
+    <ClCompile Include="version_unittest.cc" />
+    <ClCompile Include="waitable_event_unittest.cc" />
+    <ClCompile Include="webui_unittest.cc" />
+    <ClCompile Include="xml_reader_unittest.cc" />
+    <ClCompile Include="zip_reader_unittest.cc" />
+    <ClCompile Include="resource_util_win_idmap.cc" />
+    <ClCompile Include="extensions\background_unittest.cc" />
+    <ClCompile Include="extensions\chrome_alarms_unittest.cc" />
+    <ClCompile Include="extensions\chrome_storage_unittest.cc" />
+    <ClCompile Include="extensions\chrome_tabs_unittest.cc" />
+    <ClCompile Include="extensions\extension_test_handler.cc" />
+    <ClInclude Include="extensions\extension_test_handler.h" />
+    <ClCompile Include="extensions\view_unittest.cc" />
+    <None Include="resources\win\ceftests.ico" />
+    <ResourceCompile Include="resources\win\ceftests.rc" />
+    <None Include="resources\win\small.ico" />
+    <ClCompile Include="..\shared\browser\client_app_browser.cc" />
+    <ClInclude Include="..\shared\browser\client_app_browser.h" />
+    <ClCompile Include="..\shared\browser\extension_util.cc" />
+    <ClInclude Include="..\shared\browser\extension_util.h" />
+    <ClCompile Include="..\shared\browser\file_util.cc" />
+    <ClInclude Include="..\shared\browser\file_util.h" />
+    <ClCompile Include="..\shared\browser\geometry_util.cc" />
+    <ClInclude Include="..\shared\browser\geometry_util.h" />
+    <ClCompile Include="..\shared\browser\main_message_loop.cc" />
+    <ClInclude Include="..\shared\browser\main_message_loop.h" />
+    <ClCompile Include="..\shared\browser\main_message_loop_external_pump.cc" />
+    <ClInclude Include="..\shared\browser\main_message_loop_external_pump.h" />
+    <ClCompile Include="..\shared\browser\main_message_loop_std.cc" />
+    <ClInclude Include="..\shared\browser\main_message_loop_std.h" />
+    <ClInclude Include="..\shared\browser\resource_util.h" />
+    <ClCompile Include="..\shared\browser\main_message_loop_external_pump_win.cc" />
+    <ClCompile Include="..\shared\browser\resource_util_win.cc" />
+    <ClCompile Include="..\shared\browser\util_win.cc" />
+    <ClInclude Include="..\shared\browser\util_win.h" />
+    <ClCompile Include="..\shared\common\client_app.cc" />
+    <ClInclude Include="..\shared\common\client_app.h" />
+    <ClCompile Include="..\shared\common\client_app_other.cc" />
+    <ClInclude Include="..\shared\common\client_app_other.h" />
+    <ClCompile Include="..\shared\common\client_switches.cc" />
+    <ClInclude Include="..\shared\common\client_switches.h" />
+    <ClCompile Include="..\shared\renderer\client_app_renderer.cc" />
+    <ClInclude Include="..\shared\renderer\client_app_renderer.h" />
+    <ClCompile Include="views\button_unittest.cc" />
+    <ClCompile Include="views\panel_unittest.cc" />
+    <ClCompile Include="views\scroll_view_unittest.cc" />
+    <ClCompile Include="views\test_window_delegate.cc" />
+    <ClInclude Include="views\test_window_delegate.h" />
+    <ClCompile Include="views\textfield_unittest.cc" />
+    <ClCompile Include="views\window_unittest.cc" />
+    <None Include="..\shared\resources\osr_test.html" />
+    <None Include="..\shared\resources\pdf.html" />
+    <None Include="..\shared\resources\pdf.pdf" />
+    <Image Include="..\shared\resources\window_icon.1x.png" />
+    <Image Include="..\shared\resources\window_icon.2x.png" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

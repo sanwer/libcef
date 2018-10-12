@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=1c3649a0a566198686f496673b77f9bd74865581$
+// $hash=660a9d771f8b3f088653a8723ef94b8cc8284979$
 //
 
 #include "libcef_dll/ctocpp/task_runner_ctocpp.h"
@@ -140,9 +140,9 @@ CefCToCppRefCounted<CefTaskRunnerCToCpp, CefTaskRunner, cef_task_runner_t>::
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount CefCToCppRefCounted<CefTaskRunnerCToCpp,
-                                         CefTaskRunner,
-                                         cef_task_runner_t>::DebugObjCt = 0;
+base::AtomicRefCount
+    CefCToCppRefCounted<CefTaskRunnerCToCpp, CefTaskRunner, cef_task_runner_t>::
+        DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

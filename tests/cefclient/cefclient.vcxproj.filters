@@ -31,6 +31,9 @@
     <ClCompile Include="browser\drm_test.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
+    <ClCompile Include="browser\image_cache.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
     <ClCompile Include="browser\main_context.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
@@ -58,6 +61,9 @@
     <ClCompile Include="browser\scheme_test.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
+    <ClCompile Include="browser\server_test.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
     <ClCompile Include="browser\test_runner.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
@@ -71,6 +77,12 @@
       <Filter>cefclient\browser</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\browser\client_app_browser.cc">
+      <Filter>shared\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\browser\extension_util.cc">
+      <Filter>shared\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\browser\file_util.cc">
       <Filter>shared\browser</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\browser\geometry_util.cc">
@@ -184,9 +196,6 @@
     <ClCompile Include="..\shared\browser\util_win.cc">
       <Filter>shared\browser</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\browser\resource_util.cc">
-      <Filter>cefclient\browser</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="browser\binding_test.h">
@@ -219,6 +228,9 @@
     <ClInclude Include="browser\drm_test.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
+    <ClInclude Include="browser\image_cache.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
     <ClInclude Include="browser\main_context.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
@@ -249,6 +261,9 @@
     <ClInclude Include="browser\scheme_test.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
+    <ClInclude Include="browser\server_test.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
     <ClInclude Include="browser\temp_window.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
@@ -265,6 +280,12 @@
       <Filter>cefclient\browser</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\browser\client_app_browser.h">
+      <Filter>shared\browser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\browser\extension_util.h">
+      <Filter>shared\browser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\browser\file_util.h">
       <Filter>shared\browser</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\browser\geometry_util.h">

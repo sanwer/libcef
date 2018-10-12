@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=fad9939546ba7289df656386ae77e4d8b60f58de$
+// $hash=042215fd05260b11c9db9207034eccf2d370f671$
 //
 
 #include "libcef_dll/cpptoc/views/window_delegate_cpptoc.h"
@@ -54,6 +54,51 @@ window_delegate_on_window_destroyed(struct _cef_window_delegate_t* self,
   // Execute
   CefWindowDelegateCppToC::Get(self)->OnWindowDestroyed(
       CefWindowCToCpp::Wrap(window));
+}
+
+cef_window_t* CEF_CALLBACK
+window_delegate_get_parent_window(struct _cef_window_delegate_t* self,
+                                  cef_window_t* window,
+                                  int* is_menu,
+                                  int* can_activate_menu) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return NULL;
+  // Verify param: window; type: refptr_diff
+  DCHECK(window);
+  if (!window)
+    return NULL;
+  // Verify param: is_menu; type: bool_byaddr
+  DCHECK(is_menu);
+  if (!is_menu)
+    return NULL;
+  // Verify param: can_activate_menu; type: bool_byaddr
+  DCHECK(can_activate_menu);
+  if (!can_activate_menu)
+    return NULL;
+
+  // Translate param: is_menu; type: bool_byaddr
+  bool is_menuBool = (is_menu && *is_menu) ? true : false;
+  // Translate param: can_activate_menu; type: bool_byaddr
+  bool can_activate_menuBool =
+      (can_activate_menu && *can_activate_menu) ? true : false;
+
+  // Execute
+  CefRefPtr<CefWindow> _retval =
+      CefWindowDelegateCppToC::Get(self)->GetParentWindow(
+          CefWindowCToCpp::Wrap(window), &is_menuBool, &can_activate_menuBool);
+
+  // Restore param: is_menu; type: bool_byaddr
+  if (is_menu)
+    *is_menu = is_menuBool ? true : false;
+  // Restore param: can_activate_menu; type: bool_byaddr
+  if (can_activate_menu)
+    *can_activate_menu = can_activate_menuBool ? true : false;
+
+  // Return type: refptr_diff
+  return CefWindowCToCpp::Unwrap(_retval);
 }
 
 int CEF_CALLBACK
@@ -392,6 +437,7 @@ void CEF_CALLBACK window_delegate_on_blur(struct _cef_view_delegate_t* self,
 CefWindowDelegateCppToC::CefWindowDelegateCppToC() {
   GetStruct()->on_window_created = window_delegate_on_window_created;
   GetStruct()->on_window_destroyed = window_delegate_on_window_destroyed;
+  GetStruct()->get_parent_window = window_delegate_get_parent_window;
   GetStruct()->is_frameless = window_delegate_is_frameless;
   GetStruct()->can_resize = window_delegate_can_resize;
   GetStruct()->can_maximize = window_delegate_can_maximize;
@@ -427,7 +473,8 @@ CefRefPtr<CefWindowDelegate> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefWindowDelegateCppToC,
                                          CefWindowDelegate,
-                                         cef_window_delegate_t>::DebugObjCt = 0;
+                                         cef_window_delegate_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

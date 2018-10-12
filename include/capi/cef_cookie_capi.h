@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=c2bf8084385f3c795ae7494da6970a0a61b96ac6$
+// $hash=00e6d1aa80d5998d89cc272dcb199cde0add12fa$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_COOKIE_CAPI_H_
@@ -158,6 +158,16 @@ typedef struct _cef_cookie_manager_t {
 ///
 CEF_EXPORT cef_cookie_manager_t* cef_cookie_manager_get_global_manager(
     struct _cef_completion_callback_t* callback);
+
+///
+// Returns a cookie manager that neither stores nor retrieves cookies. All usage
+// of cookies will be blocked including cookies accessed via the network
+// (request/response headers), via JavaScript (document.cookie), and via
+// cef_cookie_manager_t functions. No cookies will be displayed in DevTools. If
+// you wish to only block cookies sent via the network use the
+// cef_request_tHandler CanGetCookies and CanSetCookie functions instead.
+///
+CEF_EXPORT cef_cookie_manager_t* cef_cookie_manager_get_blocking_manager();
 
 ///
 // Creates a new cookie manager. If |path| is NULL data will be stored in memory

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=f92e2d8dea0ebbb5d0e2bd31cd7e8322db6e95fc$
+// $hash=220b230275444cd613b0c933179cf50211371468$
 //
 
 #include "libcef_dll/cpptoc/read_handler_cpptoc.h"
@@ -121,7 +121,8 @@ CefCppToCRefCounted<CefReadHandlerCppToC, CefReadHandler, cef_read_handler_t>::
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefReadHandlerCppToC,
                                          CefReadHandler,
-                                         cef_read_handler_t>::DebugObjCt = 0;
+                                         cef_read_handler_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

@@ -20,6 +20,7 @@
 #include "tests/cefclient/browser/main_context.h"
 #include "tests/cefclient/browser/root_window_manager.h"
 #include "tests/cefclient/browser/test_runner.h"
+#include "tests/shared/browser/extension_util.h"
 #include "tests/shared/browser/resource_util.h"
 #include "tests/shared/common/client_switches.h"
 
@@ -393,6 +394,7 @@ void ClientHandler::OnFullscreenModeChange(CefRefPtr<CefBrowser> browser,
 }
 
 bool ClientHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
+                                     cef_log_severity_t level,
                                      const CefString& message,
                                      const CefString& source,
                                      int line) {
@@ -401,6 +403,24 @@ bool ClientHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
   FILE* file = fopen(console_log_file_.c_str(), "a");
   if (file) {
     std::stringstream ss;
+    ss << "Level: ";
+    switch (level) {
+      case LOGSEVERITY_DEBUG:
+        ss << "Debug" << NEWLINE;
+        break;
+      case LOGSEVERITY_INFO:
+        ss << "Info" << NEWLINE;
+        break;
+      case LOGSEVERITY_WARNING:
+        ss << "Warn" << NEWLINE;
+        break;
+      case LOGSEVERITY_ERROR:
+        ss << "Error" << NEWLINE;
+        break;
+      default:
+        NOTREACHED();
+        break;
+    }
     ss << "Message: " << message.ToString() << NEWLINE
        << "Source: " << source.ToString() << NEWLINE << "Line: " << line
        << NEWLINE << "-----------------------" << NEWLINE;
@@ -415,6 +435,14 @@ bool ClientHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
   }
 
   return false;
+}
+
+bool ClientHandler::OnAutoResize(CefRefPtr<CefBrowser> browser,
+                                 const CefSize& new_size) {
+  CEF_REQUIRE_UI_THREAD();
+
+  NotifyAutoResize(new_size);
+  return true;
 }
 
 void ClientHandler::OnBeforeDownload(
@@ -469,18 +497,6 @@ void ClientHandler::OnTakeFocus(CefRefPtr<CefBrowser> browser, bool next) {
   NotifyTakeFocus(next);
 }
 
-bool ClientHandler::OnRequestGeolocationPermission(
-    CefRefPtr<CefBrowser> browser,
-    const CefString& requesting_url,
-    int request_id,
-    CefRefPtr<CefGeolocationCallback> callback) {
-  CEF_REQUIRE_UI_THREAD();
-
-  // Allow geolocation access from all websites.
-  callback->Continue(true);
-  return true;
-}
-
 bool ClientHandler::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
                                   const CefKeyEvent& event,
                                   CefEventHandle os_event,
@@ -513,7 +529,7 @@ bool ClientHandler::OnBeforePopup(
     CefRefPtr<CefClient>& client,
     CefBrowserSettings& settings,
     bool* no_javascript_access) {
-  CEF_REQUIRE_IO_THREAD();
+  CEF_REQUIRE_UI_THREAD();
 
   // Return true to cancel the popup window.
   return !CreatePopupWindow(browser, false, popupFeatures, windowInfo, client,
@@ -540,6 +556,19 @@ void ClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   // Disable mouse cursor change if requested via the command-line flag.
   if (mouse_cursor_change_disabled_)
     browser->GetHost()->SetMouseCursorChangeDisabled(true);
+
+  if (browser->GetHost()->GetExtension()) {
+    // Browsers hosting extension apps should auto-resize.
+    browser->GetHost()->SetAutoResizeEnabled(true, CefSize(20, 20),
+                                             CefSize(1000, 1000));
+
+    CefRefPtr<CefExtension> extension = browser->GetHost()->GetExtension();
+    if (extension_util::IsInternalExtension(extension->GetPath())) {
+      // Register the internal handler for extension resources.
+      extension_util::AddInternalExtensionToResourceManager(extension,
+                                                            resource_manager_);
+    }
+  }
 
   NotifyBrowserCreated(browser);
 }
@@ -606,6 +635,7 @@ void ClientHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
 bool ClientHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
                                    CefRefPtr<CefFrame> frame,
                                    CefRefPtr<CefRequest> request,
+                                   bool user_gesture,
                                    bool is_redirect) {
   CEF_REQUIRE_UI_THREAD();
 
@@ -623,8 +653,11 @@ bool ClientHandler::OnOpenURLFromTab(
       target_disposition == WOD_NEW_FOREGROUND_TAB) {
     // Handle middle-click and ctrl + left-click by opening the URL in a new
     // browser window.
-    MainContext::Get()->GetRootWindowManager()->CreateRootWindow(
-        true, is_osr(), CefRect(), target_url);
+    RootWindowConfig config;
+    config.with_controls = true;
+    config.with_osr = is_osr();
+    config.url = target_url;
+    MainContext::Get()->GetRootWindowManager()->CreateRootWindow(config);
     return true;
   }
 
@@ -694,6 +727,13 @@ bool ClientHandler::OnCertificateError(CefRefPtr<CefBrowser> browser,
                                        CefRefPtr<CefSSLInfo> ssl_info,
                                        CefRefPtr<CefRequestCallback> callback) {
   CEF_REQUIRE_UI_THREAD();
+
+  if (cert_error == ERR_CERT_AUTHORITY_INVALID &&
+      request_url.ToString().find("https://www.magpcss.org/") == 0U) {
+    // Allow the CEF Forum to load. It has a self-signed certificate.
+    callback->Continue(true);
+    return true;
+  }
 
   CefRefPtr<CefX509Certificate> cert = ssl_info->GetX509Certificate();
   if (cert.get()) {
@@ -860,9 +900,11 @@ void ClientHandler::ShowSSLInformation(CefRefPtr<CefBrowser> browser) {
 
   ss << "</body></html>";
 
-  MainContext::Get()->GetRootWindowManager()->CreateRootWindow(
-      false, is_osr(), CefRect(),
-      test_runner::GetDataURI(ss.str(), "text/html"));
+  RootWindowConfig config;
+  config.with_controls = false;
+  config.with_osr = is_osr();
+  config.url = test_runner::GetDataURI(ss.str(), "text/html");
+  MainContext::Get()->GetRootWindowManager()->CreateRootWindow(config);
 }
 
 bool ClientHandler::CreatePopupWindow(CefRefPtr<CefBrowser> browser,
@@ -871,7 +913,7 @@ bool ClientHandler::CreatePopupWindow(CefRefPtr<CefBrowser> browser,
                                       CefWindowInfo& windowInfo,
                                       CefRefPtr<CefClient>& client,
                                       CefBrowserSettings& settings) {
-  // Note: This method will be called on multiple threads.
+  CEF_REQUIRE_UI_THREAD();
 
   // The popup browser will be parented to a new native window.
   // Don't show URL bar and navigation buttons on DevTools windows.
@@ -960,6 +1002,18 @@ void ClientHandler::NotifyFullscreen(bool fullscreen) {
 
   if (delegate_)
     delegate_->OnSetFullscreen(fullscreen);
+}
+
+void ClientHandler::NotifyAutoResize(const CefSize& new_size) {
+  if (!CURRENTLY_ON_MAIN_THREAD()) {
+    // Execute this method on the main thread.
+    MAIN_POST_CLOSURE(
+        base::Bind(&ClientHandler::NotifyAutoResize, this, new_size));
+    return;
+  }
+
+  if (delegate_)
+    delegate_->OnAutoResize(new_size);
 }
 
 void ClientHandler::NotifyLoadingState(bool isLoading,

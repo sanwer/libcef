@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=de24c7c2b66d08aff8d9fc36cc35419345503840$
+// $hash=3f4aac94239019a999ea06e465b7028f02e8acfa$
 //
 
 #include "libcef_dll/cpptoc/domvisitor_cpptoc.h"
@@ -53,9 +53,9 @@ CefCppToCRefCounted<CefDOMVisitorCppToC, CefDOMVisitor, cef_domvisitor_t>::
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount CefCppToCRefCounted<CefDOMVisitorCppToC,
-                                         CefDOMVisitor,
-                                         cef_domvisitor_t>::DebugObjCt = 0;
+base::AtomicRefCount
+    CefCppToCRefCounted<CefDOMVisitorCppToC, CefDOMVisitor, cef_domvisitor_t>::
+        DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

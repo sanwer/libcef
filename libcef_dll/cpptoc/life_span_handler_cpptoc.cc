@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a2d97e44c5404e9694b436eb590979759cc84972$
+// $hash=5a8162a9fc5f2b1ad7b6ee338c0cdd4957ecb075$
 //
 
 #include "libcef_dll/cpptoc/life_span_handler_cpptoc.h"
@@ -203,8 +203,8 @@ CefRefPtr<CefLifeSpanHandler> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefLifeSpanHandlerCppToC,
                                          CefLifeSpanHandler,
-                                         cef_life_span_handler_t>::DebugObjCt =
-    0;
+                                         cef_life_span_handler_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

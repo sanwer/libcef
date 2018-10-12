@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=06ab08bb628eb7ec388604c9b393e9e9e1200435$
+// $hash=4561dd3119fba509919cdd697b33bb5ab93591d8$
 //
 
 #include "libcef_dll/cpptoc/navigation_entry_visitor_cpptoc.h"
@@ -64,10 +64,10 @@ CefCppToCRefCounted<CefNavigationEntryVisitorCppToC,
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCppToCRefCounted<CefNavigationEntryVisitorCppToC,
-                        CefNavigationEntryVisitor,
-                        cef_navigation_entry_visitor_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCppToCRefCounted<
+    CefNavigationEntryVisitorCppToC,
+    CefNavigationEntryVisitor,
+    cef_navigation_entry_visitor_t>::DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

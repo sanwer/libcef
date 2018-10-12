@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=be685c43e83d5b570606ed3708ce83d9e6bad0c8$
+// $hash=a0a473fc8a5e05655d145629bf52e15043f92ed9$
 //
 
 #include "libcef_dll/ctocpp/menu_model_ctocpp.h"
@@ -972,9 +972,9 @@ CefCToCppRefCounted<CefMenuModelCToCpp, CefMenuModel, cef_menu_model_t>::
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount CefCToCppRefCounted<CefMenuModelCToCpp,
-                                         CefMenuModel,
-                                         cef_menu_model_t>::DebugObjCt = 0;
+base::AtomicRefCount
+    CefCToCppRefCounted<CefMenuModelCToCpp, CefMenuModel, cef_menu_model_t>::
+        DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

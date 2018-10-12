@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=815287a25120b02a67c6a04cd84132cf7f746f92$
+// $hash=b755726fe9c8e4d3b4cd905bc09100c78821689a$
 //
 
 #include "libcef_dll/cpptoc/scheme_handler_factory_cpptoc.h"
@@ -74,10 +74,10 @@ CefRefPtr<CefSchemeHandlerFactory> CefCppToCRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCppToCRefCounted<CefSchemeHandlerFactoryCppToC,
-                        CefSchemeHandlerFactory,
-                        cef_scheme_handler_factory_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCppToCRefCounted<
+    CefSchemeHandlerFactoryCppToC,
+    CefSchemeHandlerFactory,
+    cef_scheme_handler_factory_t>::DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

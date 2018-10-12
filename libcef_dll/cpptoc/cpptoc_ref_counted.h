@@ -6,6 +6,7 @@
 #define CEF_LIBCEF_DLL_CPPTOC_CPPTOC_REF_COUNTED_H_
 #pragma once
 
+#include "include/base/cef_atomic_ref_count.h"
 #include "include/base/cef_logging.h"
 #include "include/base/cef_macros.h"
 #include "include/capi/cef_base_capi.h"
@@ -142,7 +143,7 @@ class CefCppToCRefCounted : public CefBaseRefCounted {
 
   // Increment/decrement reference counts on only the underlying class.
   void UnderlyingAddRef() const { wrapper_struct_.object_->AddRef(); }
-  bool UnderlyingRelease() const { return wrapper_struct_.object_->Release(); }
+  void UnderlyingRelease() const { wrapper_struct_.object_->Release(); }
   bool UnderlyingHasOneRef() const {
     return wrapper_struct_.object_->HasOneRef();
   }

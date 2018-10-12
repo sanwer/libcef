@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=ce7a9042d0bdebfd5c017e6bda42ee819699b6cc$
+// $hash=87e7cb4c62c701e2ce3f967e1938f01a1f9d04cc$
 //
 
 #include "libcef_dll/ctocpp/resource_bundle_ctocpp.h"
@@ -98,7 +98,8 @@ cef_resource_bundle_t* CefCToCppRefCounted<
 template <>
 base::AtomicRefCount CefCToCppRefCounted<CefResourceBundleCToCpp,
                                          CefResourceBundle,
-                                         cef_resource_bundle_t>::DebugObjCt = 0;
+                                         cef_resource_bundle_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

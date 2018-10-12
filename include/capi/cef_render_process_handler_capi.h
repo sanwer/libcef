@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=04ddf8c8cc5e09610a6cd6dbee96194eb6567b41$
+// $hash=fb34d81715ada28d5509cd33aa36f37829933a91$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_RENDER_PROCESS_HANDLER_CAPI_H_
@@ -101,19 +101,6 @@ typedef struct _cef_render_process_handler_t {
   ///
   struct _cef_load_handler_t*(CEF_CALLBACK* get_load_handler)(
       struct _cef_render_process_handler_t* self);
-
-  ///
-  // Called before browser navigation. Return true (1) to cancel the navigation
-  // or false (0) to allow the navigation to proceed. The |request| object
-  // cannot be modified in this callback.
-  ///
-  int(CEF_CALLBACK* on_before_navigation)(
-      struct _cef_render_process_handler_t* self,
-      struct _cef_browser_t* browser,
-      struct _cef_frame_t* frame,
-      struct _cef_request_t* request,
-      cef_navigation_type_t navigation_type,
-      int is_redirect);
 
   ///
   // Called immediately after the V8 context for a frame has been created. To

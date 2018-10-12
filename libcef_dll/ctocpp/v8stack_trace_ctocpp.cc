@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=0d5501d1df13b04f9f52443df3f76a9d3de5b8b8$
+// $hash=a8d9780245d59d7ada91e763388ce3c532567033$
 //
 
 #include "libcef_dll/ctocpp/v8stack_trace_ctocpp.h"
@@ -89,7 +89,8 @@ CefCToCppRefCounted<CefV8StackTraceCToCpp,
 template <>
 base::AtomicRefCount CefCToCppRefCounted<CefV8StackTraceCToCpp,
                                          CefV8StackTrace,
-                                         cef_v8stack_trace_t>::DebugObjCt = 0;
+                                         cef_v8stack_trace_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=29e80c799b48d2d05117f502e4ab1a71e510b5e9$
+// $hash=4be09346b705126eed5d90cc1c3510f565ebf135$
 //
 
 #include "libcef_dll/cpptoc/context_menu_handler_cpptoc.h"
@@ -184,10 +184,10 @@ CefRefPtr<CefContextMenuHandler> CefCppToCRefCounted<
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCppToCRefCounted<CefContextMenuHandlerCppToC,
-                        CefContextMenuHandler,
-                        cef_context_menu_handler_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCppToCRefCounted<CefContextMenuHandlerCppToC,
+                                         CefContextMenuHandler,
+                                         cef_context_menu_handler_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

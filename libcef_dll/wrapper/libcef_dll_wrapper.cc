@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,13 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b9a497935b8b0378d130ba55a92d188025df7350$
+// $hash=0549060b3d0b129aa1d4b0824eeacf3af9d3d5ab$
 //
 
 #include "include/capi/cef_app_capi.h"
 #include "include/capi/cef_crash_util_capi.h"
 #include "include/capi/cef_file_util_capi.h"
-#include "include/capi/cef_geolocation_capi.h"
 #include "include/capi/cef_origin_whitelist_capi.h"
 #include "include/capi/cef_parser_capi.h"
 #include "include/capi/cef_path_util_capi.h"
@@ -26,10 +25,10 @@
 #include "include/capi/cef_trace_capi.h"
 #include "include/capi/cef_v8_capi.h"
 #include "include/capi/cef_web_plugin_capi.h"
+#include "include/capi/test/cef_test_helpers_capi.h"
 #include "include/cef_app.h"
 #include "include/cef_crash_util.h"
 #include "include/cef_file_util.h"
-#include "include/cef_geolocation.h"
 #include "include/cef_origin_whitelist.h"
 #include "include/cef_parser.h"
 #include "include/cef_path_util.h"
@@ -41,6 +40,7 @@
 #include "include/cef_v8.h"
 #include "include/cef_version.h"
 #include "include/cef_web_plugin.h"
+#include "include/test/cef_test_helpers.h"
 #include "libcef_dll/cpptoc/accessibility_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/app_cpptoc.h"
 #include "libcef_dll/cpptoc/browser_process_handler_cpptoc.h"
@@ -55,10 +55,9 @@
 #include "libcef_dll/cpptoc/download_image_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/drag_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/end_tracing_callback_cpptoc.h"
+#include "libcef_dll/cpptoc/extension_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/find_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/focus_handler_cpptoc.h"
-#include "libcef_dll/cpptoc/geolocation_handler_cpptoc.h"
-#include "libcef_dll/cpptoc/get_geolocation_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/jsdialog_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/keyboard_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/life_span_handler_cpptoc.h"
@@ -78,6 +77,7 @@
 #include "libcef_dll/cpptoc/response_filter_cpptoc.h"
 #include "libcef_dll/cpptoc/run_file_dialog_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/scheme_handler_factory_cpptoc.h"
+#include "libcef_dll/cpptoc/server_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/set_cookie_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/string_visitor_cpptoc.h"
 #include "libcef_dll/cpptoc/task_cpptoc.h"
@@ -87,6 +87,7 @@
 #include "libcef_dll/cpptoc/test/translator_test_scoped_client_cpptoc.h"
 #include "libcef_dll/cpptoc/urlrequest_client_cpptoc.h"
 #include "libcef_dll/cpptoc/v8accessor_cpptoc.h"
+#include "libcef_dll/cpptoc/v8array_buffer_release_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/v8handler_cpptoc.h"
 #include "libcef_dll/cpptoc/v8interceptor_cpptoc.h"
 #include "libcef_dll/cpptoc/views/browser_view_delegate_cpptoc.h"
@@ -113,9 +114,10 @@
 #include "libcef_dll/ctocpp/download_item_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/download_item_ctocpp.h"
 #include "libcef_dll/ctocpp/drag_data_ctocpp.h"
+#include "libcef_dll/ctocpp/extension_ctocpp.h"
 #include "libcef_dll/ctocpp/file_dialog_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/frame_ctocpp.h"
-#include "libcef_dll/ctocpp/geolocation_callback_ctocpp.h"
+#include "libcef_dll/ctocpp/get_extension_resource_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/image_ctocpp.h"
 #include "libcef_dll/ctocpp/jsdialog_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/list_value_ctocpp.h"
@@ -129,6 +131,7 @@
 #include "libcef_dll/ctocpp/run_context_menu_callback_ctocpp.h"
 #include "libcef_dll/ctocpp/scheme_registrar_ctocpp.h"
 #include "libcef_dll/ctocpp/select_client_certificate_callback_ctocpp.h"
+#include "libcef_dll/ctocpp/server_ctocpp.h"
 #include "libcef_dll/ctocpp/sslinfo_ctocpp.h"
 #include "libcef_dll/ctocpp/sslstatus_ctocpp.h"
 #include "libcef_dll/ctocpp/stream_reader_ctocpp.h"
@@ -157,6 +160,7 @@
 #include "libcef_dll/ctocpp/views/label_button_ctocpp.h"
 #include "libcef_dll/ctocpp/views/layout_ctocpp.h"
 #include "libcef_dll/ctocpp/views/menu_button_ctocpp.h"
+#include "libcef_dll/ctocpp/views/menu_button_pressed_lock_ctocpp.h"
 #include "libcef_dll/ctocpp/views/panel_ctocpp.h"
 #include "libcef_dll/ctocpp/views/scroll_view_ctocpp.h"
 #include "libcef_dll/ctocpp/views/textfield_ctocpp.h"
@@ -266,15 +270,15 @@ CEF_GLOBAL void CefShutdown() {
   DCHECK(base::AtomicRefCountIsZero(&CefDragDataCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefDragHandlerCppToC::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefEndTracingCallbackCppToC::DebugObjCt));
+  DCHECK(base::AtomicRefCountIsZero(&CefExtensionCToCpp::DebugObjCt));
+  DCHECK(base::AtomicRefCountIsZero(&CefExtensionHandlerCppToC::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefFileDialogCallbackCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefFillLayoutCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefFindHandlerCppToC::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefFocusHandlerCppToC::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefFrameCToCpp::DebugObjCt));
-  DCHECK(base::AtomicRefCountIsZero(&CefGeolocationCallbackCToCpp::DebugObjCt));
-  DCHECK(base::AtomicRefCountIsZero(&CefGeolocationHandlerCppToC::DebugObjCt));
-  DCHECK(
-      base::AtomicRefCountIsZero(&CefGetGeolocationCallbackCppToC::DebugObjCt));
+  DCHECK(base::AtomicRefCountIsZero(
+      &CefGetExtensionResourceCallbackCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefImageCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefJSDialogCallbackCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefJSDialogHandlerCppToC::DebugObjCt));
@@ -286,6 +290,8 @@ CEF_GLOBAL void CefShutdown() {
   DCHECK(base::AtomicRefCountIsZero(&CefLoadHandlerCppToC::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefMenuButtonCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefMenuButtonDelegateCppToC::DebugObjCt));
+  DCHECK(
+      base::AtomicRefCountIsZero(&CefMenuButtonPressedLockCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefMenuModelCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefMenuModelDelegateCppToC::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefNavigationEntryCToCpp::DebugObjCt));
@@ -323,6 +329,8 @@ CEF_GLOBAL void CefShutdown() {
   DCHECK(base::AtomicRefCountIsZero(&CefScrollViewCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(
       &CefSelectClientCertificateCallbackCToCpp::DebugObjCt));
+  DCHECK(base::AtomicRefCountIsZero(&CefServerCToCpp::DebugObjCt));
+  DCHECK(base::AtomicRefCountIsZero(&CefServerHandlerCppToC::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefSetCookieCallbackCppToC::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefStreamReaderCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefStreamWriterCToCpp::DebugObjCt));
@@ -356,6 +364,8 @@ CEF_GLOBAL void CefShutdown() {
   DCHECK(base::AtomicRefCountIsZero(&CefURLRequestCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefURLRequestClientCppToC::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefV8AccessorCppToC::DebugObjCt));
+  DCHECK(base::AtomicRefCountIsZero(
+      &CefV8ArrayBufferReleaseCallbackCppToC::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefV8ContextCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefV8ExceptionCToCpp::DebugObjCt));
   DCHECK(base::AtomicRefCountIsZero(&CefV8HandlerCppToC::DebugObjCt));
@@ -561,23 +571,6 @@ CEF_GLOBAL void CefLoadCRLSetsFile(const CefString& path) {
 
   // Execute
   cef_load_crlsets_file(path.GetStruct());
-}
-
-CEF_GLOBAL bool CefGetGeolocation(
-    CefRefPtr<CefGetGeolocationCallback> callback) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: callback; type: refptr_diff
-  DCHECK(callback.get());
-  if (!callback.get())
-    return false;
-
-  // Execute
-  int _retval =
-      cef_get_geolocation(CefGetGeolocationCallbackCppToC::Wrap(callback));
-
-  // Return type: bool
-  return _retval ? true : false;
 }
 
 CEF_GLOBAL bool CefAddCrossOriginWhitelistEntry(
@@ -1113,4 +1106,20 @@ CEF_GLOBAL void CefRegisterWidevineCdm(
   // Execute
   cef_register_widevine_cdm(path.GetStruct(),
                             CefRegisterCdmCallbackCppToC::Wrap(callback));
+}
+
+CEF_GLOBAL void CefExecuteJavaScriptWithUserGestureForTests(
+    CefRefPtr<CefFrame> frame,
+    const CefString& javascript) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Verify param: frame; type: refptr_same
+  DCHECK(frame.get());
+  if (!frame.get())
+    return;
+  // Unverified params: javascript
+
+  // Execute
+  cef_execute_java_script_with_user_gesture_for_tests(
+      CefFrameCToCpp::Unwrap(frame), javascript.GetStruct());
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b04a2cadf7325090a53b435cf777173216802ec1$
+// $hash=72c506c07bed3692c11e77aeb6a76b06008e795b$
 //
 
 #include "libcef_dll/cpptoc/test/translator_test_ref_ptr_client_cpptoc.h"
@@ -59,10 +59,10 @@ CefCppToCRefCounted<CefTranslatorTestRefPtrClientCppToC,
 
 #if DCHECK_IS_ON()
 template <>
-base::AtomicRefCount
-    CefCppToCRefCounted<CefTranslatorTestRefPtrClientCppToC,
-                        CefTranslatorTestRefPtrClient,
-                        cef_translator_test_ref_ptr_client_t>::DebugObjCt = 0;
+base::AtomicRefCount CefCppToCRefCounted<
+    CefTranslatorTestRefPtrClientCppToC,
+    CefTranslatorTestRefPtrClient,
+    cef_translator_test_ref_ptr_client_t>::DebugObjCt ATOMIC_DECLARATION;
 #endif
 
 template <>

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=2055b8206165fb8583b6d7659366d438913f3c25$
+// $hash=4fec87b6907d9c957ea58ac1d1df937799b9a07e$
 //
 
 #include "libcef_dll/cpptoc/resolve_callback_cpptoc.h"
@@ -61,8 +61,8 @@ CefRefPtr<CefResolveCallback> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefResolveCallbackCppToC,
                                          CefResolveCallback,
-                                         cef_resolve_callback_t>::DebugObjCt =
-    0;
+                                         cef_resolve_callback_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

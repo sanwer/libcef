@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=f66e7704d6938d0a6997fd7e7f575930659af430$
+// $hash=bfa801e5fcd4a03b10415183e671b648f08c7870$
 //
 
 #include "libcef_dll/ctocpp/post_data_element_ctocpp.h"
@@ -166,8 +166,8 @@ cef_post_data_element_t* CefCToCppRefCounted<
 template <>
 base::AtomicRefCount CefCToCppRefCounted<CefPostDataElementCToCpp,
                                          CefPostDataElement,
-                                         cef_post_data_element_t>::DebugObjCt =
-    0;
+                                         cef_post_data_element_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

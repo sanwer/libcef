@@ -16,7 +16,11 @@
 #if defined(CEF_USE_SANDBOX)
 // The cef_sandbox.lib static library is currently built with VS2013. It may not
 // link successfully with other VS versions.
+#ifdef NDEBUG
 #pragma comment(lib, "cef_sandbox.lib")
+#else
+#pragma comment(lib, "cef_sandbox_d.lib")
+#endif
 #endif
 
 // Entry point function for all processes.

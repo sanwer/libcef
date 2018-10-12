@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=c4a791057449122f888535d07ccd6ac32757de8b$
+// $hash=81ea7232fc9a91e45b154cae3ea216a7b801430f$
 //
 
 #include "libcef_dll/cpptoc/views/textfield_delegate_cpptoc.h"
@@ -280,8 +280,8 @@ CefRefPtr<CefTextfieldDelegate> CefCppToCRefCounted<
 template <>
 base::AtomicRefCount CefCppToCRefCounted<CefTextfieldDelegateCppToC,
                                          CefTextfieldDelegate,
-                                         cef_textfield_delegate_t>::DebugObjCt =
-    0;
+                                         cef_textfield_delegate_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>

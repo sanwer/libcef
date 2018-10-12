@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=95094867efa267a8462c40596e749539670db449$
+// $hash=d7b892c740e6a19d40911cb4b7c53545df15a3cf$
 //
 
 #include "libcef_dll/ctocpp/views/button_ctocpp.h"
@@ -790,8 +790,8 @@ CefCToCppRefCounted<CefButtonCToCpp, CefButton, cef_button_t>::UnwrapDerived(
 #if DCHECK_IS_ON()
 template <>
 base::AtomicRefCount
-    CefCToCppRefCounted<CefButtonCToCpp, CefButton, cef_button_t>::DebugObjCt =
-        0;
+    CefCToCppRefCounted<CefButtonCToCpp, CefButton, cef_button_t>::DebugObjCt
+        ATOMIC_DECLARATION;
 #endif
 
 template <>

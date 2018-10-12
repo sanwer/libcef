@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4eadd6cf6e4016537a2dbb9a041f6189801d085a$
+// $hash=0464376fa24627e57280c81408ff70c3c2768021$
 //
 
 #include "libcef_dll/ctocpp/auth_callback_ctocpp.h"
@@ -24,11 +24,7 @@ void CefAuthCallbackCToCpp::Continue(const CefString& username,
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
-  // Verify param: username; type: string_byref_const
-  DCHECK(!username.empty());
-  if (username.empty())
-    return;
-  // Unverified params: password
+  // Unverified params: username, password
 
   // Execute
   _struct->cont(_struct, username.GetStruct(), password.GetStruct());
@@ -63,7 +59,8 @@ CefCToCppRefCounted<CefAuthCallbackCToCpp,
 template <>
 base::AtomicRefCount CefCToCppRefCounted<CefAuthCallbackCToCpp,
                                          CefAuthCallback,
-                                         cef_auth_callback_t>::DebugObjCt = 0;
+                                         cef_auth_callback_t>::DebugObjCt
+    ATOMIC_DECLARATION;
 #endif
 
 template <>
