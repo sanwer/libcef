@@ -14,12 +14,24 @@ namespace client {
 // one browser per handler instance.
 class ClientHandlerStd : public ClientHandler {
  public:
-  ClientHandlerStd(Delegate* delegate, const std::string& startup_url);
+  ClientHandlerStd(Delegate* delegate,
+                   bool with_controls,
+                   const std::string& startup_url);
+
+  ClientHandlerStd(const ClientHandlerStd&) = delete;
+  ClientHandlerStd& operator=(const ClientHandlerStd&) = delete;
+
+  // Returns the ClientHandlerStd for |client|, or nullptr if |client| is not a
+  // ClientHandlerStd.
+  static CefRefPtr<ClientHandlerStd> GetForClient(CefRefPtr<CefClient> client);
 
  private:
+  // Used to determine the object type.
+  virtual const void* GetTypeKey() const override { return &kTypeKey; }
+  static constexpr int kTypeKey = 0;
+
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(ClientHandlerStd);
-  DISALLOW_COPY_AND_ASSIGN(ClientHandlerStd);
 };
 
 }  // namespace client

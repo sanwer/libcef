@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,18 +9,23 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=9b4a8a1e45f1264df53c6ae0ac3153004372bf9d$
+// $hash=aa09cc8055ceaeeda6a731cc39ae30ebb6827e2f$
 //
 
 #include "libcef_dll/ctocpp/navigation_entry_ctocpp.h"
+
 #include "libcef_dll/ctocpp/sslstatus_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
-bool CefNavigationEntryCToCpp::IsValid() {
-  cef_navigation_entry_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_valid))
+NO_SANITIZE("cfi-icall") bool CefNavigationEntryCToCpp::IsValid() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->is_valid) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -31,10 +36,13 @@ bool CefNavigationEntryCToCpp::IsValid() {
   return _retval ? true : false;
 }
 
-CefString CefNavigationEntryCToCpp::GetURL() {
-  cef_navigation_entry_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_url))
+NO_SANITIZE("cfi-icall") CefString CefNavigationEntryCToCpp::GetURL() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_url) {
     return CefString();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -47,10 +55,13 @@ CefString CefNavigationEntryCToCpp::GetURL() {
   return _retvalStr;
 }
 
-CefString CefNavigationEntryCToCpp::GetDisplayURL() {
-  cef_navigation_entry_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_display_url))
+NO_SANITIZE("cfi-icall") CefString CefNavigationEntryCToCpp::GetDisplayURL() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_display_url) {
     return CefString();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -63,10 +74,13 @@ CefString CefNavigationEntryCToCpp::GetDisplayURL() {
   return _retvalStr;
 }
 
-CefString CefNavigationEntryCToCpp::GetOriginalURL() {
-  cef_navigation_entry_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_original_url))
+NO_SANITIZE("cfi-icall") CefString CefNavigationEntryCToCpp::GetOriginalURL() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_original_url) {
     return CefString();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -79,10 +93,13 @@ CefString CefNavigationEntryCToCpp::GetOriginalURL() {
   return _retvalStr;
 }
 
-CefString CefNavigationEntryCToCpp::GetTitle() {
-  cef_navigation_entry_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_title))
+NO_SANITIZE("cfi-icall") CefString CefNavigationEntryCToCpp::GetTitle() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_title) {
     return CefString();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -95,11 +112,15 @@ CefString CefNavigationEntryCToCpp::GetTitle() {
   return _retvalStr;
 }
 
+NO_SANITIZE("cfi-icall")
 CefNavigationEntry::TransitionType
-CefNavigationEntryCToCpp::GetTransitionType() {
-  cef_navigation_entry_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_transition_type))
+    CefNavigationEntryCToCpp::GetTransitionType() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_transition_type) {
     return TT_EXPLICIT;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -110,10 +131,13 @@ CefNavigationEntryCToCpp::GetTransitionType() {
   return _retval;
 }
 
-bool CefNavigationEntryCToCpp::HasPostData() {
-  cef_navigation_entry_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, has_post_data))
+NO_SANITIZE("cfi-icall") bool CefNavigationEntryCToCpp::HasPostData() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->has_post_data) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -124,24 +148,31 @@ bool CefNavigationEntryCToCpp::HasPostData() {
   return _retval ? true : false;
 }
 
-CefTime CefNavigationEntryCToCpp::GetCompletionTime() {
-  cef_navigation_entry_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_completion_time))
-    return CefTime();
+NO_SANITIZE("cfi-icall")
+CefBaseTime CefNavigationEntryCToCpp::GetCompletionTime() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_completion_time) {
+    return CefBaseTime();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_time_t _retval = _struct->get_completion_time(_struct);
+  cef_basetime_t _retval = _struct->get_completion_time(_struct);
 
   // Return type: simple
   return _retval;
 }
 
-int CefNavigationEntryCToCpp::GetHttpStatusCode() {
-  cef_navigation_entry_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_http_status_code))
+NO_SANITIZE("cfi-icall") int CefNavigationEntryCToCpp::GetHttpStatusCode() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_http_status_code) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -152,23 +183,33 @@ int CefNavigationEntryCToCpp::GetHttpStatusCode() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefSSLStatus> CefNavigationEntryCToCpp::GetSSLStatus() {
-  cef_navigation_entry_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_sslstatus))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_sslstatus) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_sslstatus_t* _retval = _struct->get_sslstatus(_struct);
+  auto* _retval = _struct->get_sslstatus(_struct);
 
   // Return type: refptr_same
-  return CefSSLStatusCToCpp::Wrap(_retval);
+  return CefSSLStatusCToCpp_Wrap(_retval);
 }
 
 // CONSTRUCTOR - Do not edit by hand.
 
 CefNavigationEntryCToCpp::CefNavigationEntryCToCpp() {}
+
+// DESTRUCTOR - Do not edit by hand.
+
+CefNavigationEntryCToCpp::~CefNavigationEntryCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
 
 template <>
 cef_navigation_entry_t* CefCToCppRefCounted<
@@ -176,17 +217,9 @@ cef_navigation_entry_t* CefCToCppRefCounted<
     CefNavigationEntry,
     cef_navigation_entry_t>::UnwrapDerived(CefWrapperType type,
                                            CefNavigationEntry* c) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCToCppRefCounted<CefNavigationEntryCToCpp,
-                                         CefNavigationEntry,
-                                         cef_navigation_entry_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefNavigationEntryCToCpp,

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=18f6330905f1f4345f5f894283377619cc07aa15$
+// $hash=18f90b304fd3473149ff4cc180927133d4c57a68$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_WRITE_HANDLER_CPPTOC_H_
@@ -31,6 +31,10 @@ class CefWriteHandlerCppToC : public CefCppToCRefCounted<CefWriteHandlerCppToC,
                                                          cef_write_handler_t> {
  public:
   CefWriteHandlerCppToC();
+  virtual ~CefWriteHandlerCppToC();
 };
+
+constexpr auto CefWriteHandlerCppToC_Wrap = CefWriteHandlerCppToC::Wrap;
+constexpr auto CefWriteHandlerCppToC_Unwrap = CefWriteHandlerCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_WRITE_HANDLER_CPPTOC_H_

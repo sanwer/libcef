@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=23b51a14b0bccad99aa527e30d1309d02c425f32$
+// $hash=1c58f8250455ddc738f6b061e50930dff5dac40c$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_STREAM_WRITER_CTOCPP_H_
@@ -31,13 +31,17 @@ class CefStreamWriterCToCpp : public CefCToCppRefCounted<CefStreamWriterCToCpp,
                                                          cef_stream_writer_t> {
  public:
   CefStreamWriterCToCpp();
+  virtual ~CefStreamWriterCToCpp();
 
   // CefStreamWriter methods.
-  size_t Write(const void* ptr, size_t size, size_t n) OVERRIDE;
-  int Seek(int64 offset, int whence) OVERRIDE;
-  int64 Tell() OVERRIDE;
-  int Flush() OVERRIDE;
-  bool MayBlock() OVERRIDE;
+  size_t Write(const void* ptr, size_t size, size_t n) override;
+  int Seek(int64_t offset, int whence) override;
+  int64_t Tell() override;
+  int Flush() override;
+  bool MayBlock() override;
 };
+
+constexpr auto CefStreamWriterCToCpp_Wrap = CefStreamWriterCToCpp::Wrap;
+constexpr auto CefStreamWriterCToCpp_Unwrap = CefStreamWriterCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_STREAM_WRITER_CTOCPP_H_

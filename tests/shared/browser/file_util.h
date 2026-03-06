@@ -9,8 +9,7 @@
 #include <limits>
 #include <string>
 
-namespace client {
-namespace file_util {
+namespace client::file_util {
 
 // Platform-specific path separator.
 extern const char kPathSep;
@@ -19,10 +18,10 @@ extern const char kPathSep;
 // false on error.  In case of I/O error, |contents| holds the data that could
 // be read from the file before the error occurred.  When the file size exceeds
 // max_size|, the function returns false with |contents| holding the file
-// truncated to |max_size|. |contents| may be NULL, in which case this function
-// is useful for its side effect of priming the disk cache (could be used for
-// unit tests). Calling this function on the browser process UI or IO threads is
-// not allowed.
+// truncated to |max_size|. |contents| may be nullptr, in which case this
+// function is useful for its side effect of priming the disk cache (could be
+// used for unit tests). Calling this function on the browser process UI or IO
+// threads is not allowed.
 bool ReadFileToString(const std::string& path,
                       std::string* contents,
                       size_t max_size = std::numeric_limits<size_t>::max());
@@ -39,7 +38,6 @@ std::string JoinPath(const std::string& path1, const std::string& path2);
 // Extracts the file extension from |path|.
 std::string GetFileExtension(const std::string& path);
 
-}  // namespace file_util
-}  // namespace client
+}  // namespace client::file_util
 
 #endif  // CEF_TESTS_SHARED_BROWSER_FILE_UTIL_H_

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=4a448fc89af9db6e12499d3284b2b1309f889cfb$
+// $hash=bd26c39d678e163d8d90070bec172607fd7d4fb6$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_SSL_STATUS_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_SSL_STATUS_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_values_capi.h"
@@ -49,42 +53,44 @@ extern "C" {
 #endif
 
 ///
-// Structure representing the SSL information for a navigation entry.
+/// Structure representing the SSL information for a navigation entry.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_sslstatus_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Returns true (1) if the status is related to a secure SSL/TLS connection.
+  /// Returns true (1) if the status is related to a secure SSL/TLS connection.
   ///
   int(CEF_CALLBACK* is_secure_connection)(struct _cef_sslstatus_t* self);
 
   ///
-  // Returns a bitmask containing any and all problems verifying the server
-  // certificate.
+  /// Returns a bitmask containing any and all problems verifying the server
+  /// certificate.
   ///
   cef_cert_status_t(CEF_CALLBACK* get_cert_status)(
       struct _cef_sslstatus_t* self);
 
   ///
-  // Returns the SSL version used for the SSL connection.
+  /// Returns the SSL version used for the SSL connection.
   ///
   cef_ssl_version_t(CEF_CALLBACK* get_sslversion)(
       struct _cef_sslstatus_t* self);
 
   ///
-  // Returns a bitmask containing the page security content status.
+  /// Returns a bitmask containing the page security content status.
   ///
   cef_ssl_content_status_t(CEF_CALLBACK* get_content_status)(
       struct _cef_sslstatus_t* self);
 
   ///
-  // Returns the X.509 certificate.
+  /// Returns the X.509 certificate.
   ///
-  struct _cef_x509certificate_t*(CEF_CALLBACK* get_x509certificate)(
+  struct _cef_x509_certificate_t*(CEF_CALLBACK* get_x509_certificate)(
       struct _cef_sslstatus_t* self);
 } cef_sslstatus_t;
 

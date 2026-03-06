@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a504836c9d4b9e1f17129b902670f957c7c927a0$
+// $hash=068c20765d6c3a1e05f25173dc9dea9a89c2305d$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_SSLINFO_CTOCPP_H_
@@ -30,10 +30,14 @@ class CefSSLInfoCToCpp
     : public CefCToCppRefCounted<CefSSLInfoCToCpp, CefSSLInfo, cef_sslinfo_t> {
  public:
   CefSSLInfoCToCpp();
+  virtual ~CefSSLInfoCToCpp();
 
   // CefSSLInfo methods.
-  cef_cert_status_t GetCertStatus() OVERRIDE;
-  CefRefPtr<CefX509Certificate> GetX509Certificate() OVERRIDE;
+  cef_cert_status_t GetCertStatus() override;
+  CefRefPtr<CefX509Certificate> GetX509Certificate() override;
 };
+
+constexpr auto CefSSLInfoCToCpp_Wrap = CefSSLInfoCToCpp::Wrap;
+constexpr auto CefSSLInfoCToCpp_Unwrap = CefSSLInfoCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_SSLINFO_CTOCPP_H_

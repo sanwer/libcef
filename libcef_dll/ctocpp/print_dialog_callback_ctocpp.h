@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=430e158541398410d3a012e8cc0ba3438d8b4299$
+// $hash=ef1dcb04166e2243efba9d8926927dad71a4c521$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_PRINT_DIALOG_CALLBACK_CTOCPP_H_
@@ -32,10 +32,16 @@ class CefPrintDialogCallbackCToCpp
                                  cef_print_dialog_callback_t> {
  public:
   CefPrintDialogCallbackCToCpp();
+  virtual ~CefPrintDialogCallbackCToCpp();
 
   // CefPrintDialogCallback methods.
-  void Continue(CefRefPtr<CefPrintSettings> settings) OVERRIDE;
-  void Cancel() OVERRIDE;
+  void Continue(CefRefPtr<CefPrintSettings> settings) override;
+  void Cancel() override;
 };
+
+constexpr auto CefPrintDialogCallbackCToCpp_Wrap =
+    CefPrintDialogCallbackCToCpp::Wrap;
+constexpr auto CefPrintDialogCallbackCToCpp_Unwrap =
+    CefPrintDialogCallbackCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_PRINT_DIALOG_CALLBACK_CTOCPP_H_

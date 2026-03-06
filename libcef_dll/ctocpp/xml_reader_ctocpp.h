@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=6360a2f68292797a97a51eff8aab74b6f6daef92$
+// $hash=3f3d392c98c9344147c04f58f0ed0285e659e263$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_XML_READER_CTOCPP_H_
@@ -31,39 +31,43 @@ class CefXmlReaderCToCpp : public CefCToCppRefCounted<CefXmlReaderCToCpp,
                                                       cef_xml_reader_t> {
  public:
   CefXmlReaderCToCpp();
+  virtual ~CefXmlReaderCToCpp();
 
   // CefXmlReader methods.
-  bool MoveToNextNode() OVERRIDE;
-  bool Close() OVERRIDE;
-  bool HasError() OVERRIDE;
-  CefString GetError() OVERRIDE;
-  NodeType GetType() OVERRIDE;
-  int GetDepth() OVERRIDE;
-  CefString GetLocalName() OVERRIDE;
-  CefString GetPrefix() OVERRIDE;
-  CefString GetQualifiedName() OVERRIDE;
-  CefString GetNamespaceURI() OVERRIDE;
-  CefString GetBaseURI() OVERRIDE;
-  CefString GetXmlLang() OVERRIDE;
-  bool IsEmptyElement() OVERRIDE;
-  bool HasValue() OVERRIDE;
-  CefString GetValue() OVERRIDE;
-  bool HasAttributes() OVERRIDE;
-  size_t GetAttributeCount() OVERRIDE;
-  CefString GetAttribute(int index) OVERRIDE;
-  CefString GetAttribute(const CefString& qualifiedName) OVERRIDE;
+  bool MoveToNextNode() override;
+  bool Close() override;
+  bool HasError() override;
+  CefString GetError() override;
+  NodeType GetType() override;
+  int GetDepth() override;
+  CefString GetLocalName() override;
+  CefString GetPrefix() override;
+  CefString GetQualifiedName() override;
+  CefString GetNamespaceURI() override;
+  CefString GetBaseURI() override;
+  CefString GetXmlLang() override;
+  bool IsEmptyElement() override;
+  bool HasValue() override;
+  CefString GetValue() override;
+  bool HasAttributes() override;
+  size_t GetAttributeCount() override;
+  CefString GetAttribute(int index) override;
+  CefString GetAttribute(const CefString& qualifiedName) override;
   CefString GetAttribute(const CefString& localName,
-                         const CefString& namespaceURI) OVERRIDE;
-  CefString GetInnerXml() OVERRIDE;
-  CefString GetOuterXml() OVERRIDE;
-  int GetLineNumber() OVERRIDE;
-  bool MoveToAttribute(int index) OVERRIDE;
-  bool MoveToAttribute(const CefString& qualifiedName) OVERRIDE;
+                         const CefString& namespaceURI) override;
+  CefString GetInnerXml() override;
+  CefString GetOuterXml() override;
+  int GetLineNumber() override;
+  bool MoveToAttribute(int index) override;
+  bool MoveToAttribute(const CefString& qualifiedName) override;
   bool MoveToAttribute(const CefString& localName,
-                       const CefString& namespaceURI) OVERRIDE;
-  bool MoveToFirstAttribute() OVERRIDE;
-  bool MoveToNextAttribute() OVERRIDE;
-  bool MoveToCarryingElement() OVERRIDE;
+                       const CefString& namespaceURI) override;
+  bool MoveToFirstAttribute() override;
+  bool MoveToNextAttribute() override;
+  bool MoveToCarryingElement() override;
 };
+
+constexpr auto CefXmlReaderCToCpp_Wrap = CefXmlReaderCToCpp::Wrap;
+constexpr auto CefXmlReaderCToCpp_Unwrap = CefXmlReaderCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_XML_READER_CTOCPP_H_

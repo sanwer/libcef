@@ -6,9 +6,7 @@
 #define CEF_LIBCEF_DLL_CPPTOC_CPPTOC_REF_COUNTED_H_
 #pragma once
 
-#include "include/base/cef_atomic_ref_count.h"
 #include "include/base/cef_logging.h"
-#include "include/base/cef_macros.h"
 #include "include/capi/cef_base_capi.h"
 #include "include/cef_base.h"
 #include "libcef_dll/wrapper_types.h"
@@ -19,11 +17,15 @@
 template <class ClassName, class BaseName, class StructName>
 class CefCppToCRefCounted : public CefBaseRefCounted {
  public:
+  CefCppToCRefCounted(const CefCppToCRefCounted&) = delete;
+  CefCppToCRefCounted& operator=(const CefCppToCRefCounted&) = delete;
+
   // Create a new wrapper instance and associated structure reference for
   // passing an object instance the other side.
   static StructName* Wrap(CefRefPtr<BaseName> c) {
-    if (!c.get())
-      return NULL;
+    if (!c.get()) {
+      return nullptr;
+    }
 
     // Wrap our object with the CefCppToCRefCounted class.
     ClassName* wrapper = new ClassName();
@@ -38,16 +40,19 @@ class CefCppToCRefCounted : public CefBaseRefCounted {
   // Retrieve the underlying object instance for a structure reference passed
   // back from the other side.
   static CefRefPtr<BaseName> Unwrap(StructName* s) {
-    if (!s)
-      return NULL;
+    if (!s) {
+      return nullptr;
+    }
 
     // Cast our structure to the wrapper structure type.
-    WrapperStruct* wrapperStruct = GetWrapperStruct(s);
+    WrapperStruct* wrapperStruct =
+        GetWrapperStruct(s, /*require_exact_type=*/false);
 
     // If the type does not match this object then we need to unwrap as the
     // derived type.
-    if (wrapperStruct->type_ != kWrapperType)
+    if (wrapperStruct->type_ != kWrapperType) {
       return UnwrapDerived(wrapperStruct->type_, s);
+    }
 
     // Add the underlying object instance to a smart pointer.
     CefRefPtr<BaseName> objectPtr(wrapperStruct->object_);
@@ -64,8 +69,6 @@ class CefCppToCRefCounted : public CefBaseRefCounted {
   static CefRefPtr<BaseName> Get(StructName* s) {
     DCHECK(s);
     WrapperStruct* wrapperStruct = GetWrapperStruct(s);
-    // Verify that the wrapper offset was calculated correctly.
-    DCHECK_EQ(kWrapperType, wrapperStruct->type_);
     return wrapperStruct->object_;
   }
 
@@ -89,11 +92,7 @@ class CefCppToCRefCounted : public CefBaseRefCounted {
     return false;
   }
   bool HasOneRef() const { return UnderlyingHasOneRef(); }
-
-#if DCHECK_IS_ON()
-  // Simple tracking of allocated objects.
-  static base::AtomicRefCount DebugObjCt;
-#endif
+  bool HasAtLeastOneRef() const { return UnderlyingHasAtLeastOneRef(); }
 
  protected:
   CefCppToCRefCounted() {
@@ -107,17 +106,10 @@ class CefCppToCRefCounted : public CefBaseRefCounted {
     base->add_ref = struct_add_ref;
     base->release = struct_release;
     base->has_one_ref = struct_has_one_ref;
-
-#if DCHECK_IS_ON()
-    base::AtomicRefCountInc(&DebugObjCt);
-#endif
+    base->has_at_least_one_ref = struct_has_at_least_one_ref;
   }
 
-  virtual ~CefCppToCRefCounted() {
-#if DCHECK_IS_ON()
-    base::AtomicRefCountDec(&DebugObjCt);
-#endif
-  }
+  virtual ~CefCppToCRefCounted() = default;
 
  private:
   // Used to associate this wrapper object, the underlying object instance and
@@ -129,13 +121,21 @@ class CefCppToCRefCounted : public CefBaseRefCounted {
     StructName struct_;
   };
 
-  static WrapperStruct* GetWrapperStruct(StructName* s) {
+  static WrapperStruct* GetWrapperStruct(StructName* s,
+                                         bool require_exact_type = true) {
     // Offset using the WrapperStruct size instead of individual member sizes
     // to avoid problems due to platform/compiler differences in structure
     // padding.
-    return reinterpret_cast<WrapperStruct*>(
+    auto* wrapperStruct = reinterpret_cast<WrapperStruct*>(
         reinterpret_cast<char*>(s) -
         (sizeof(WrapperStruct) - sizeof(StructName)));
+
+    if (require_exact_type) {
+      // Verify that the wrapper offset was calculated correctly.
+      CHECK_EQ(kWrapperType, wrapperStruct->type_);
+    }
+
+    return wrapperStruct;
   }
 
   // Unwrap as the derived type.
@@ -147,52 +147,59 @@ class CefCppToCRefCounted : public CefBaseRefCounted {
   bool UnderlyingHasOneRef() const {
     return wrapper_struct_.object_->HasOneRef();
   }
+  bool UnderlyingHasAtLeastOneRef() const {
+    return wrapper_struct_.object_->HasAtLeastOneRef();
+  }
 
   static void CEF_CALLBACK struct_add_ref(cef_base_ref_counted_t* base) {
     DCHECK(base);
-    if (!base)
+    if (!base) {
       return;
+    }
 
     WrapperStruct* wrapperStruct =
         GetWrapperStruct(reinterpret_cast<StructName*>(base));
-    // Verify that the wrapper offset was calculated correctly.
-    DCHECK_EQ(kWrapperType, wrapperStruct->type_);
-
     wrapperStruct->wrapper_->AddRef();
   }
 
   static int CEF_CALLBACK struct_release(cef_base_ref_counted_t* base) {
     DCHECK(base);
-    if (!base)
+    if (!base) {
       return 0;
+    }
 
     WrapperStruct* wrapperStruct =
         GetWrapperStruct(reinterpret_cast<StructName*>(base));
-    // Verify that the wrapper offset was calculated correctly.
-    DCHECK_EQ(kWrapperType, wrapperStruct->type_);
-
     return wrapperStruct->wrapper_->Release();
   }
 
   static int CEF_CALLBACK struct_has_one_ref(cef_base_ref_counted_t* base) {
     DCHECK(base);
-    if (!base)
+    if (!base) {
       return 0;
+    }
 
     WrapperStruct* wrapperStruct =
         GetWrapperStruct(reinterpret_cast<StructName*>(base));
-    // Verify that the wrapper offset was calculated correctly.
-    DCHECK_EQ(kWrapperType, wrapperStruct->type_);
-
     return wrapperStruct->wrapper_->HasOneRef();
+  }
+
+  static int CEF_CALLBACK
+  struct_has_at_least_one_ref(cef_base_ref_counted_t* base) {
+    DCHECK(base);
+    if (!base) {
+      return 0;
+    }
+
+    WrapperStruct* wrapperStruct =
+        GetWrapperStruct(reinterpret_cast<StructName*>(base));
+    return wrapperStruct->wrapper_->HasAtLeastOneRef();
   }
 
   WrapperStruct wrapper_struct_;
   CefRefCount ref_count_;
 
   static CefWrapperType kWrapperType;
-
-  DISALLOW_COPY_AND_ASSIGN(CefCppToCRefCounted);
 };
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_CPPTOC_REF_COUNTED_H_

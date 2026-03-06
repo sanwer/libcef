@@ -2,19 +2,28 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#ifndef CEF_TESTS_UNITTESTS_TEST_UTIL_H_
-#define CEF_TESTS_UNITTESTS_TEST_UTIL_H_
+#ifndef CEF_TESTS_CEFTESTS_TEST_UTIL_H_
+#define CEF_TESTS_CEFTESTS_TEST_UTIL_H_
 #pragma once
 
+#include <optional>
+
+#include "include/base/cef_callback.h"
 #include "include/cef_process_message.h"
 #include "include/cef_request.h"
 #include "include/cef_request_context.h"
 #include "include/cef_response.h"
 #include "include/cef_values.h"
+#include "include/views/cef_browser_view.h"
+#include "include/views/cef_window.h"
 #include "tests/ceftests/test_suite.h"
 
-// Test that CefRequest::HeaderMap objects are equal
-// If |allowExtras| is true then additional header fields will be allowed in
+CefTime CefTimeFrom(CefBaseTime value);
+CefBaseTime CefBaseTimeFrom(const CefTime& value);
+
+// Test that CefRequest::HeaderMap objects are equal. Multiple values with the
+// same key are allowed, but not duplicate entries with the same key/value. If
+// |allowExtras| is true then additional header fields will be allowed in
 // |map2|.
 void TestMapEqual(const CefRequest::HeaderMap& map1,
                   const CefRequest::HeaderMap& map2,
@@ -68,21 +77,100 @@ enum TestRequestContextMode {
   TEST_RC_MODE_NONE,
   TEST_RC_MODE_GLOBAL,
   TEST_RC_MODE_GLOBAL_WITH_HANDLER,
-  TEST_RC_MODE_CUSTOM,
   TEST_RC_MODE_CUSTOM_WITH_HANDLER,
 };
 
 inline bool IsTestRequestContextModeCustom(TestRequestContextMode mode) {
-  return mode == TEST_RC_MODE_CUSTOM ||
-         mode == TEST_RC_MODE_CUSTOM_WITH_HANDLER;
+  return mode == TEST_RC_MODE_CUSTOM_WITH_HANDLER;
 }
 
-// Return a RequestContext object matching the specified |mode|.
-// |cache_path| may be specified for CUSTOM modes.
-// Use the RC_TEST_GROUP_BASE macro to test all valid combinations.
-CefRefPtr<CefRequestContext> CreateTestRequestContext(
-    TestRequestContextMode mode,
-    const std::string& cache_path);
+// Returns true if the old CefResourceHandler API should be tested.
+bool TestOldResourceAPI();
+
+// Returns true if Views should be used as a the global default.
+bool UseViewsGlobal();
+
+// Returns true if Alloy style browser should be used as the global default.
+bool UseAlloyStyleBrowserGlobal();
+
+// Returns true if Alloy style window should be used as the global default.
+// Only used in combination with Views.
+bool UseAlloyStyleWindowGlobal();
+
+// Determine the Views window title based on the style of |window| and
+// optionally |browser_view|.
+std::string ComputeViewsWindowTitle(CefRefPtr<CefWindow> window,
+                                    CefRefPtr<CefBrowserView> browser_view);
+
+// Determine the native window title based on |use_alloy_style|.
+std::string ComputeNativeWindowTitle(bool use_alloy_style);
+
+// Returns true if BFCache is enabled.
+bool IsBFCacheEnabled();
+
+// Returns true if same-site BFCache is enabled.
+bool IsSameSiteBFCacheEnabled();
+
+// Returns true if requests for |url| should be ignored by tests.
+bool IgnoreURL(const std::string& url);
+
+// Returns |timeout_ms| as scaled by the current configuration, or std::nullopt
+// if timeouts are disabled.
+std::optional<int> GetConfiguredTestTimeout(int timeout_ms);
+
+// Send a mouse click event with the necessary delay to avoid having events
+// dropped or rate limited.
+void SendMouseClickEvent(CefRefPtr<CefBrowser> browser,
+                         const CefMouseEvent& mouse_event,
+                         cef_mouse_button_type_t mouse_button_type = MBT_LEFT);
+
+// Send a mouse click event using JavaScript injection instead of synthetic
+// input events. This is more reliable on headless systems. Simulates clicking
+// the element at the specified coordinates with the given button and modifiers.
+// Uses CefExecuteJavaScriptWithUserGestureForTests to ensure the click is
+// treated as a trusted user interaction (required for triggering user-gesture-
+// gated features like downloads, popups, and permission prompts).
+// NOTE: Should only be used for simple DOM-level clicks. Do NOT use for testing
+// browser-level interactions like middle-click navigation, ctrl+click, right-
+// click context menus, etc., as these are intercepted by the browser before
+// reaching the DOM and cannot be properly simulated via JavaScript.
+void SendJavaScriptClickEvent(
+    CefRefPtr<CefBrowser> browser,
+    const CefMouseEvent& mouse_event,
+    cef_mouse_button_type_t mouse_button_type = MBT_LEFT);
+
+// Allow |parent_url| to create popups that bypass the popup blocker. If
+// |parent_url| is empty the default value will be configured.
+void GrantPopupPermission(CefRefPtr<CefRequestContext> request_context,
+                          const std::string& parent_url);
+
+// Create a CefRequestContext object matching the specified |mode|. |cache_path|
+// may be specified for CUSTOM modes. |init_callback| will be executed
+// asynchronously on the UI thread. Use the RC_TEST_GROUP_ALL macro to test all
+// valid combinations.
+using RCInitCallback = base::OnceCallback<void(CefRefPtr<CefRequestContext>)>;
+void CreateTestRequestContext(TestRequestContextMode mode,
+                              const std::string& cache_path,
+                              RCInitCallback init_callback);
+
+// Run a single test without additional test modes.
+#define RC_TEST_SINGLE(test_case_name, test_name, test_class, rc_mode,   \
+                       with_cache_path)                                  \
+  TEST(test_case_name, test_name) {                                      \
+    CefScopedTempDir scoped_temp_dir;                                    \
+    std::string cache_path;                                              \
+    if (with_cache_path) {                                               \
+      EXPECT_TRUE(scoped_temp_dir.CreateUniqueTempDirUnderPath(          \
+          CefTestSuite::GetInstance()->root_cache_path()));              \
+      cache_path = scoped_temp_dir.GetPath();                            \
+    }                                                                    \
+    CefRefPtr<test_class> handler = new test_class(rc_mode, cache_path); \
+    handler->ExecuteTest();                                              \
+    ReleaseAndWaitForDestructor(handler);                                \
+    if (!scoped_temp_dir.IsEmpty()) {                                    \
+      scoped_temp_dir.Take();                                            \
+    }                                                                    \
+  }
 
 // Helper macro for testing a single RequestContextMode value.
 // See RC_TEST_GROUP_ALL documentation for example usage.
@@ -92,7 +180,8 @@ CefRefPtr<CefRequestContext> CreateTestRequestContext(
     CefScopedTempDir scoped_temp_dir;                                  \
     std::string cache_path;                                            \
     if (with_cache_path) {                                             \
-      EXPECT_TRUE(scoped_temp_dir.CreateUniqueTempDir());              \
+      EXPECT_TRUE(scoped_temp_dir.CreateUniqueTempDirUnderPath(        \
+          CefTestSuite::GetInstance()->root_cache_path()));            \
       cache_path = scoped_temp_dir.GetPath();                          \
     }                                                                  \
     CefRefPtr<test_class> handler =                                    \
@@ -100,8 +189,7 @@ CefRefPtr<CefRequestContext> CreateTestRequestContext(
     handler->ExecuteTest();                                            \
     ReleaseAndWaitForDestructor(handler);                              \
     if (!scoped_temp_dir.IsEmpty()) {                                  \
-      CefTestSuite::GetInstance()->RegisterTempDirectory(              \
-          scoped_temp_dir.Take());                                     \
+      scoped_temp_dir.Take();                                          \
     }                                                                  \
   }
 
@@ -109,24 +197,19 @@ CefRefPtr<CefRequestContext> CreateTestRequestContext(
 #define RC_TEST_GROUP_IN_MEMORY(test_case_name, test_name, test_class,     \
                                 test_mode)                                 \
   RC_TEST_BASE(test_case_name, test_name##RCNone, test_class, test_mode,   \
-               TEST_RC_MODE_NONE, false);                                  \
+               TEST_RC_MODE_NONE, false)                                   \
   RC_TEST_BASE(test_case_name, test_name##RCGlobal, test_class, test_mode, \
-               TEST_RC_MODE_GLOBAL, false);                                \
+               TEST_RC_MODE_GLOBAL, false)                                 \
   RC_TEST_BASE(test_case_name, test_name##RCGlobalWithHandler, test_class, \
-               test_mode, TEST_RC_MODE_GLOBAL_WITH_HANDLER, false);        \
-  RC_TEST_BASE(test_case_name, test_name##RCCustomInMemory, test_class,    \
-               test_mode, TEST_RC_MODE_CUSTOM, false);                     \
+               test_mode, TEST_RC_MODE_GLOBAL_WITH_HANDLER, false)         \
   RC_TEST_BASE(test_case_name, test_name##RCCustomInMemoryWithHandler,     \
-               test_class, test_mode, TEST_RC_MODE_CUSTOM_WITH_HANDLER,    \
-               false);
+               test_class, test_mode, TEST_RC_MODE_CUSTOM_WITH_HANDLER, false)
 
 // RequestContextModes that operate on disk.
-#define RC_TEST_GROUP_ON_DISK(test_case_name, test_name, test_class,  \
-                              test_mode)                              \
-  RC_TEST_BASE(test_case_name, test_name##RCCustomOnDisk, test_class, \
-               test_mode, TEST_RC_MODE_CUSTOM, true);                 \
-  RC_TEST_BASE(test_case_name, test_name##RCCustomOnDiskWithHandler,  \
-               test_class, test_mode, TEST_RC_MODE_CUSTOM_WITH_HANDLER, true);
+#define RC_TEST_GROUP_ON_DISK(test_case_name, test_name, test_class, \
+                              test_mode)                             \
+  RC_TEST_BASE(test_case_name, test_name##RCCustomOnDiskWithHandler, \
+               test_class, test_mode, TEST_RC_MODE_CUSTOM_WITH_HANDLER, true)
 
 // Helper macro for testing all valid combinations of RequestContextMode values.
 // For example:
@@ -149,9 +232,11 @@ CefRefPtr<CefRequestContext> CreateTestRequestContext(
 //
 //     void RunTest() override {
 //        // Create a RequestContext with the specified attributes.
-//        CefRefPtr<CefRequestContext> request_context =
-//            CreateTestRequestContext(rc_mode_, rc_cache_path_);
+//        CreateTestRequestContext(rc_mode_, rc_cache_path_,
+//            base::BindOnce(&MyTestHandler::RunTestContinue, this));
+//     }
 //
+//     void RunTestContinue(CefRefPtr<CefRequestContext> request_context) {
 //        // Do something with |test_mode_| and |request_context|...
 //     }
 //
@@ -176,4 +261,4 @@ CefRefPtr<CefRequestContext> CreateTestRequestContext(
   RC_TEST_GROUP_IN_MEMORY(test_case_name, test_name, test_class, test_mode) \
   RC_TEST_GROUP_ON_DISK(test_case_name, test_name, test_class, test_mode)
 
-#endif  // CEF_TESTS_UNITTESTS_TEST_UTIL_H_
+#endif  // CEF_TESTS_CEFTESTS_TEST_UTIL_H_

@@ -4,20 +4,23 @@
 
 // Implementation based on ui/base/ime/win/imm32_manager.cc from Chromium.
 
+#include "tests/cefclient/browser/osr_ime_handler_win.h"
+
 #include <msctf.h>
 #include <windowsx.h>
 
 #include "include/base/cef_build.h"
-#include "tests/cefclient/browser/osr_ime_handler_win.h"
 #include "tests/cefclient/browser/resource.h"
 #include "tests/shared/browser/geometry_util.h"
 #include "tests/shared/browser/main_message_loop.h"
 #include "tests/shared/browser/util_win.h"
 
-#define ColorUNDERLINE 0xFF000000  // Black SkColor value for underline,
-                                   // same as Blink.
-#define ColorBKCOLOR 0x00000000    // White SkColor value for background,
-                                   // same as Blink.
+#define ColorUNDERLINE \
+  0xFF000000  // Black SkColor value for underline,
+              // same as Blink.
+#define ColorBKCOLOR \
+  0x00000000  // White SkColor value for background,
+              // same as Blink.
 
 namespace client {
 
@@ -33,23 +36,26 @@ bool IsSelectionAttribute(char attribute) {
 // to get the target range that's selected by the user in the current
 // composition string.
 void GetCompositionSelectionRange(HIMC imc,
-                                  int* target_start,
-                                  int* target_end) {
-  int attribute_size = ::ImmGetCompositionString(imc, GCS_COMPATTR, NULL, 0);
+                                  uint32_t* target_start,
+                                  uint32_t* target_end) {
+  uint32_t attribute_size =
+      ::ImmGetCompositionString(imc, GCS_COMPATTR, nullptr, 0);
   if (attribute_size > 0) {
-    int start = 0;
-    int end = 0;
+    uint32_t start = 0;
+    uint32_t end = 0;
     std::vector<char> attribute_data(attribute_size);
 
     ::ImmGetCompositionString(imc, GCS_COMPATTR, &attribute_data[0],
                               attribute_size);
     for (start = 0; start < attribute_size; ++start) {
-      if (IsSelectionAttribute(attribute_data[start]))
+      if (IsSelectionAttribute(attribute_data[start])) {
         break;
+      }
     }
     for (end = start; end < attribute_size; ++end) {
-      if (!IsSelectionAttribute(attribute_data[end]))
+      if (!IsSelectionAttribute(attribute_data[end])) {
         break;
+      }
     }
 
     *target_start = start;
@@ -61,18 +67,18 @@ void GetCompositionSelectionRange(HIMC imc,
 // underlines information of the current composition string.
 void GetCompositionUnderlines(
     HIMC imc,
-    int target_start,
-    int target_end,
+    uint32_t target_start,
+    uint32_t target_end,
     std::vector<CefCompositionUnderline>& underlines) {
-  int clause_size = ::ImmGetCompositionString(imc, GCS_COMPCLAUSE, NULL, 0);
-  int clause_length = clause_size / sizeof(uint32);
+  int clause_size = ::ImmGetCompositionString(imc, GCS_COMPCLAUSE, nullptr, 0);
+  int clause_length = clause_size / sizeof(uint32_t);
   if (clause_length) {
-    std::vector<uint32> clause_data(clause_length);
+    std::vector<uint32_t> clause_data(clause_length);
 
     ::ImmGetCompositionString(imc, GCS_COMPCLAUSE, &clause_data[0],
                               clause_size);
     for (int i = 0; i < clause_length - 1; ++i) {
-      cef_composition_underline_t underline;
+      cef_composition_underline_t underline = {};
       underline.range.from = clause_data[i];
       underline.range.to = clause_data[i + 1];
       underline.color = ColorUNDERLINE;
@@ -92,10 +98,9 @@ void GetCompositionUnderlines(
 }  // namespace
 
 OsrImeHandlerWin::OsrImeHandlerWin(HWND hwnd)
-    : is_composing_(false),
-      input_language_id_(LANG_USER_DEFAULT),
-      system_caret_(false),
-      cursor_index_(-1),
+    : input_language_id_(LANG_USER_DEFAULT),
+
+      cursor_index_(std::numeric_limits<uint32_t>::max()),
       hwnd_(hwnd) {
   ime_rect_ = {-1, -1, 0, 0};
 }
@@ -131,8 +136,9 @@ void OsrImeHandlerWin::CreateImeWindow() {
   if (PRIMARYLANGID(input_language_id_) == LANG_CHINESE ||
       PRIMARYLANGID(input_language_id_) == LANG_JAPANESE) {
     if (!system_caret_) {
-      if (::CreateCaret(hwnd_, NULL, 1, 1))
+      if (::CreateCaret(hwnd_, nullptr, 1, 1)) {
         system_caret_ = true;
+      }
     }
   }
 }
@@ -147,24 +153,28 @@ void OsrImeHandlerWin::DestroyImeWindow() {
 
 void OsrImeHandlerWin::MoveImeWindow() {
   // Does nothing when the target window has no input focus.
-  if (GetFocus() != hwnd_)
+  if (GetFocus() != hwnd_) {
     return;
+  }
 
   CefRect rc = ime_rect_;
-  int location = cursor_index_;
+  uint32_t location = cursor_index_;
 
   // If location is not specified fall back to the composition range start.
-  if (location == -1)
+  if (location == std::numeric_limits<uint32_t>::max()) {
     location = composition_range_.from;
+  }
 
   // Offset location by the composition range start if required.
-  if (location >= composition_range_.from)
+  if (location >= composition_range_.from) {
     location -= composition_range_.from;
+  }
 
-  if (location < static_cast<int>(composition_bounds_.size()))
+  if (location < composition_bounds_.size()) {
     rc = composition_bounds_[location];
-  else
+  } else {
     return;
+  }
 
   HIMC imc = ::ImmGetContext(hwnd_);
   if (imc) {
@@ -231,7 +241,7 @@ void OsrImeHandlerWin::CleanupComposition() {
 void OsrImeHandlerWin::ResetComposition() {
   // Reset the composition status.
   is_composing_ = false;
-  cursor_index_ = -1;
+  cursor_index_ = std::numeric_limits<uint32_t>::max();
 }
 
 void OsrImeHandlerWin::GetCompositionInfo(
@@ -244,13 +254,14 @@ void OsrImeHandlerWin::GetCompositionInfo(
   // convert them into underlines and selection range respectively.
   underlines.clear();
 
-  int length = static_cast<int>(composition_text.length());
+  uint32_t length = static_cast<uint32_t>(composition_text.length());
 
   // Find out the range selected by the user.
-  int target_start = length;
-  int target_end = length;
-  if (lparam & GCS_COMPATTR)
+  uint32_t target_start = length;
+  uint32_t target_end = length;
+  if (lparam & GCS_COMPATTR) {
     GetCompositionSelectionRange(imc, &target_start, &target_end);
+  }
 
   // Retrieve the selection range information. If CS_NOMOVECARET is specified
   // it means the cursor should not be moved and we therefore place the caret at
@@ -262,15 +273,16 @@ void OsrImeHandlerWin::GetCompositionInfo(
   if (!(lparam & CS_NOMOVECARET) && (lparam & GCS_CURSORPOS)) {
     // IMM32 does not support non-zero-width selection in a composition. So
     // always use the caret position as selection range.
-    int cursor = ::ImmGetCompositionString(imc, GCS_CURSORPOS, NULL, 0);
+    int cursor = ::ImmGetCompositionString(imc, GCS_CURSORPOS, nullptr, 0);
     composition_start = cursor;
   } else {
     composition_start = 0;
   }
 
   // Retrieve the clause segmentations and convert them to underlines.
-  if (lparam & GCS_COMPCLAUSE)
+  if (lparam & GCS_COMPCLAUSE) {
     GetCompositionUnderlines(imc, target_start, target_end, underlines);
+  }
 
   // Set default underlines in case there is no clause information.
   if (!underlines.size()) {
@@ -302,13 +314,15 @@ bool OsrImeHandlerWin::GetString(HIMC imc,
                                  WPARAM lparam,
                                  int type,
                                  CefString& result) {
-  if (!(lparam & type))
+  if (!(lparam & type)) {
     return false;
-  LONG string_size = ::ImmGetCompositionString(imc, type, NULL, 0);
-  if (string_size <= 0)
+  }
+  LONG string_size = ::ImmGetCompositionString(imc, type, nullptr, 0);
+  if (string_size <= 0) {
     return false;
+  }
 
-  // For trailing NULL - ImmGetCompositionString excludes that.
+  // For trailing nullptr - ImmGetCompositionString excludes that.
   string_size += sizeof(WCHAR);
 
   std::vector<wchar_t> buffer(string_size);
@@ -354,7 +368,7 @@ bool OsrImeHandlerWin::GetComposition(
 
 void OsrImeHandlerWin::DisableIME() {
   CleanupComposition();
-  ::ImmAssociateContextEx(hwnd_, NULL, 0);
+  ::ImmAssociateContextEx(hwnd_, nullptr, 0);
 }
 
 void OsrImeHandlerWin::CancelIME() {
@@ -370,10 +384,10 @@ void OsrImeHandlerWin::CancelIME() {
 
 void OsrImeHandlerWin::EnableIME() {
   // Load the default IME context.
-  ::ImmAssociateContextEx(hwnd_, NULL, IACE_DEFAULT);
+  ::ImmAssociateContextEx(hwnd_, nullptr, IACE_DEFAULT);
 }
 
-void OsrImeHandlerWin::UpdateCaretPosition(int index) {
+void OsrImeHandlerWin::UpdateCaretPosition(uint32_t index) {
   // Save the caret position.
   cursor_index_ = index;
   // Move the IME window.

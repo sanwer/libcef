@@ -4,7 +4,6 @@
 
 #include "include/cef_image.h"
 #include "tests/ceftests/image_util.h"
-#include "tests/ceftests/thread_helper.h"
 #include "tests/gtest/include/gtest/gtest.h"
 
 namespace {
@@ -39,10 +38,11 @@ void VerifyScaleExists(CefRefPtr<CefImage> image,
   int expected_pixel_size = kExpectedDIPSize * expected_scale_factor;
 
   // Only returns true for exact matches.
-  if (scale_factor == expected_scale_factor)
+  if (scale_factor == expected_scale_factor) {
     EXPECT_TRUE(image->HasRepresentation(scale_factor));
-  else
+  } else {
     EXPECT_FALSE(image->HasRepresentation(scale_factor));
+  }
 
   // Returns the closest match.
   EXPECT_TRUE(image->GetRepresentationInfo(scale_factor, actual_scale_factor,
@@ -137,7 +137,9 @@ void VerifySaveAsJPEG(CefRefPtr<CefImage> image,
   VerifyScaleExists(image2, expected_scale_factor, expected_scale_factor);
 }
 
-void EmptyImpl() {
+}  // namespace
+
+TEST(ImageTest, Empty) {
   CefRefPtr<CefImage> image = CefImage::CreateImage();
   EXPECT_TRUE(image.get());
 
@@ -160,7 +162,7 @@ void EmptyImpl() {
   VerifyScaleEmpty(image, 2.0f);
 }
 
-void Scale1xImpl() {
+TEST(ImageTest, Scale1x) {
   CefRefPtr<CefImage> image = CefImage::CreateImage();
   EXPECT_TRUE(image.get());
 
@@ -173,7 +175,7 @@ void Scale1xImpl() {
   VerifyScaleEmpty(image, 2.0f);
 }
 
-void Scale2xImpl() {
+TEST(ImageTest, Scale2x) {
   CefRefPtr<CefImage> image = CefImage::CreateImage();
   EXPECT_TRUE(image.get());
 
@@ -186,7 +188,7 @@ void Scale2xImpl() {
   VerifyScaleExists(image, 2.0f, 2.0f);
 }
 
-void ScaleMultiImpl() {
+TEST(ImageTest, ScaleMulti) {
   CefRefPtr<CefImage> image = CefImage::CreateImage();
   EXPECT_TRUE(image.get());
 
@@ -200,7 +202,7 @@ void ScaleMultiImpl() {
   VerifyScaleExists(image, 2.0f, 2.0f);
 }
 
-void SaveBitmap1xImpl() {
+TEST(ImageTest, SaveBitmap1x) {
   CefRefPtr<CefImage> image = CefImage::CreateImage();
   EXPECT_TRUE(image.get());
 
@@ -209,7 +211,7 @@ void SaveBitmap1xImpl() {
   VerifySaveAsBitmap(image, 1.0f, 1.0f);
 }
 
-void SaveBitmap2xImpl() {
+TEST(ImageTest, SaveBitmap2x) {
   CefRefPtr<CefImage> image = CefImage::CreateImage();
   EXPECT_TRUE(image.get());
 
@@ -218,7 +220,7 @@ void SaveBitmap2xImpl() {
   VerifySaveAsBitmap(image, 2.0f, 2.0f);
 }
 
-void SaveBitmapMultiImpl() {
+TEST(ImageTest, SaveBitmapMulti) {
   CefRefPtr<CefImage> image = CefImage::CreateImage();
   EXPECT_TRUE(image.get());
 
@@ -227,7 +229,7 @@ void SaveBitmapMultiImpl() {
   VerifySaveAsBitmap(image, 1.0f, 2.0f);
 }
 
-void SavePNG1xImpl() {
+TEST(ImageTest, SavePNG1x) {
   CefRefPtr<CefImage> image = CefImage::CreateImage();
   EXPECT_TRUE(image.get());
 
@@ -236,7 +238,7 @@ void SavePNG1xImpl() {
   VerifySaveAsPNG(image, 1.0f, 1.0f);
 }
 
-void SavePNG2xImpl() {
+TEST(ImageTest, SavePNG2x) {
   CefRefPtr<CefImage> image = CefImage::CreateImage();
   EXPECT_TRUE(image.get());
 
@@ -245,7 +247,7 @@ void SavePNG2xImpl() {
   VerifySaveAsPNG(image, 2.0f, 2.0f);
 }
 
-void SavePNGMultiImpl() {
+TEST(ImageTest, SavePNGMulti) {
   CefRefPtr<CefImage> image = CefImage::CreateImage();
   EXPECT_TRUE(image.get());
 
@@ -254,7 +256,7 @@ void SavePNGMultiImpl() {
   VerifySaveAsPNG(image, 1.0f, 2.0f);
 }
 
-void SaveJPEG1xImpl() {
+TEST(ImageTest, SaveJPEG1x) {
   CefRefPtr<CefImage> image = CefImage::CreateImage();
   EXPECT_TRUE(image.get());
 
@@ -263,7 +265,7 @@ void SaveJPEG1xImpl() {
   VerifySaveAsJPEG(image, 1.0f, 1.0f);
 }
 
-void SaveJPEG2xImpl() {
+TEST(ImageTest, SaveJPEG2x) {
   CefRefPtr<CefImage> image = CefImage::CreateImage();
   EXPECT_TRUE(image.get());
 
@@ -272,7 +274,7 @@ void SaveJPEG2xImpl() {
   VerifySaveAsJPEG(image, 2.0f, 2.0f);
 }
 
-void SaveJPEGMultiImpl() {
+TEST(ImageTest, SaveJPEGMulti) {
   CefRefPtr<CefImage> image = CefImage::CreateImage();
   EXPECT_TRUE(image.get());
 
@@ -280,21 +282,3 @@ void SaveJPEGMultiImpl() {
 
   VerifySaveAsJPEG(image, 1.0f, 2.0f);
 }
-
-}  // namespace
-
-#define IMAGE_TEST(name) UI_THREAD_TEST(ImageTest, name)
-
-IMAGE_TEST(Empty);
-IMAGE_TEST(Scale1x);
-IMAGE_TEST(Scale2x);
-IMAGE_TEST(ScaleMulti);
-IMAGE_TEST(SaveBitmap1x);
-IMAGE_TEST(SaveBitmap2x);
-IMAGE_TEST(SaveBitmapMulti);
-IMAGE_TEST(SavePNG1x);
-IMAGE_TEST(SavePNG2x);
-IMAGE_TEST(SavePNGMulti);
-IMAGE_TEST(SaveJPEG1x);
-IMAGE_TEST(SaveJPEG2x);
-IMAGE_TEST(SaveJPEGMulti);

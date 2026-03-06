@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a9d0c44394b90a64d2a0d830df933ccb041bf45f$
+// $hash=81a44ae1d636bdee9a98166703a2f5e9784edbe0$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_DISPLAY_HANDLER_CPPTOC_H_
@@ -32,6 +32,10 @@ class CefDisplayHandlerCppToC
                                  cef_display_handler_t> {
  public:
   CefDisplayHandlerCppToC();
+  virtual ~CefDisplayHandlerCppToC();
 };
+
+constexpr auto CefDisplayHandlerCppToC_Wrap = CefDisplayHandlerCppToC::Wrap;
+constexpr auto CefDisplayHandlerCppToC_Unwrap = CefDisplayHandlerCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_DISPLAY_HANDLER_CPPTOC_H_

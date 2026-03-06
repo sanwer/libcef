@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=defa53d73fd8cc4e7f7ef6568370dc15fc34c743$
+// $hash=ff6c1623c4cb8326654df95b5dba682a1806df57$
 //
 
 #include "libcef_dll/cpptoc/string_visitor_cpptoc.h"
+
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -20,11 +22,14 @@ namespace {
 
 void CEF_CALLBACK string_visitor_visit(struct _cef_string_visitor_t* self,
                                        const cef_string_t* string) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Unverified params: string
 
   // Execute
@@ -39,23 +44,21 @@ CefStringVisitorCppToC::CefStringVisitorCppToC() {
   GetStruct()->visit = string_visitor_visit;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefStringVisitorCppToC::~CefStringVisitorCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefStringVisitor> CefCppToCRefCounted<
     CefStringVisitorCppToC,
     CefStringVisitor,
     cef_string_visitor_t>::UnwrapDerived(CefWrapperType type,
                                          cef_string_visitor_t* s) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefStringVisitorCppToC,
-                                         CefStringVisitor,
-                                         cef_string_visitor_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefStringVisitorCppToC,

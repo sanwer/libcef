@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,15 +33,18 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=17ac101c343ef5bee85e2fb2046fc87c4ab5b033$
+// $hash=cdca290a5a3f8db40fafbdfe0479ccafee476d52$
 //
 
 #ifndef CEF_INCLUDE_CAPI_TEST_CEF_TEST_HELPERS_CAPI_H_
 #define CEF_INCLUDE_CAPI_TEST_CEF_TEST_HELPERS_CAPI_H_
 #pragma once
 
-#if !defined(BUILDING_CEF_SHARED) && !defined(WRAPPING_CEF_SHARED) && \
-    !defined(UNIT_TEST)
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
+
+#if !defined(WRAPPING_CEF_SHARED) && !defined(UNIT_TEST)
 #error This file can be included for unit tests only
 #endif
 
@@ -52,12 +55,28 @@ extern "C" {
 #endif
 
 ///
-// Execute JavaScript with a user gesture to trigger functionality like
-// onbeforeunload handlers that will otherwise be blocked.
+/// Execute JavaScript with a user gesture to trigger functionality like
+/// onbeforeunload handlers that will otherwise be blocked.
 ///
 CEF_EXPORT void cef_execute_java_script_with_user_gesture_for_tests(
     struct _cef_frame_t* frame,
     const cef_string_t* javascript);
+
+///
+/// Set the DIR_SRC_TEST_DATA_ROOT directory used to load test data. Must be
+/// configured when running from a CEF binary distribution. Defaults to the
+/// "chromium/src" directory when running from a local CEF/Chromium build. |dir|
+/// must be an absolute path.
+///
+CEF_EXPORT void cef_set_data_directory_for_tests(const cef_string_t* dir);
+
+///
+/// Returns true (1) if |feature_name| is enabled by default, command line or
+/// field trial. This supports a short list of curated values that are queried
+/// by unit tests.
+///
+CEF_EXPORT int cef_is_feature_enabled_for_tests(
+    const cef_string_t* feature_name);
 
 #ifdef __cplusplus
 }

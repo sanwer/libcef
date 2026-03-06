@@ -5,17 +5,17 @@
 #include "tests/cefclient/browser/server_test.h"
 
 #include <algorithm>
+#include <memory>
 #include <string>
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/base/cef_weak_ptr.h"
 #include "include/cef_parser.h"
 #include "include/cef_server.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "tests/shared/browser/resource_util.h"
 
-namespace client {
-namespace server_test {
+namespace client::server_test {
 
 namespace {
 
@@ -30,9 +30,6 @@ const char kPortKey[] = "port";
 const char kStatusKey[] = "status";
 const char kMessageKey[] = "message";
 
-// Required URL for cefQuery execution.
-const char kTestUrl[] = "http://tests/server";
-
 // Server default values.
 const char kServerAddress[] = "127.0.0.1";
 const int kServerPortDefault = 8099;
@@ -42,25 +39,28 @@ const char kDefaultPath[] = "websocket.html";
 // Handles the HTTP/WebSocket server.
 class ServerHandler : public CefServerHandler {
  public:
-  typedef base::Callback<void(bool /* success */)> CompleteCallback;
+  using CompleteCallback = base::OnceCallback<void(bool /* success */)>;
 
-  ServerHandler() {}
+  ServerHandler() = default;
+
+  ServerHandler(const ServerHandler&) = delete;
+  ServerHandler& operator=(const ServerHandler&) = delete;
 
   // |complete_callback| will be executed on the UI thread after completion.
-  void StartServer(int port, const CompleteCallback& complete_callback) {
+  void StartServer(int port, CompleteCallback complete_callback) {
     CEF_REQUIRE_UI_THREAD();
     DCHECK(!server_);
     DCHECK(port >= 1025 && port <= 65535);
     port_ = port;
-    complete_callback_ = complete_callback;
+    complete_callback_ = std::move(complete_callback);
     CefServer::CreateServer(kServerAddress, port, kServerBacklog, this);
   }
 
   // |complete_callback| will be executed on the UI thread after completion.
-  void StopServer(const CompleteCallback& complete_callback) {
+  void StopServer(CompleteCallback complete_callback) {
     CEF_REQUIRE_UI_THREAD();
     DCHECK(server_);
-    complete_callback_ = complete_callback;
+    complete_callback_ = std::move(complete_callback);
     server_->Shutdown();
   }
 
@@ -92,11 +92,13 @@ class ServerHandler : public CefServerHandler {
     CefURLParts url_parts;
     CefParseURL(request->GetURL(), url_parts);
     std::string path = CefString(&url_parts.path);
-    if (!path.empty() && path[0] == '/')
+    if (!path.empty() && path[0] == '/') {
       path = path.substr(1);
+    }
 
-    if (path.empty())
+    if (path.empty()) {
       path = kDefaultPath;
+    }
 
     std::string mime_type;
     const size_t sep = path.find_last_of(".");
@@ -107,8 +109,9 @@ class ServerHandler : public CefServerHandler {
       // No extension. Assume html.
       path += ".html";
     }
-    if (mime_type.empty())
+    if (mime_type.empty()) {
       mime_type = "text/html";
+    }
 
     CefRefPtr<CefStreamReader> stream;
     CefResponse::HeaderMap extra_headers;
@@ -159,14 +162,13 @@ class ServerHandler : public CefServerHandler {
  private:
   void RunCompleteCallback(bool success) {
     if (!CefCurrentlyOn(TID_UI)) {
-      CefPostTask(TID_UI, base::Bind(&ServerHandler::RunCompleteCallback, this,
-                                     success));
+      CefPostTask(TID_UI, base::BindOnce(&ServerHandler::RunCompleteCallback,
+                                         this, success));
       return;
     }
 
     if (!complete_callback_.is_null()) {
-      complete_callback_.Run(success);
-      complete_callback_.Reset();
+      std::move(complete_callback_).Run(success);
     }
   }
 
@@ -177,7 +179,7 @@ class ServerHandler : public CefServerHandler {
                                      CefResponse::HeaderMap extra_headers) {
     // Determine the stream size.
     stream->Seek(0, SEEK_END);
-    int64 content_length = stream->Tell();
+    int64_t content_length = stream->Tell();
     stream->Seek(0, SEEK_SET);
 
     // Send response headers.
@@ -189,8 +191,9 @@ class ServerHandler : public CefServerHandler {
     size_t read;
     do {
       read = stream->Read(buffer, 1, sizeof(buffer));
-      if (read > 0)
+      if (read > 0) {
         server->SendRawData(connection_id, buffer, read);
+      }
     } while (!stream->Eof() && read != 0);
 
     // Close the connection.
@@ -204,7 +207,6 @@ class ServerHandler : public CefServerHandler {
   CompleteCallback complete_callback_;
 
   IMPLEMENT_REFCOUNTING(ServerHandler);
-  DISALLOW_COPY_AND_ASSIGN(ServerHandler);
 };
 
 // Handle messages in the browser process.
@@ -212,7 +214,7 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
  public:
   Handler() : weak_ptr_factory_(this) {}
 
-  virtual ~Handler() {
+  ~Handler() override {
     if (handler_) {
       handler_->StopServer(ServerHandler::CompleteCallback());
       handler_ = nullptr;
@@ -220,18 +222,19 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
   }
 
   // Called due to cefQuery execution in server.html.
-  virtual bool OnQuery(CefRefPtr<CefBrowser> browser,
-                       CefRefPtr<CefFrame> frame,
-                       int64 query_id,
-                       const CefString& request,
-                       bool persistent,
-                       CefRefPtr<Callback> callback) OVERRIDE {
+  bool OnQuery(CefRefPtr<CefBrowser> browser,
+               CefRefPtr<CefFrame> frame,
+               int64_t query_id,
+               const CefString& request,
+               bool persistent,
+               CefRefPtr<Callback> callback) override {
     CEF_REQUIRE_UI_THREAD();
 
     // Only handle messages from the test URL.
     const std::string& url = frame->GetURL();
-    if (url.find(kTestUrl) != 0)
+    if (url.find(test_runner::GetTestURL("server")) != 0) {
       return false;
+    }
 
     // Parse |request| as a JSON dictionary.
     CefRefPtr<CefDictionaryValue> request_dict = ParseJSON(request);
@@ -240,8 +243,9 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
       return true;
     }
 
-    if (!VerifyKey(request_dict, kActionKey, VTYPE_STRING, callback))
+    if (!VerifyKey(request_dict, kActionKey, VTYPE_STRING, callback)) {
       return true;
+    }
 
     const std::string& action = request_dict->GetString(kActionKey);
     if (action == "query") {
@@ -280,8 +284,9 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
       return;
     }
 
-    if (!VerifyKey(request_dict, kPortKey, VTYPE_INT, callback))
+    if (!VerifyKey(request_dict, kPortKey, VTYPE_INT, callback)) {
       return;
+    }
 
     const int port = request_dict->GetInt(kPortKey);
     if (port < 8000 || port > 65535) {
@@ -292,9 +297,9 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
     handler_ = new ServerHandler();
 
     // Start the server. OnComplete will be executed upon completion.
-    handler_->StartServer(port,
-                          base::Bind(&Handler::OnStartComplete,
-                                     weak_ptr_factory_.GetWeakPtr(), callback));
+    handler_->StartServer(
+        port, base::BindOnce(&Handler::OnStartComplete,
+                             weak_ptr_factory_.GetWeakPtr(), callback));
   }
 
   // Stop the server.
@@ -306,8 +311,8 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
     }
 
     // Stop the server. OnComplete will be executed upon completion.
-    handler_->StopServer(base::Bind(&Handler::OnStopComplete,
-                                    weak_ptr_factory_.GetWeakPtr(), callback));
+    handler_->StopServer(base::BindOnce(
+        &Handler::OnStopComplete, weak_ptr_factory_.GetWeakPtr(), callback));
 
     handler_ = nullptr;
   }
@@ -350,9 +355,10 @@ class Handler : public CefMessageRouterBrowserSide::Handler {
   // Convert a JSON string to a dictionary value.
   static CefRefPtr<CefDictionaryValue> ParseJSON(const CefString& string) {
     CefRefPtr<CefValue> value = CefParseJSON(string, JSON_PARSER_RFC);
-    if (value.get() && value->GetType() == VTYPE_DICTIONARY)
+    if (value.get() && value->GetType() == VTYPE_DICTIONARY) {
       return value->GetDictionary();
-    return NULL;
+    }
+    return nullptr;
   }
 
   // Verify that |key| exists in |dictionary| and has type |value_type|. Fails
@@ -383,5 +389,4 @@ void CreateMessageHandlers(test_runner::MessageHandlerSet& handlers) {
   handlers.insert(new Handler());
 }
 
-}  // namespace server_test
-}  // namespace client
+}  // namespace client::server_test

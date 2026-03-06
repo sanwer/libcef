@@ -7,6 +7,7 @@
 #pragma once
 
 #include <string>
+
 #include "include/cef_image.h"
 #include "include/cef_stream.h"
 
@@ -16,10 +17,8 @@
 
 namespace client {
 
-#if defined(OS_POSIX)
 // Returns the directory containing resource files.
 bool GetResourceDir(std::string& dir);
-#endif
 
 // Retrieve a resource as a string.
 bool LoadBinaryResource(const char* resource_name, std::string& resource_data);

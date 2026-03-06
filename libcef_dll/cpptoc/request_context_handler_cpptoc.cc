@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,13 +9,16 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=5a0803ca861a822f346b49743cc5505da788135e$
+// $hash=03fa6cc394d4a9c336db4e7de40094ba4db30ad5$
 //
 
 #include "libcef_dll/cpptoc/request_context_handler_cpptoc.h"
-#include "libcef_dll/ctocpp/cookie_manager_ctocpp.h"
+
+#include "libcef_dll/cpptoc/resource_request_handler_cpptoc.h"
+#include "libcef_dll/ctocpp/browser_ctocpp.h"
+#include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/ctocpp/request_context_ctocpp.h"
-#include "libcef_dll/ctocpp/web_plugin_info_ctocpp.h"
+#include "libcef_dll/ctocpp/request_ctocpp.h"
 
 namespace {
 
@@ -23,73 +26,71 @@ namespace {
 
 void CEF_CALLBACK request_context_handler_on_request_context_initialized(
     struct _cef_request_context_handler_t* self,
-    cef_request_context_t* request_context) {
+    struct _cef_request_context_t* request_context) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: request_context; type: refptr_diff
   DCHECK(request_context);
-  if (!request_context)
+  if (!request_context) {
     return;
+  }
 
   // Execute
   CefRequestContextHandlerCppToC::Get(self)->OnRequestContextInitialized(
-      CefRequestContextCToCpp::Wrap(request_context));
+      CefRequestContextCToCpp_Wrap(request_context));
 }
 
-cef_cookie_manager_t* CEF_CALLBACK request_context_handler_get_cookie_manager(
-    struct _cef_request_context_handler_t* self) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return NULL;
-
-  // Execute
-  CefRefPtr<CefCookieManager> _retval =
-      CefRequestContextHandlerCppToC::Get(self)->GetCookieManager();
-
-  // Return type: refptr_diff
-  return CefCookieManagerCToCpp::Unwrap(_retval);
-}
-
-int CEF_CALLBACK request_context_handler_on_before_plugin_load(
+struct _cef_resource_request_handler_t* CEF_CALLBACK
+request_context_handler_get_resource_request_handler(
     struct _cef_request_context_handler_t* self,
-    const cef_string_t* mime_type,
-    const cef_string_t* plugin_url,
-    int is_main_frame,
-    const cef_string_t* top_origin_url,
-    struct _cef_web_plugin_info_t* plugin_info,
-    cef_plugin_policy_t* plugin_policy) {
+    struct _cef_browser_t* browser,
+    struct _cef_frame_t* frame,
+    struct _cef_request_t* request,
+    int is_navigation,
+    int is_download,
+    const cef_string_t* request_initiator,
+    int* disable_default_handling) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
-    return 0;
-  // Verify param: mime_type; type: string_byref_const
-  DCHECK(mime_type);
-  if (!mime_type)
-    return 0;
-  // Verify param: plugin_info; type: refptr_diff
-  DCHECK(plugin_info);
-  if (!plugin_info)
-    return 0;
-  // Verify param: plugin_policy; type: simple_byaddr
-  DCHECK(plugin_policy);
-  if (!plugin_policy)
-    return 0;
-  // Unverified params: plugin_url, top_origin_url
+  if (!self) {
+    return NULL;
+  }
+  // Verify param: request; type: refptr_diff
+  DCHECK(request);
+  if (!request) {
+    return NULL;
+  }
+  // Verify param: disable_default_handling; type: bool_byref
+  DCHECK(disable_default_handling);
+  if (!disable_default_handling) {
+    return NULL;
+  }
+  // Unverified params: browser, frame, request_initiator
+
+  // Translate param: disable_default_handling; type: bool_byref
+  bool disable_default_handlingBool =
+      (disable_default_handling && *disable_default_handling) ? true : false;
 
   // Execute
-  bool _retval = CefRequestContextHandlerCppToC::Get(self)->OnBeforePluginLoad(
-      CefString(mime_type), CefString(plugin_url), is_main_frame ? true : false,
-      CefString(top_origin_url), CefWebPluginInfoCToCpp::Wrap(plugin_info),
-      plugin_policy);
+  CefRefPtr<CefResourceRequestHandler> _retval =
+      CefRequestContextHandlerCppToC::Get(self)->GetResourceRequestHandler(
+          CefBrowserCToCpp_Wrap(browser), CefFrameCToCpp_Wrap(frame),
+          CefRequestCToCpp_Wrap(request), is_navigation ? true : false,
+          is_download ? true : false, CefString(request_initiator),
+          disable_default_handlingBool);
 
-  // Return type: bool
-  return _retval;
+  // Restore param: disable_default_handling; type: bool_byref
+  if (disable_default_handling) {
+    *disable_default_handling = disable_default_handlingBool ? true : false;
+  }
+
+  // Return type: refptr_same
+  return CefResourceRequestHandlerCppToC_Wrap(_retval);
 }
 
 }  // namespace
@@ -99,10 +100,13 @@ int CEF_CALLBACK request_context_handler_on_before_plugin_load(
 CefRequestContextHandlerCppToC::CefRequestContextHandlerCppToC() {
   GetStruct()->on_request_context_initialized =
       request_context_handler_on_request_context_initialized;
-  GetStruct()->get_cookie_manager = request_context_handler_get_cookie_manager;
-  GetStruct()->on_before_plugin_load =
-      request_context_handler_on_before_plugin_load;
+  GetStruct()->get_resource_request_handler =
+      request_context_handler_get_resource_request_handler;
 }
+
+// DESTRUCTOR - Do not edit by hand.
+
+CefRequestContextHandlerCppToC::~CefRequestContextHandlerCppToC() {}
 
 template <>
 CefRefPtr<CefRequestContextHandler> CefCppToCRefCounted<
@@ -111,17 +115,9 @@ CefRefPtr<CefRequestContextHandler> CefCppToCRefCounted<
     cef_request_context_handler_t>::UnwrapDerived(CefWrapperType type,
                                                   cef_request_context_handler_t*
                                                       s) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<
-    CefRequestContextHandlerCppToC,
-    CefRequestContextHandler,
-    cef_request_context_handler_t>::DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType

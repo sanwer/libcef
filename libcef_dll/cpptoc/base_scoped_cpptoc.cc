@@ -4,13 +4,13 @@
 
 #include "libcef_dll/cpptoc/base_scoped_cpptoc.h"
 
-CefBaseScopedCppToC::CefBaseScopedCppToC() {}
+CefBaseScopedCppToC::CefBaseScopedCppToC() = default;
 
 template <>
 CefOwnPtr<CefBaseScoped>
 CefCppToCScoped<CefBaseScopedCppToC, CefBaseScoped, cef_base_scoped_t>::
     UnwrapDerivedOwn(CefWrapperType type, cef_base_scoped_t* s) {
-  NOTREACHED();
+  DCHECK(false);
   return CefOwnPtr<CefBaseScoped>();
 }
 
@@ -18,16 +18,9 @@ template <>
 CefRawPtr<CefBaseScoped>
 CefCppToCScoped<CefBaseScopedCppToC, CefBaseScoped, cef_base_scoped_t>::
     UnwrapDerivedRaw(CefWrapperType type, cef_base_scoped_t* s) {
-  NOTREACHED();
-  return NULL;
+  DCHECK(false);
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount
-    CefCppToCScoped<CefBaseScopedCppToC, CefBaseScoped, cef_base_scoped_t>::
-        DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCScoped<CefBaseScopedCppToC,

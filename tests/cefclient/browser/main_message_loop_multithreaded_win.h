@@ -7,6 +7,7 @@
 #pragma once
 
 #include <windows.h>
+
 #include <queue>
 
 #include "include/base/cef_lock.h"
@@ -22,14 +23,19 @@ namespace client {
 class MainMessageLoopMultithreadedWin : public MainMessageLoop {
  public:
   MainMessageLoopMultithreadedWin();
-  ~MainMessageLoopMultithreadedWin();
+  ~MainMessageLoopMultithreadedWin() override;
+
+  MainMessageLoopMultithreadedWin(const MainMessageLoopMultithreadedWin&) =
+      delete;
+  MainMessageLoopMultithreadedWin& operator=(
+      const MainMessageLoopMultithreadedWin&) = delete;
 
   // MainMessageLoop methods.
-  int Run() OVERRIDE;
-  void Quit() OVERRIDE;
-  void PostTask(CefRefPtr<CefTask> task) OVERRIDE;
-  bool RunsTasksOnCurrentThread() const OVERRIDE;
-  void SetCurrentModelessDialog(HWND hWndDialog) OVERRIDE;
+  int Run() override;
+  void Quit() override;
+  void PostTask(CefRefPtr<CefTask> task) override;
+  bool RunsTasksOnCurrentThread() const override;
+  void SetCurrentModelessDialog(HWND hWndDialog) override;
 
  private:
   // Create the message window.
@@ -47,15 +53,13 @@ class MainMessageLoopMultithreadedWin : public MainMessageLoop {
   UINT task_message_id_;
 
   // Only accessed on the main thread.
-  HWND dialog_hwnd_;
+  HWND dialog_hwnd_ = nullptr;
 
   base::Lock lock_;
 
   // Must be protected by |lock_|.
-  HWND message_hwnd_;
+  HWND message_hwnd_ = nullptr;
   std::queue<CefRefPtr<CefTask>> queued_tasks_;
-
-  DISALLOW_COPY_AND_ASSIGN(MainMessageLoopMultithreadedWin);
 };
 
 }  // namespace client

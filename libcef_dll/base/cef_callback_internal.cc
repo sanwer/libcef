@@ -1,4 +1,4 @@
-// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Copyright 2012 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,36 +6,59 @@
 
 #include "include/base/cef_logging.h"
 
-namespace base {
-namespace cef_internal {
+namespace base::cef_internal {
 
-void BindStateBase::AddRef() {
-  AtomicRefCountInc(&ref_count_);
+namespace {
+
+bool QueryCancellationTraitsForNonCancellables(
+    const BindStateBase*,
+    BindStateBase::CancellationQueryMode mode) {
+  // Non-cancellables are never cancelled and always valid, which means the
+  // response for each mode is the same as its underlying value.
+  return static_cast<bool>(mode);
 }
 
-void BindStateBase::Release() {
-  if (!AtomicRefCountDec(&ref_count_))
-    destructor_(this);
+}  // namespace
+
+void BindStateBaseRefCountTraits::Destruct(const BindStateBase* bind_state) {
+  bind_state->destructor_(bind_state);
 }
 
-void CallbackBase::Reset() {
-  polymorphic_invoke_ = NULL;
-  // NULL the bind_state_ last, since it may be holding the last ref to whatever
-  // object owns us, and we may be deleted after that.
-  bind_state_ = NULL;
+BindStateBase::BindStateBase(InvokeFuncStorage polymorphic_invoke,
+                             DestructorPtr destructor)
+    : BindStateBase(polymorphic_invoke,
+                    destructor,
+                    &QueryCancellationTraitsForNonCancellables) {}
+
+BindStateBase::BindStateBase(
+    InvokeFuncStorage polymorphic_invoke,
+    DestructorPtr destructor,
+    QueryCancellationTraitsPtr query_cancellation_traits)
+    : polymorphic_invoke_(polymorphic_invoke),
+      destructor_(destructor),
+      query_cancellation_traits_(query_cancellation_traits) {}
+
+BindStateHolder& BindStateHolder::operator=(BindStateHolder&&) noexcept =
+    default;
+
+BindStateHolder::BindStateHolder(const BindStateHolder&) = default;
+
+BindStateHolder& BindStateHolder::operator=(const BindStateHolder&) = default;
+
+BindStateHolder::~BindStateHolder() = default;
+
+void BindStateHolder::Reset() {
+  bind_state_ = nullptr;
 }
 
-bool CallbackBase::Equals(const CallbackBase& other) const {
-  return bind_state_.get() == other.bind_state_.get() &&
-         polymorphic_invoke_ == other.polymorphic_invoke_;
+bool BindStateHolder::IsCancelled() const {
+  DCHECK(bind_state_);
+  return bind_state_->IsCancelled();
 }
 
-CallbackBase::CallbackBase(BindStateBase* bind_state)
-    : bind_state_(bind_state), polymorphic_invoke_(NULL) {
-  DCHECK(!bind_state_.get() || bind_state_->ref_count_ == 1);
+bool BindStateHolder::MaybeValid() const {
+  DCHECK(bind_state_);
+  return bind_state_->MaybeValid();
 }
 
-CallbackBase::~CallbackBase() {}
-
-}  // namespace cef_internal
-}  // namespace base
+}  // namespace base::cef_internal

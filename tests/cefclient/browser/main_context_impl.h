@@ -6,7 +6,8 @@
 #define CEF_TESTS_CEFCLIENT_BROWSER_MAIN_CONTEXT_IMPL_H_
 #pragma once
 
-#include "include/base/cef_scoped_ptr.h"
+#include <memory>
+
 #include "include/base/cef_thread_checker.h"
 #include "include/cef_app.h"
 #include "include/cef_command_line.h"
@@ -21,18 +22,24 @@ class MainContextImpl : public MainContext {
   MainContextImpl(CefRefPtr<CefCommandLine> command_line,
                   bool terminate_when_all_windows_closed);
 
+  MainContextImpl(const MainContextImpl&) = delete;
+  MainContextImpl& operator=(const MainContextImpl&) = delete;
+
   // MainContext members.
-  std::string GetConsoleLogPath() OVERRIDE;
-  std::string GetDownloadPath(const std::string& file_name) OVERRIDE;
-  std::string GetAppWorkingDirectory() OVERRIDE;
-  std::string GetMainURL() OVERRIDE;
-  cef_color_t GetBackgroundColor() OVERRIDE;
-  bool UseViews() OVERRIDE;
-  bool UseWindowlessRendering() OVERRIDE;
-  void PopulateSettings(CefSettings* settings) OVERRIDE;
-  void PopulateBrowserSettings(CefBrowserSettings* settings) OVERRIDE;
-  void PopulateOsrSettings(OsrRenderer::Settings* settings) OVERRIDE;
-  RootWindowManager* GetRootWindowManager() OVERRIDE;
+  CefRefPtr<CefCommandLine> GetCommandLine() override;
+  std::string GetConsoleLogPath() override;
+  std::string GetDownloadPath(const std::string& file_name) override;
+  std::string GetAppWorkingDirectory() override;
+  std::string GetMainURL(CefRefPtr<CefCommandLine> command_line) override;
+  cef_color_t GetBackgroundColor() override;
+  bool UseViewsGlobal() override;
+  bool UseAlloyStyleGlobal() override;
+  bool TouchEventsEnabled() override;
+  bool UseDefaultPopup() override;
+  void PopulateSettings(CefSettings* settings) override;
+  void PopulateBrowserSettings(CefBrowserSettings* settings) override;
+  void PopulateOsrSettings(OsrRendererSettings* settings) override;
+  RootWindowManager* GetRootWindowManager() override;
 
   // Initialize CEF and associated main context state. This method must be
   // called on the same thread that created this object.
@@ -46,10 +53,10 @@ class MainContextImpl : public MainContext {
   void Shutdown();
 
  private:
-  // Allow deletion via scoped_ptr only.
-  friend struct base::DefaultDeleter<MainContextImpl>;
+  // Allow deletion via std::unique_ptr only.
+  friend std::default_delete<MainContextImpl>;
 
-  ~MainContextImpl();
+  ~MainContextImpl() override;
 
   // Returns true if the context is in a valid state (initialized and not yet
   // shut down).
@@ -61,21 +68,24 @@ class MainContextImpl : public MainContext {
   // Track context state. Accessing these variables from multiple threads is
   // safe because only a single thread will exist at the time that they're set
   // (during context initialization and shutdown).
-  bool initialized_;
-  bool shutdown_;
+  bool initialized_ = false;
+  bool shutdown_ = false;
 
-  std::string main_url_;
-  cef_color_t background_color_;
-  cef_color_t browser_background_color_;
+  cef_color_t background_color_ = 0;
+  cef_color_t browser_background_color_ = 0;
   bool use_windowless_rendering_;
+  int windowless_frame_rate_ = 0;
   bool use_views_;
+  bool use_alloy_style_;
 
-  scoped_ptr<RootWindowManager> root_window_manager_;
+  std::unique_ptr<RootWindowManager> root_window_manager_;
+
+  bool shared_texture_enabled_;
+
+  bool external_begin_frame_enabled_;
 
   // Used to verify that methods are called on the correct thread.
   base::ThreadChecker thread_checker_;
-
-  DISALLOW_COPY_AND_ASSIGN(MainContextImpl);
 };
 
 }  // namespace client

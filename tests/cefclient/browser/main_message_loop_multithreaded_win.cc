@@ -4,7 +4,7 @@
 
 #include "tests/cefclient/browser/main_message_loop_multithreaded_win.h"
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/base/cef_logging.h"
 #include "include/cef_app.h"
 #include "tests/cefclient/browser/resource.h"
@@ -21,9 +21,7 @@ const wchar_t kTaskMessageName[] = L"Client_CustomTask";
 
 MainMessageLoopMultithreadedWin::MainMessageLoopMultithreadedWin()
     : thread_id_(base::PlatformThread::CurrentId()),
-      task_message_id_(RegisterWindowMessage(kTaskMessageName)),
-      dialog_hwnd_(NULL),
-      message_hwnd_(NULL) {}
+      task_message_id_(RegisterWindowMessage(kTaskMessageName)) {}
 
 MainMessageLoopMultithreadedWin::~MainMessageLoopMultithreadedWin() {
   DCHECK(RunsTasksOnCurrentThread());
@@ -34,7 +32,7 @@ MainMessageLoopMultithreadedWin::~MainMessageLoopMultithreadedWin() {
 int MainMessageLoopMultithreadedWin::Run() {
   DCHECK(RunsTasksOnCurrentThread());
 
-  HINSTANCE hInstance = ::GetModuleHandle(NULL);
+  HINSTANCE hInstance = ::GetModuleHandle(nullptr);
 
   {
     base::AutoLock lock_scope(lock_);
@@ -54,15 +52,16 @@ int MainMessageLoopMultithreadedWin::Run() {
   }
 
   HACCEL hAccelTable =
-      LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_CEFCLIENT));
+      LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_MAINFRAME));
 
   MSG msg;
 
   // Run the application message loop.
-  while (GetMessage(&msg, NULL, 0, 0)) {
+  while (GetMessage(&msg, nullptr, 0, 0)) {
     // Allow processing of dialog messages.
-    if (dialog_hwnd_ && IsDialogMessage(dialog_hwnd_, &msg))
+    if (dialog_hwnd_ && IsDialogMessage(dialog_hwnd_, &msg)) {
       continue;
+    }
 
     if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
       TranslateMessage(&msg);
@@ -75,7 +74,7 @@ int MainMessageLoopMultithreadedWin::Run() {
 
     // Destroy the message window.
     DestroyWindow(message_hwnd_);
-    message_hwnd_ = NULL;
+    message_hwnd_ = nullptr;
   }
 
   return static_cast<int>(msg.wParam);
@@ -83,7 +82,7 @@ int MainMessageLoopMultithreadedWin::Run() {
 
 void MainMessageLoopMultithreadedWin::Quit() {
   // Execute PostQuitMessage(0) on the main thread.
-  PostClosure(base::Bind(::PostQuitMessage, 0));
+  PostClosure(base::BindOnce(::PostQuitMessage, 0));
 }
 
 void MainMessageLoopMultithreadedWin::PostTask(CefRefPtr<CefTask> task) {
@@ -117,8 +116,8 @@ HWND MainMessageLoopMultithreadedWin::CreateMessageWindow(HINSTANCE hInstance) {
   wc.lpszClassName = kWndClass;
   RegisterClassEx(&wc);
 
-  return CreateWindow(kWndClass, 0, 0, 0, 0, 0, 0, HWND_MESSAGE, 0, hInstance,
-                      0);
+  return CreateWindow(kWndClass, nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr,
+                      hInstance, nullptr);
 }
 
 // static
@@ -142,7 +141,7 @@ MainMessageLoopMultithreadedWin::MessageWndProc(HWND hWnd,
     switch (message) {
       case WM_NCDESTROY:
         // Clear the reference to |self|.
-        SetUserDataPtr(hWnd, NULL);
+        SetUserDataPtr(hWnd, nullptr);
         break;
     }
   }

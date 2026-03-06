@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,32 +9,39 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=3515f4f84294697be76da24e3e2ef47a526ffbf5$
+// $hash=9935e58918af0488f80696530389b9760f89dcc3$
 //
 
 #include "libcef_dll/ctocpp/list_value_ctocpp.h"
+
 #include "libcef_dll/ctocpp/binary_value_ctocpp.h"
 #include "libcef_dll/ctocpp/dictionary_value_ctocpp.h"
 #include "libcef_dll/ctocpp/value_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 // STATIC METHODS - Body may be edited by hand.
 
-CefRefPtr<CefListValue> CefListValue::Create() {
+NO_SANITIZE("cfi-icall") CefRefPtr<CefListValue> CefListValue::Create() {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_list_value_t* _retval = cef_list_value_create();
+  auto* _retval = cef_list_value_create();
 
   // Return type: refptr_same
-  return CefListValueCToCpp::Wrap(_retval);
+  return CefListValueCToCpp_Wrap(_retval);
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
-bool CefListValueCToCpp::IsValid() {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_valid))
+NO_SANITIZE("cfi-icall") bool CefListValueCToCpp::IsValid() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->is_valid) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -45,10 +52,13 @@ bool CefListValueCToCpp::IsValid() {
   return _retval ? true : false;
 }
 
-bool CefListValueCToCpp::IsOwned() {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_owned))
+NO_SANITIZE("cfi-icall") bool CefListValueCToCpp::IsOwned() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->is_owned) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -59,10 +69,13 @@ bool CefListValueCToCpp::IsOwned() {
   return _retval ? true : false;
 }
 
-bool CefListValueCToCpp::IsReadOnly() {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_read_only))
+NO_SANITIZE("cfi-icall") bool CefListValueCToCpp::IsReadOnly() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->is_read_only) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -73,62 +86,78 @@ bool CefListValueCToCpp::IsReadOnly() {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefListValueCToCpp::IsSame(CefRefPtr<CefListValue> that) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_same))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->is_same) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: that; type: refptr_same
   DCHECK(that.get());
-  if (!that.get())
+  if (!that.get()) {
     return false;
+  }
 
   // Execute
-  int _retval = _struct->is_same(_struct, CefListValueCToCpp::Unwrap(that));
+  int _retval = _struct->is_same(_struct, CefListValueCToCpp_Unwrap(that));
 
   // Return type: bool
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefListValueCToCpp::IsEqual(CefRefPtr<CefListValue> that) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_equal))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->is_equal) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: that; type: refptr_same
   DCHECK(that.get());
-  if (!that.get())
+  if (!that.get()) {
     return false;
+  }
 
   // Execute
-  int _retval = _struct->is_equal(_struct, CefListValueCToCpp::Unwrap(that));
+  int _retval = _struct->is_equal(_struct, CefListValueCToCpp_Unwrap(that));
 
   // Return type: bool
   return _retval ? true : false;
 }
 
-CefRefPtr<CefListValue> CefListValueCToCpp::Copy() {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, copy))
-    return NULL;
+NO_SANITIZE("cfi-icall") CefRefPtr<CefListValue> CefListValueCToCpp::Copy() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->copy) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_list_value_t* _retval = _struct->copy(_struct);
+  auto* _retval = _struct->copy(_struct);
 
   // Return type: refptr_same
-  return CefListValueCToCpp::Wrap(_retval);
+  return CefListValueCToCpp_Wrap(_retval);
 }
 
-bool CefListValueCToCpp::SetSize(size_t size) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_size))
+NO_SANITIZE("cfi-icall") bool CefListValueCToCpp::SetSize(size_t size) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->set_size) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -139,10 +168,13 @@ bool CefListValueCToCpp::SetSize(size_t size) {
   return _retval ? true : false;
 }
 
-size_t CefListValueCToCpp::GetSize() {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_size))
+NO_SANITIZE("cfi-icall") size_t CefListValueCToCpp::GetSize() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_size) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -153,10 +185,13 @@ size_t CefListValueCToCpp::GetSize() {
   return _retval;
 }
 
-bool CefListValueCToCpp::Clear() {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, clear))
+NO_SANITIZE("cfi-icall") bool CefListValueCToCpp::Clear() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->clear) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -167,10 +202,13 @@ bool CefListValueCToCpp::Clear() {
   return _retval ? true : false;
 }
 
-bool CefListValueCToCpp::Remove(size_t index) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, remove))
+NO_SANITIZE("cfi-icall") bool CefListValueCToCpp::Remove(size_t index) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->remove) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -181,10 +219,14 @@ bool CefListValueCToCpp::Remove(size_t index) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 CefValueType CefListValueCToCpp::GetType(size_t index) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_type))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_type) {
     return VTYPE_INVALID;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -195,24 +237,31 @@ CefValueType CefListValueCToCpp::GetType(size_t index) {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefValue> CefListValueCToCpp::GetValue(size_t index) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_value))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_value) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_value_t* _retval = _struct->get_value(_struct, index);
+  auto* _retval = _struct->get_value(_struct, index);
 
   // Return type: refptr_same
-  return CefValueCToCpp::Wrap(_retval);
+  return CefValueCToCpp_Wrap(_retval);
 }
 
-bool CefListValueCToCpp::GetBool(size_t index) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_bool))
+NO_SANITIZE("cfi-icall") bool CefListValueCToCpp::GetBool(size_t index) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_bool) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -223,10 +272,13 @@ bool CefListValueCToCpp::GetBool(size_t index) {
   return _retval ? true : false;
 }
 
-int CefListValueCToCpp::GetInt(size_t index) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_int))
+NO_SANITIZE("cfi-icall") int CefListValueCToCpp::GetInt(size_t index) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_int) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -237,10 +289,13 @@ int CefListValueCToCpp::GetInt(size_t index) {
   return _retval;
 }
 
-double CefListValueCToCpp::GetDouble(size_t index) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_double))
+NO_SANITIZE("cfi-icall") double CefListValueCToCpp::GetDouble(size_t index) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_double) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -251,10 +306,13 @@ double CefListValueCToCpp::GetDouble(size_t index) {
   return _retval;
 }
 
-CefString CefListValueCToCpp::GetString(size_t index) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_string))
+NO_SANITIZE("cfi-icall") CefString CefListValueCToCpp::GetString(size_t index) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_string) {
     return CefString();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -267,72 +325,92 @@ CefString CefListValueCToCpp::GetString(size_t index) {
   return _retvalStr;
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefBinaryValue> CefListValueCToCpp::GetBinary(size_t index) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_binary))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_binary) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_binary_value_t* _retval = _struct->get_binary(_struct, index);
+  auto* _retval = _struct->get_binary(_struct, index);
 
   // Return type: refptr_same
-  return CefBinaryValueCToCpp::Wrap(_retval);
+  return CefBinaryValueCToCpp_Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefDictionaryValue> CefListValueCToCpp::GetDictionary(size_t index) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_dictionary))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_dictionary) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_dictionary_value_t* _retval = _struct->get_dictionary(_struct, index);
+  auto* _retval = _struct->get_dictionary(_struct, index);
 
   // Return type: refptr_same
-  return CefDictionaryValueCToCpp::Wrap(_retval);
+  return CefDictionaryValueCToCpp_Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefListValue> CefListValueCToCpp::GetList(size_t index) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_list))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_list) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_list_value_t* _retval = _struct->get_list(_struct, index);
+  auto* _retval = _struct->get_list(_struct, index);
 
   // Return type: refptr_same
-  return CefListValueCToCpp::Wrap(_retval);
+  return CefListValueCToCpp_Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefListValueCToCpp::SetValue(size_t index, CefRefPtr<CefValue> value) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_value))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->set_value) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: value; type: refptr_same
   DCHECK(value.get());
-  if (!value.get())
+  if (!value.get()) {
     return false;
+  }
 
   // Execute
   int _retval =
-      _struct->set_value(_struct, index, CefValueCToCpp::Unwrap(value));
+      _struct->set_value(_struct, index, CefValueCToCpp_Unwrap(value));
 
   // Return type: bool
   return _retval ? true : false;
 }
 
-bool CefListValueCToCpp::SetNull(size_t index) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_null))
+NO_SANITIZE("cfi-icall") bool CefListValueCToCpp::SetNull(size_t index) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->set_null) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -343,10 +421,14 @@ bool CefListValueCToCpp::SetNull(size_t index) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefListValueCToCpp::SetBool(size_t index, bool value) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_bool))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->set_bool) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -357,10 +439,14 @@ bool CefListValueCToCpp::SetBool(size_t index, bool value) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefListValueCToCpp::SetInt(size_t index, int value) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_int))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->set_int) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -371,10 +457,14 @@ bool CefListValueCToCpp::SetInt(size_t index, int value) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefListValueCToCpp::SetDouble(size_t index, double value) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_double))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->set_double) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -385,10 +475,14 @@ bool CefListValueCToCpp::SetDouble(size_t index, double value) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefListValueCToCpp::SetString(size_t index, const CefString& value) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_string))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->set_string) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -401,63 +495,78 @@ bool CefListValueCToCpp::SetString(size_t index, const CefString& value) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefListValueCToCpp::SetBinary(size_t index,
                                    CefRefPtr<CefBinaryValue> value) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_binary))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->set_binary) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: value; type: refptr_same
   DCHECK(value.get());
-  if (!value.get())
+  if (!value.get()) {
     return false;
+  }
 
   // Execute
   int _retval =
-      _struct->set_binary(_struct, index, CefBinaryValueCToCpp::Unwrap(value));
+      _struct->set_binary(_struct, index, CefBinaryValueCToCpp_Unwrap(value));
 
   // Return type: bool
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefListValueCToCpp::SetDictionary(size_t index,
                                        CefRefPtr<CefDictionaryValue> value) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_dictionary))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->set_dictionary) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: value; type: refptr_same
   DCHECK(value.get());
-  if (!value.get())
+  if (!value.get()) {
     return false;
+  }
 
   // Execute
-  int _retval = _struct->set_dictionary(
-      _struct, index, CefDictionaryValueCToCpp::Unwrap(value));
+  int _retval = _struct->set_dictionary(_struct, index,
+                                        CefDictionaryValueCToCpp_Unwrap(value));
 
   // Return type: bool
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefListValueCToCpp::SetList(size_t index, CefRefPtr<CefListValue> value) {
-  cef_list_value_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_list))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->set_list) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: value; type: refptr_same
   DCHECK(value.get());
-  if (!value.get())
+  if (!value.get()) {
     return false;
+  }
 
   // Execute
   int _retval =
-      _struct->set_list(_struct, index, CefListValueCToCpp::Unwrap(value));
+      _struct->set_list(_struct, index, CefListValueCToCpp_Unwrap(value));
 
   // Return type: bool
   return _retval ? true : false;
@@ -467,20 +576,19 @@ bool CefListValueCToCpp::SetList(size_t index, CefRefPtr<CefListValue> value) {
 
 CefListValueCToCpp::CefListValueCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefListValueCToCpp::~CefListValueCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 cef_list_value_t*
 CefCToCppRefCounted<CefListValueCToCpp, CefListValue, cef_list_value_t>::
     UnwrapDerived(CefWrapperType type, CefListValue* c) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount
-    CefCToCppRefCounted<CefListValueCToCpp, CefListValue, cef_list_value_t>::
-        DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefListValueCToCpp,

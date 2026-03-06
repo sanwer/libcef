@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,35 +9,45 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=56e84a88921d747ee35eecc55a0a37a44ba3876d$
+// $hash=31af7581c2a0fb21c04fc9c135992ee9583c159b$
 //
 
 #include "libcef_dll/ctocpp/process_message_ctocpp.h"
+
 #include "libcef_dll/ctocpp/list_value_ctocpp.h"
+#include "libcef_dll/ctocpp/shared_memory_region_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 // STATIC METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefProcessMessage> CefProcessMessage::Create(const CefString& name) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: name; type: string_byref_const
   DCHECK(!name.empty());
-  if (name.empty())
-    return NULL;
+  if (name.empty()) {
+    return nullptr;
+  }
 
   // Execute
-  cef_process_message_t* _retval = cef_process_message_create(name.GetStruct());
+  auto* _retval = cef_process_message_create(name.GetStruct());
 
   // Return type: refptr_same
-  return CefProcessMessageCToCpp::Wrap(_retval);
+  return CefProcessMessageCToCpp_Wrap(_retval);
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
-bool CefProcessMessageCToCpp::IsValid() {
-  cef_process_message_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_valid))
+NO_SANITIZE("cfi-icall") bool CefProcessMessageCToCpp::IsValid() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->is_valid) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -48,10 +58,13 @@ bool CefProcessMessageCToCpp::IsValid() {
   return _retval ? true : false;
 }
 
-bool CefProcessMessageCToCpp::IsReadOnly() {
-  cef_process_message_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, is_read_only))
+NO_SANITIZE("cfi-icall") bool CefProcessMessageCToCpp::IsReadOnly() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->is_read_only) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -62,24 +75,31 @@ bool CefProcessMessageCToCpp::IsReadOnly() {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefProcessMessage> CefProcessMessageCToCpp::Copy() {
-  cef_process_message_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, copy))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->copy) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_process_message_t* _retval = _struct->copy(_struct);
+  auto* _retval = _struct->copy(_struct);
 
   // Return type: refptr_same
-  return CefProcessMessageCToCpp::Wrap(_retval);
+  return CefProcessMessageCToCpp_Wrap(_retval);
 }
 
-CefString CefProcessMessageCToCpp::GetName() {
-  cef_process_message_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_name))
+NO_SANITIZE("cfi-icall") CefString CefProcessMessageCToCpp::GetName() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_name) {
     return CefString();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -92,23 +112,52 @@ CefString CefProcessMessageCToCpp::GetName() {
   return _retvalStr;
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefListValue> CefProcessMessageCToCpp::GetArgumentList() {
-  cef_process_message_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_argument_list))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_argument_list) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_list_value_t* _retval = _struct->get_argument_list(_struct);
+  auto* _retval = _struct->get_argument_list(_struct);
 
   // Return type: refptr_same
-  return CefListValueCToCpp::Wrap(_retval);
+  return CefListValueCToCpp_Wrap(_retval);
+}
+
+NO_SANITIZE("cfi-icall")
+CefRefPtr<
+    CefSharedMemoryRegion> CefProcessMessageCToCpp::GetSharedMemoryRegion() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_shared_memory_region) {
+    return nullptr;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  auto* _retval = _struct->get_shared_memory_region(_struct);
+
+  // Return type: refptr_same
+  return CefSharedMemoryRegionCToCpp_Wrap(_retval);
 }
 
 // CONSTRUCTOR - Do not edit by hand.
 
 CefProcessMessageCToCpp::CefProcessMessageCToCpp() {}
+
+// DESTRUCTOR - Do not edit by hand.
+
+CefProcessMessageCToCpp::~CefProcessMessageCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
 
 template <>
 cef_process_message_t* CefCToCppRefCounted<
@@ -116,17 +165,9 @@ cef_process_message_t* CefCToCppRefCounted<
     CefProcessMessage,
     cef_process_message_t>::UnwrapDerived(CefWrapperType type,
                                           CefProcessMessage* c) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCToCppRefCounted<CefProcessMessageCToCpp,
-                                         CefProcessMessage,
-                                         cef_process_message_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefProcessMessageCToCpp,

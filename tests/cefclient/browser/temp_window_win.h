@@ -11,7 +11,7 @@
 namespace client {
 
 // Represents a singleton hidden window that acts as a temporary parent for
-// popup browsers.
+// popup browsers. Only accessed on the UI thread.
 class TempWindowWin {
  public:
   // Returns the singleton window handle.
@@ -20,13 +20,16 @@ class TempWindowWin {
  private:
   // A single instance will be created/owned by RootWindowManager.
   friend class RootWindowManager;
+  // Allow deletion via std::unique_ptr only.
+  friend std::default_delete<TempWindowWin>;
 
   TempWindowWin();
   ~TempWindowWin();
 
-  CefWindowHandle hwnd_;
+  TempWindowWin(const TempWindowWin&) = delete;
+  TempWindowWin& operator=(const TempWindowWin&) = delete;
 
-  DISALLOW_COPY_AND_ASSIGN(TempWindowWin);
+  CefWindowHandle hwnd_;
 };
 
 }  // namespace client

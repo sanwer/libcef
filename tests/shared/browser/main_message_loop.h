@@ -6,8 +6,9 @@
 #define CEF_TESTS_SHARED_BROWSER_MAIN_MESSAGE_LOOP_H_
 #pragma once
 
-#include "include/base/cef_bind.h"
-#include "include/base/cef_scoped_ptr.h"
+#include <memory>
+
+#include "include/base/cef_callback.h"
 #include "include/cef_task.h"
 
 #if defined(OS_WIN)
@@ -22,6 +23,8 @@ namespace client {
 // this class are thread-safe unless otherwise indicated.
 class MainMessageLoop {
  public:
+  MainMessageLoop(const MainMessageLoop&) = delete;
+  MainMessageLoop& operator=(const MainMessageLoop&) = delete;
   // Returns the singleton instance of this object.
   static MainMessageLoop* Get();
 
@@ -47,17 +50,15 @@ class MainMessageLoop {
 #endif
 
   // Post a closure for execution on the main message loop.
-  void PostClosure(const base::Closure& closure);
+  void PostClosure(base::OnceClosure closure);
+  void PostClosure(const base::RepeatingClosure& closure);
 
  protected:
-  // Only allow deletion via scoped_ptr.
-  friend struct base::DefaultDeleter<MainMessageLoop>;
+  // Only allow deletion via std::unique_ptr.
+  friend std::default_delete<MainMessageLoop>;
 
   MainMessageLoop();
   virtual ~MainMessageLoop();
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(MainMessageLoop);
 };
 
 #define CURRENTLY_ON_MAIN_THREAD() \
@@ -88,7 +89,7 @@ class MainMessageLoop {
 //
 // base::scoped_refptr<Foo> foo = new Foo();
 // foo->DoSomething();
-// foo = NULL;  // Deletion of |foo| will occur on the main thread.
+// foo = nullptr;  // Deletion of |foo| will occur on the main thread.
 //
 struct DeleteOnMainThread {
   template <typename T>
@@ -96,8 +97,8 @@ struct DeleteOnMainThread {
     if (CURRENTLY_ON_MAIN_THREAD()) {
       delete x;
     } else {
-      client::MainMessageLoop::Get()->PostClosure(
-          base::Bind(&DeleteOnMainThread::Destruct<T>, x));
+      client::MainMessageLoop::Get()->PostClosure(base::BindOnce(
+          &DeleteOnMainThread::Destruct<T>, base::Unretained(x)));
     }
   }
 };

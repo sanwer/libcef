@@ -18,24 +18,30 @@
 #include "tests/cefclient/browser/test_runner.h"
 #include "tests/shared/browser/resource_util.h"
 
-namespace client {
-namespace scheme_test {
+namespace client::scheme_test {
 
 namespace {
 
 // Implementation of the schema handler for client:// requests.
 class ClientSchemeHandler : public CefResourceHandler {
  public:
-  ClientSchemeHandler() : offset_(0) {}
+  ClientSchemeHandler() = default;
 
-  virtual bool ProcessRequest(CefRefPtr<CefRequest> request,
-                              CefRefPtr<CefCallback> callback) OVERRIDE {
-    CEF_REQUIRE_IO_THREAD();
+  ClientSchemeHandler(const ClientSchemeHandler&) = delete;
+  ClientSchemeHandler& operator=(const ClientSchemeHandler&) = delete;
+
+  bool Open(CefRefPtr<CefRequest> request,
+            bool& handle_request,
+            CefRefPtr<CefCallback> callback) override {
+    DCHECK(!CefCurrentlyOn(TID_UI) && !CefCurrentlyOn(TID_IO));
+
+    // The request will be continued or canceled based on the return value.
+    handle_request = true;
 
     bool handled = false;
 
     std::string url = request->GetURL();
-    if (strstr(url.c_str(), "handler.html") != NULL) {
+    if (strstr(url.c_str(), "handler.html") != nullptr) {
       // Build the response html
       data_ =
           "<html><head><title>Client Scheme Handler</title></head>"
@@ -61,7 +67,7 @@ class ClientSchemeHandler : public CefResourceHandler {
 
       // Set the resulting mime type
       mime_type_ = "text/html";
-    } else if (strstr(url.c_str(), "logo.png") != NULL) {
+    } else if (strstr(url.c_str(), "logo.png") != nullptr) {
       // Load the response image
       if (LoadBinaryResource("logo.png", data_)) {
         handled = true;
@@ -70,18 +76,12 @@ class ClientSchemeHandler : public CefResourceHandler {
       }
     }
 
-    if (handled) {
-      // Indicate the headers are available.
-      callback->Continue();
-      return true;
-    }
-
-    return false;
+    return handled;
   }
 
-  virtual void GetResponseHeaders(CefRefPtr<CefResponse> response,
-                                  int64& response_length,
-                                  CefString& redirectUrl) OVERRIDE {
+  void GetResponseHeaders(CefRefPtr<CefResponse> response,
+                          int64_t& response_length,
+                          CefString& redirectUrl) override {
     CEF_REQUIRE_IO_THREAD();
 
     DCHECK(!data_.empty());
@@ -93,13 +93,13 @@ class ClientSchemeHandler : public CefResourceHandler {
     response_length = data_.length();
   }
 
-  virtual void Cancel() OVERRIDE { CEF_REQUIRE_IO_THREAD(); }
+  void Cancel() override { CEF_REQUIRE_IO_THREAD(); }
 
-  virtual bool ReadResponse(void* data_out,
-                            int bytes_to_read,
-                            int& bytes_read,
-                            CefRefPtr<CefCallback> callback) OVERRIDE {
-    CEF_REQUIRE_IO_THREAD();
+  bool Read(void* data_out,
+            int bytes_to_read,
+            int& bytes_read,
+            CefRefPtr<CefResourceReadCallback> callback) override {
+    DCHECK(!CefCurrentlyOn(TID_UI) && !CefCurrentlyOn(TID_IO));
 
     bool has_data = false;
     bytes_read = 0;
@@ -121,7 +121,7 @@ class ClientSchemeHandler : public CefResourceHandler {
  private:
   std::string data_;
   std::string mime_type_;
-  size_t offset_;
+  size_t offset_ = 0;
 
   IMPLEMENT_REFCOUNTING(ClientSchemeHandler);
 };
@@ -129,12 +129,17 @@ class ClientSchemeHandler : public CefResourceHandler {
 // Implementation of the factory for for creating schema handlers.
 class ClientSchemeHandlerFactory : public CefSchemeHandlerFactory {
  public:
+  ClientSchemeHandlerFactory() = default;
+
+  ClientSchemeHandlerFactory(const ClientSchemeHandlerFactory&) = delete;
+  ClientSchemeHandlerFactory& operator=(const ClientSchemeHandlerFactory&) =
+      delete;
+
   // Return a new scheme handler instance to handle the request.
-  virtual CefRefPtr<CefResourceHandler> Create(
-      CefRefPtr<CefBrowser> browser,
-      CefRefPtr<CefFrame> frame,
-      const CefString& scheme_name,
-      CefRefPtr<CefRequest> request) OVERRIDE {
+  CefRefPtr<CefResourceHandler> Create(CefRefPtr<CefBrowser> browser,
+                                       CefRefPtr<CefFrame> frame,
+                                       const CefString& scheme_name,
+                                       CefRefPtr<CefRequest> request) override {
     CEF_REQUIRE_IO_THREAD();
     return new ClientSchemeHandler();
   }
@@ -149,5 +154,4 @@ void RegisterSchemeHandlers() {
                                   new ClientSchemeHandlerFactory());
 }
 
-}  // namespace scheme_test
-}  // namespace client
+}  // namespace client::scheme_test

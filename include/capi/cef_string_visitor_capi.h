@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=23de3627ff6557115e9a7abaa36dc5932fd7bd57$
+// $hash=d7c18649a69fdebf70eafe7430a642bac789c529$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_STRING_VISITOR_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_STRING_VISITOR_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -47,16 +51,18 @@ extern "C" {
 #endif
 
 ///
-// Implement this structure to receive string values asynchronously.
+/// Implement this structure to receive string values asynchronously.
+///
+/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_string_visitor_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Method that will be executed.
+  /// Method that will be executed.
   ///
   void(CEF_CALLBACK* visit)(struct _cef_string_visitor_t* self,
                             const cef_string_t* string);

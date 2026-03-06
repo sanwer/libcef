@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=631a4b130b3d74e603403e7546c76410492e2b2f$
+// $hash=e72703445cd5a0ff2270bcd61812b0873934c136$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_PDF_PRINT_CALLBACK_CPPTOC_H_
@@ -34,6 +34,11 @@ class CefPdfPrintCallbackCppToC
                                  cef_pdf_print_callback_t> {
  public:
   CefPdfPrintCallbackCppToC();
+  virtual ~CefPdfPrintCallbackCppToC();
 };
+
+constexpr auto CefPdfPrintCallbackCppToC_Wrap = CefPdfPrintCallbackCppToC::Wrap;
+constexpr auto CefPdfPrintCallbackCppToC_Unwrap =
+    CefPdfPrintCallbackCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_PDF_PRINT_CALLBACK_CPPTOC_H_

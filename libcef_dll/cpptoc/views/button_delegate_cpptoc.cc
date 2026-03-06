@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,13 +9,15 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a78d9c4f074e398ce9419be3263061e4d90664fa$
+// $hash=288b5c61eea52c370075981f511199f778dc8c47$
 //
 
 #include "libcef_dll/cpptoc/views/button_delegate_cpptoc.h"
+
 #include "libcef_dll/cpptoc/views/menu_button_delegate_cpptoc.h"
 #include "libcef_dll/ctocpp/views/button_ctocpp.h"
 #include "libcef_dll/ctocpp/views/view_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -23,57 +25,69 @@ namespace {
 
 void CEF_CALLBACK
 button_delegate_on_button_pressed(struct _cef_button_delegate_t* self,
-                                  cef_button_t* button) {
+                                  struct _cef_button_t* button) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: button; type: refptr_diff
   DCHECK(button);
-  if (!button)
+  if (!button) {
     return;
+  }
 
   // Execute
   CefButtonDelegateCppToC::Get(self)->OnButtonPressed(
-      CefButtonCToCpp::Wrap(button));
+      CefButtonCToCpp_Wrap(button));
 }
 
 void CEF_CALLBACK
 button_delegate_on_button_state_changed(struct _cef_button_delegate_t* self,
-                                        cef_button_t* button) {
+                                        struct _cef_button_t* button) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: button; type: refptr_diff
   DCHECK(button);
-  if (!button)
+  if (!button) {
     return;
+  }
 
   // Execute
   CefButtonDelegateCppToC::Get(self)->OnButtonStateChanged(
-      CefButtonCToCpp::Wrap(button));
+      CefButtonCToCpp_Wrap(button));
 }
 
 cef_size_t CEF_CALLBACK
 button_delegate_get_preferred_size(struct _cef_view_delegate_t* self,
-                                   cef_view_t* view) {
+                                   struct _cef_view_t* view) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return CefSize();
+  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view)
+  if (!view) {
     return CefSize();
+  }
 
   // Execute
   cef_size_t _retval = CefButtonDelegateCppToC::Get(
                            reinterpret_cast<cef_button_delegate_t*>(self))
-                           ->GetPreferredSize(CefViewCToCpp::Wrap(view));
+                           ->GetPreferredSize(CefViewCToCpp_Wrap(view));
 
   // Return type: simple
   return _retval;
@@ -81,21 +95,25 @@ button_delegate_get_preferred_size(struct _cef_view_delegate_t* self,
 
 cef_size_t CEF_CALLBACK
 button_delegate_get_minimum_size(struct _cef_view_delegate_t* self,
-                                 cef_view_t* view) {
+                                 struct _cef_view_t* view) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return CefSize();
+  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view)
+  if (!view) {
     return CefSize();
+  }
 
   // Execute
   cef_size_t _retval = CefButtonDelegateCppToC::Get(
                            reinterpret_cast<cef_button_delegate_t*>(self))
-                           ->GetMinimumSize(CefViewCToCpp::Wrap(view));
+                           ->GetMinimumSize(CefViewCToCpp_Wrap(view));
 
   // Return type: simple
   return _retval;
@@ -103,21 +121,25 @@ button_delegate_get_minimum_size(struct _cef_view_delegate_t* self,
 
 cef_size_t CEF_CALLBACK
 button_delegate_get_maximum_size(struct _cef_view_delegate_t* self,
-                                 cef_view_t* view) {
+                                 struct _cef_view_t* view) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return CefSize();
+  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view)
+  if (!view) {
     return CefSize();
+  }
 
   // Execute
   cef_size_t _retval = CefButtonDelegateCppToC::Get(
                            reinterpret_cast<cef_button_delegate_t*>(self))
-                           ->GetMaximumSize(CefViewCToCpp::Wrap(view));
+                           ->GetMaximumSize(CefViewCToCpp_Wrap(view));
 
   // Return type: simple
   return _retval;
@@ -125,22 +147,26 @@ button_delegate_get_maximum_size(struct _cef_view_delegate_t* self,
 
 int CEF_CALLBACK
 button_delegate_get_height_for_width(struct _cef_view_delegate_t* self,
-                                     cef_view_t* view,
+                                     struct _cef_view_t* view,
                                      int width) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view)
+  if (!view) {
     return 0;
+  }
 
   // Execute
   int _retval = CefButtonDelegateCppToC::Get(
                     reinterpret_cast<cef_button_delegate_t*>(self))
-                    ->GetHeightForWidth(CefViewCToCpp::Wrap(view), width);
+                    ->GetHeightForWidth(CefViewCToCpp_Wrap(view), width);
 
   // Return type: simple
   return _retval;
@@ -148,86 +174,180 @@ button_delegate_get_height_for_width(struct _cef_view_delegate_t* self,
 
 void CEF_CALLBACK
 button_delegate_on_parent_view_changed(struct _cef_view_delegate_t* self,
-                                       cef_view_t* view,
+                                       struct _cef_view_t* view,
                                        int added,
-                                       cef_view_t* parent) {
+                                       struct _cef_view_t* parent) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view)
+  if (!view) {
     return;
+  }
   // Verify param: parent; type: refptr_diff
   DCHECK(parent);
-  if (!parent)
+  if (!parent) {
     return;
+  }
 
   // Execute
   CefButtonDelegateCppToC::Get(reinterpret_cast<cef_button_delegate_t*>(self))
-      ->OnParentViewChanged(CefViewCToCpp::Wrap(view), added ? true : false,
-                            CefViewCToCpp::Wrap(parent));
+      ->OnParentViewChanged(CefViewCToCpp_Wrap(view), added ? true : false,
+                            CefViewCToCpp_Wrap(parent));
 }
 
 void CEF_CALLBACK
 button_delegate_on_child_view_changed(struct _cef_view_delegate_t* self,
-                                      cef_view_t* view,
+                                      struct _cef_view_t* view,
                                       int added,
-                                      cef_view_t* child) {
+                                      struct _cef_view_t* child) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view)
+  if (!view) {
     return;
+  }
   // Verify param: child; type: refptr_diff
   DCHECK(child);
-  if (!child)
+  if (!child) {
     return;
+  }
 
   // Execute
   CefButtonDelegateCppToC::Get(reinterpret_cast<cef_button_delegate_t*>(self))
-      ->OnChildViewChanged(CefViewCToCpp::Wrap(view), added ? true : false,
-                           CefViewCToCpp::Wrap(child));
+      ->OnChildViewChanged(CefViewCToCpp_Wrap(view), added ? true : false,
+                           CefViewCToCpp_Wrap(child));
+}
+
+void CEF_CALLBACK
+button_delegate_on_window_changed(struct _cef_view_delegate_t* self,
+                                  struct _cef_view_t* view,
+                                  int added) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: view; type: refptr_diff
+  DCHECK(view);
+  if (!view) {
+    return;
+  }
+
+  // Execute
+  CefButtonDelegateCppToC::Get(reinterpret_cast<cef_button_delegate_t*>(self))
+      ->OnWindowChanged(CefViewCToCpp_Wrap(view), added ? true : false);
+}
+
+void CEF_CALLBACK
+button_delegate_on_layout_changed(struct _cef_view_delegate_t* self,
+                                  struct _cef_view_t* view,
+                                  const cef_rect_t* new_bounds) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: view; type: refptr_diff
+  DCHECK(view);
+  if (!view) {
+    return;
+  }
+  // Verify param: new_bounds; type: simple_byref_const
+  DCHECK(new_bounds);
+  if (!new_bounds) {
+    return;
+  }
+
+  // Translate param: new_bounds; type: simple_byref_const
+  CefRect new_boundsVal = new_bounds ? *new_bounds : CefRect();
+
+  // Execute
+  CefButtonDelegateCppToC::Get(reinterpret_cast<cef_button_delegate_t*>(self))
+      ->OnLayoutChanged(CefViewCToCpp_Wrap(view), new_boundsVal);
 }
 
 void CEF_CALLBACK button_delegate_on_focus(struct _cef_view_delegate_t* self,
-                                           cef_view_t* view) {
+                                           struct _cef_view_t* view) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view)
+  if (!view) {
     return;
+  }
 
   // Execute
   CefButtonDelegateCppToC::Get(reinterpret_cast<cef_button_delegate_t*>(self))
-      ->OnFocus(CefViewCToCpp::Wrap(view));
+      ->OnFocus(CefViewCToCpp_Wrap(view));
 }
 
 void CEF_CALLBACK button_delegate_on_blur(struct _cef_view_delegate_t* self,
-                                          cef_view_t* view) {
+                                          struct _cef_view_t* view) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: view; type: refptr_diff
   DCHECK(view);
-  if (!view)
+  if (!view) {
     return;
+  }
 
   // Execute
   CefButtonDelegateCppToC::Get(reinterpret_cast<cef_button_delegate_t*>(self))
-      ->OnBlur(CefViewCToCpp::Wrap(view));
+      ->OnBlur(CefViewCToCpp_Wrap(view));
+}
+
+void CEF_CALLBACK
+button_delegate_on_theme_changed(struct _cef_view_delegate_t* self,
+                                 struct _cef_view_t* view) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+  // Verify param: view; type: refptr_diff
+  DCHECK(view);
+  if (!view) {
+    return;
+  }
+
+  // Execute
+  CefButtonDelegateCppToC::Get(reinterpret_cast<cef_button_delegate_t*>(self))
+      ->OnThemeChanged(CefViewCToCpp_Wrap(view));
 }
 
 }  // namespace
@@ -246,8 +366,17 @@ CefButtonDelegateCppToC::CefButtonDelegateCppToC() {
       button_delegate_on_parent_view_changed;
   GetStruct()->base.on_child_view_changed =
       button_delegate_on_child_view_changed;
+  GetStruct()->base.on_window_changed = button_delegate_on_window_changed;
+  GetStruct()->base.on_layout_changed = button_delegate_on_layout_changed;
   GetStruct()->base.on_focus = button_delegate_on_focus;
   GetStruct()->base.on_blur = button_delegate_on_blur;
+  GetStruct()->base.on_theme_changed = button_delegate_on_theme_changed;
+}
+
+// DESTRUCTOR - Do not edit by hand.
+
+CefButtonDelegateCppToC::~CefButtonDelegateCppToC() {
+  shutdown_checker::AssertNotShutdown();
 }
 
 template <>
@@ -257,20 +386,12 @@ CefRefPtr<CefButtonDelegate> CefCppToCRefCounted<
     cef_button_delegate_t>::UnwrapDerived(CefWrapperType type,
                                           cef_button_delegate_t* s) {
   if (type == WT_MENU_BUTTON_DELEGATE) {
-    return CefMenuButtonDelegateCppToC::Unwrap(
+    return CefMenuButtonDelegateCppToC_Unwrap(
         reinterpret_cast<cef_menu_button_delegate_t*>(s));
   }
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefButtonDelegateCppToC,
-                                         CefButtonDelegate,
-                                         cef_button_delegate_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefButtonDelegateCppToC,

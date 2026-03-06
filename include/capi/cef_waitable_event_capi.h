@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=b3e6242ecc3961df564d2df85b57ae449ccf03fc$
+// $hash=c4df3084a38c5c927813765c3e7f6d3a6a7b75a5$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_WAITABLE_EVENT_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_WAITABLE_EVENT_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -47,64 +51,66 @@ extern "C" {
 #endif
 
 ///
-// WaitableEvent is a thread synchronization tool that allows one thread to wait
-// for another thread to finish some work. This is equivalent to using a
-// Lock+ConditionVariable to protect a simple boolean value. However, using
-// WaitableEvent in conjunction with a Lock to wait for a more complex state
-// change (e.g., for an item to be added to a queue) is not recommended. In that
-// case consider using a ConditionVariable instead of a WaitableEvent. It is
-// safe to create and/or signal a WaitableEvent from any thread. Blocking on a
-// WaitableEvent by calling the *wait() functions is not allowed on the browser
-// process UI or IO threads.
+/// WaitableEvent is a thread synchronization tool that allows one thread to
+/// wait for another thread to finish some work. This is equivalent to using a
+/// Lock+ConditionVariable to protect a simple boolean value. However, using
+/// WaitableEvent in conjunction with a Lock to wait for a more complex state
+/// change (e.g., for an item to be added to a queue) is not recommended. In
+/// that case consider using a ConditionVariable instead of a WaitableEvent. It
+/// is safe to create and/or signal a WaitableEvent from any thread. Blocking on
+/// a WaitableEvent by calling the *wait() functions is not allowed on the
+/// browser process UI or IO threads.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_waitable_event_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Put the event in the un-signaled state.
+  /// Put the event in the un-signaled state.
   ///
   void(CEF_CALLBACK* reset)(struct _cef_waitable_event_t* self);
 
   ///
-  // Put the event in the signaled state. This causes any thread blocked on Wait
-  // to be woken up.
+  /// Put the event in the signaled state. This causes any thread blocked on
+  /// Wait to be woken up.
   ///
   void(CEF_CALLBACK* signal)(struct _cef_waitable_event_t* self);
 
   ///
-  // Returns true (1) if the event is in the signaled state, else false (0). If
-  // the event was created with |automatic_reset| set to true (1) then calling
-  // this function will also cause a reset.
+  /// Returns true (1) if the event is in the signaled state, else false (0). If
+  /// the event was created with |automatic_reset| set to true (1) then calling
+  /// this function will also cause a reset.
   ///
   int(CEF_CALLBACK* is_signaled)(struct _cef_waitable_event_t* self);
 
   ///
-  // Wait indefinitely for the event to be signaled. This function will not
-  // return until after the call to signal() has completed. This function cannot
-  // be called on the browser process UI or IO threads.
+  /// Wait indefinitely for the event to be signaled. This function will not
+  /// return until after the call to signal() has completed. This function
+  /// cannot be called on the browser process UI or IO threads.
   ///
   void(CEF_CALLBACK* wait)(struct _cef_waitable_event_t* self);
 
   ///
-  // Wait up to |max_ms| milliseconds for the event to be signaled. Returns true
-  // (1) if the event was signaled. A return value of false (0) does not
-  // necessarily mean that |max_ms| was exceeded. This function will not return
-  // until after the call to signal() has completed. This function cannot be
-  // called on the browser process UI or IO threads.
+  /// Wait up to |max_ms| milliseconds for the event to be signaled. Returns
+  /// true (1) if the event was signaled. A return value of false (0) does not
+  /// necessarily mean that |max_ms| was exceeded. This function will not return
+  /// until after the call to signal() has completed. This function cannot be
+  /// called on the browser process UI or IO threads.
   ///
   int(CEF_CALLBACK* timed_wait)(struct _cef_waitable_event_t* self,
-                                int64 max_ms);
+                                int64_t max_ms);
 } cef_waitable_event_t;
 
 ///
-// Create a new waitable event. If |automatic_reset| is true (1) then the event
-// state is automatically reset to un-signaled after a single waiting thread has
-// been released; otherwise, the state remains signaled until reset() is called
-// manually. If |initially_signaled| is true (1) then the event will start in
-// the signaled state.
+/// Create a new waitable event. If |automatic_reset| is true (1) then the event
+/// state is automatically reset to un-signaled after a single waiting thread
+/// has been released; otherwise, the state remains signaled until reset() is
+/// called manually. If |initially_signaled| is true (1) then the event will
+/// start in the signaled state.
 ///
 CEF_EXPORT cef_waitable_event_t* cef_waitable_event_create(
     int automatic_reset,

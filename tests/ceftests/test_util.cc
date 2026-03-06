@@ -3,7 +3,21 @@
 // can be found in the LICENSE file.
 
 #include "tests/ceftests/test_util.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+
+#include "include/base/cef_callback.h"
+#include "include/cef_base.h"
+#include "include/cef_command_line.h"
+#include "include/cef_request_context_handler.h"
+#include "include/test/cef_test_helpers.h"
+#include "include/wrapper/cef_closure_task.h"
+#include "include/wrapper/cef_helpers.h"
 #include "tests/gtest/include/gtest/gtest.h"
+#include "tests/shared/common/client_switches.h"
+#include "tests/shared/common/string_util.h"
 
 void TestMapEqual(const CefRequest::HeaderMap& map1,
                   const CefRequest::HeaderMap& map2,
@@ -15,23 +29,24 @@ void TestMapEqual(const CefRequest::HeaderMap& map1,
   TestMapNoDuplicates(map1);
   TestMapNoDuplicates(map2);
 
-  CefRequest::HeaderMap::const_iterator it1, it2;
-
-  for (it1 = map1.begin(); it1 != map1.end(); ++it1) {
-    it2 = map2.find(it1->first);
-    EXPECT_TRUE(it2 != map2.end());
-    if (it2 != map2.end()) {
-      EXPECT_STREQ(it1->second.ToString().c_str(),
-                   it2->second.ToString().c_str());
+  for (const auto& [key1, value1] : map1) {
+    bool found = false;
+    std::string name1 = client::AsciiStrToLower(key1);
+    for (const auto& [key2, value2] : map2) {
+      std::string name2 = client::AsciiStrToLower(key2);
+      if (name1 == name2 && value1 == value2) {
+        found = true;
+        break;
+      }
     }
+    EXPECT_TRUE(found) << "No entry for " << key1.ToString() << ": "
+                       << value1.ToString();
   }
 }
 
 void TestMapNoDuplicates(const CefRequest::HeaderMap& map) {
-  CefRequest::HeaderMap::const_iterator it1 = map.begin();
-  for (; it1 != map.end(); ++it1) {
-    CefRequest::HeaderMap::const_iterator it2 = it1;
-    for (++it2; it2 != map.end(); ++it2) {
+  for (auto it1 = map.begin(); it1 != map.end(); ++it1) {
+    for (auto it2 = std::next(it1); it2 != map.end(); ++it2) {
       EXPECT_FALSE(it1->first == it2->first && it1->second == it2->second)
           << "Duplicate entry for " << it1->first.ToString() << ": "
           << it1->second.ToString();
@@ -77,10 +92,9 @@ void TestPostDataEqual(CefRefPtr<CefPostData> postData1,
   postData1->GetElements(ev2);
   ASSERT_EQ(ev1.size(), ev2.size());
 
-  CefPostData::ElementVector::const_iterator it1 = ev1.begin();
-  CefPostData::ElementVector::const_iterator it2 = ev2.begin();
-  for (; it1 != ev1.end() && it2 != ev2.end(); ++it1, ++it2)
-    TestPostDataElementEqual((*it1), (*it2));
+  for (size_t i = 0; i < ev1.size(); ++i) {
+    TestPostDataElementEqual(ev1[i], ev2[i]);
+  }
 }
 
 void TestRequestEqual(CefRefPtr<CefRequest> request1,
@@ -106,8 +120,9 @@ void TestRequestEqual(CefRefPtr<CefRequest> request1,
   CefRefPtr<CefPostData> postData1 = request1->GetPostData();
   CefRefPtr<CefPostData> postData2 = request2->GetPostData();
   EXPECT_EQ(!!(postData1.get()), !!(postData2.get()));
-  if (postData1.get() && postData2.get())
+  if (postData1.get() && postData2.get()) {
     TestPostDataEqual(postData1, postData2);
+  }
 }
 
 void TestResponseEqual(CefRefPtr<CefResponse> response1,
@@ -168,9 +183,7 @@ void TestDictionaryEqual(CefRefPtr<CefDictionaryValue> val1,
   CefDictionaryValue::KeyList keys;
   EXPECT_TRUE(val1->GetKeys(keys));
 
-  CefDictionaryValue::KeyList::const_iterator it = keys.begin();
-  for (; it != keys.end(); ++it) {
-    CefString key = *it;
+  for (const auto& key : keys) {
     EXPECT_TRUE(val2->HasKey(key));
     CefValueType type = val1->GetType(key);
     EXPECT_EQ(type, val2->GetType(key));
@@ -198,6 +211,9 @@ void TestDictionaryEqual(CefRefPtr<CefDictionaryValue> val1,
         break;
       case VTYPE_LIST:
         TestListEqual(val1->GetList(key), val2->GetList(key));
+        break;
+      case VTYPE_NUM_VALUES:
+        NOTREACHED();
         break;
     }
   }
@@ -241,6 +257,9 @@ void TestListEqual(CefRefPtr<CefListValue> val1, CefRefPtr<CefListValue> val2) {
       case VTYPE_LIST:
         TestListEqual(val1->GetList(i), val2->GetList(i));
         break;
+      case VTYPE_NUM_VALUES:
+        NOTREACHED();
+        break;
     }
   }
 }
@@ -257,43 +276,282 @@ void TestProcessMessageEqual(CefRefPtr<CefProcessMessage> val1,
 void TestStringVectorEqual(const std::vector<CefString>& val1,
                            const std::vector<CefString>& val2) {
   EXPECT_EQ(val1.size(), val2.size());
+  if (val1.size() != val2.size()) {
+    return;
+  }
 
-  for (size_t i = 0; i < val1.size(); ++i)
+  for (size_t i = 0; i < val1.size(); ++i) {
     EXPECT_STREQ(val1[i].ToString().c_str(), val2[i].ToString().c_str());
+  }
 }
 
-CefRefPtr<CefRequestContext> CreateTestRequestContext(
-    TestRequestContextMode mode,
-    const std::string& cache_path) {
-  EXPECT_TRUE(cache_path.empty() || mode == TEST_RC_MODE_CUSTOM ||
-              mode == TEST_RC_MODE_CUSTOM_WITH_HANDLER);
+bool TestOldResourceAPI() {
+  static bool state = []() {
+    return CefCommandLine::GetGlobalCommandLine()->HasSwitch(
+        "test-old-resource-api");
+  }();
+  return state;
+}
 
-  if (mode == TEST_RC_MODE_NONE)
-    return nullptr;
-  if (mode == TEST_RC_MODE_GLOBAL)
-    return CefRequestContext::GetGlobalContext();
+bool UseViewsGlobal() {
+  static bool use_views = []() {
+    return CefCommandLine::GetGlobalCommandLine()->HasSwitch(
+        client::switches::kUseViews);
+  }();
+  return use_views;
+}
 
-  CefRefPtr<CefRequestContextHandler> rc_handler;
-  if (mode == TEST_RC_MODE_GLOBAL_WITH_HANDLER ||
-      mode == TEST_RC_MODE_CUSTOM_WITH_HANDLER) {
-    class Handler : public CefRequestContextHandler {
-     public:
-      Handler() {}
+bool UseAlloyStyleBrowserGlobal() {
+  static bool use_alloy_style = []() {
+    return CefCommandLine::GetGlobalCommandLine()->HasSwitch(
+        client::switches::kUseAlloyStyle);
+  }();
+  return use_alloy_style;
+}
 
-     private:
-      IMPLEMENT_REFCOUNTING(Handler);
-    };
-    rc_handler = new Handler();
+bool UseAlloyStyleWindowGlobal() {
+  static bool use_alloy_style = []() {
+    auto command_line = CefCommandLine::GetGlobalCommandLine();
+    return command_line->HasSwitch(client::switches::kUseAlloyStyle) &&
+           !command_line->HasSwitch(client::switches::kUseChromeStyleWindow);
+  }();
+  return use_alloy_style;
+}
+
+std::string ComputeViewsWindowTitle(CefRefPtr<CefWindow> window,
+                                    CefRefPtr<CefBrowserView> browser_view) {
+  std::string title = "CefTest - Views - ";
+  std::string window_style =
+      window->GetRuntimeStyle() == CEF_RUNTIME_STYLE_CHROME ? "Chrome"
+                                                            : "Alloy";
+  title += window_style + " Window";
+  if (browser_view) {
+    std::string browser_style =
+        browser_view->GetRuntimeStyle() == CEF_RUNTIME_STYLE_CHROME ? "Chrome"
+                                                                    : "Alloy";
+    title += " - " + browser_style + " BrowserView";
+  }
+  return title;
+}
+
+std::string ComputeNativeWindowTitle(bool use_alloy_style) {
+  std::string title = "CefTest - Native - ";
+  title += use_alloy_style ? "Alloy Browser" : "Chrome Browser";
+  return title;
+}
+
+bool IsBFCacheEnabled() {
+  static bool state = []() {
+    const std::string& value =
+        CefCommandLine::GetGlobalCommandLine()->GetSwitchValue(
+            "disable-features");
+    return value.find("BackForwardCache") == std::string::npos;
+  }();
+  return state;
+}
+
+bool IsSameSiteBFCacheEnabled() {
+  // Same-site BFCache is enabled by default starting in M101 and does not
+  // have a separate configuration flag.
+  return IsBFCacheEnabled();
+}
+
+bool IgnoreURL(const std::string& url) {
+  return url.find("/favicon.ico") != std::string::npos;
+}
+
+std::optional<int> GetConfiguredTestTimeout(int timeout_ms) {
+  static std::optional<double> multiplier = []() -> std::optional<double> {
+    auto command_line = CefCommandLine::GetGlobalCommandLine();
+    if (command_line->HasSwitch("disable-test-timeout")) {
+      return std::nullopt;
+    }
+    const std::string& sval =
+        command_line->GetSwitchValue("test-timeout-multiplier");
+    if (!sval.empty()) {
+      if (double dval = std::atof(sval.c_str())) {
+        return dval;
+      }
+    }
+    return 2.0;
+  }();
+
+  if (!multiplier) {
+    // Test timeout is disabled.
+    return std::nullopt;
   }
 
-  if (mode == TEST_RC_MODE_CUSTOM || mode == TEST_RC_MODE_CUSTOM_WITH_HANDLER) {
+  return static_cast<int>(
+      std::round(static_cast<double>(timeout_ms) * (*multiplier)));
+}
+
+void SendMouseClickEvent(CefRefPtr<CefBrowser> browser,
+                         const CefMouseEvent& mouse_event,
+                         cef_mouse_button_type_t mouse_button_type) {
+  auto host = browser->GetHost();
+  CefPostDelayedTask(TID_UI,
+                     base::BindOnce(&CefBrowserHost::SendMouseClickEvent, host,
+                                    mouse_event, mouse_button_type, false, 1),
+                     50);
+  CefPostDelayedTask(TID_UI,
+                     base::BindOnce(&CefBrowserHost::SendMouseClickEvent, host,
+                                    mouse_event, mouse_button_type, true, 1),
+                     100);
+}
+
+void SendJavaScriptClickEvent(CefRefPtr<CefBrowser> browser,
+                              const CefMouseEvent& mouse_event,
+                              cef_mouse_button_type_t mouse_button_type) {
+  // Map CEF mouse button type to JavaScript MouseEvent button property
+  // (0 = left, 1 = middle, 2 = right)
+  int button = 0;
+  int buttons = 1;  // Bitmask of buttons pressed during the event
+  switch (mouse_button_type) {
+    case MBT_LEFT:
+      button = 0;
+      buttons = 1;
+      break;
+    case MBT_MIDDLE:
+      button = 1;
+      buttons = 4;
+      break;
+    case MBT_RIGHT:
+      button = 2;
+      buttons = 2;
+      break;
+  }
+
+  // Map CEF modifiers to JavaScript event modifiers
+  bool ctrl_key = (mouse_event.modifiers & EVENTFLAG_CONTROL_DOWN) != 0;
+  bool shift_key = (mouse_event.modifiers & EVENTFLAG_SHIFT_DOWN) != 0;
+  bool alt_key = (mouse_event.modifiers & EVENTFLAG_ALT_DOWN) != 0;
+  bool meta_key = (mouse_event.modifiers & EVENTFLAG_COMMAND_DOWN) != 0;
+
+  // Build JavaScript to find the element at coordinates and dispatch click
+  std::string script =
+      "(function() {"
+      "  var element = document.elementFromPoint(" +
+      std::to_string(mouse_event.x) + ", " + std::to_string(mouse_event.y) +
+      ");"
+      "  if (!element) {"
+      "    console.error('No element found at coordinates');"
+      "    return false;"
+      "  }"
+      "  var event = new MouseEvent('click', {"
+      "    view: window,"
+      "    bubbles: true,"
+      "    cancelable: true,"
+      "    button: " +
+      std::to_string(button) +
+      ","
+      "    buttons: " +
+      std::to_string(buttons) +
+      ","
+      "    clientX: " +
+      std::to_string(mouse_event.x) +
+      ","
+      "    clientY: " +
+      std::to_string(mouse_event.y) +
+      ","
+      "    ctrlKey: " +
+      std::string(ctrl_key ? "true" : "false") +
+      ","
+      "    shiftKey: " +
+      std::string(shift_key ? "true" : "false") +
+      ","
+      "    altKey: " +
+      std::string(alt_key ? "true" : "false") +
+      ","
+      "    metaKey: " +
+      std::string(meta_key ? "true" : "false") +
+      "  });"
+      "  element.dispatchEvent(event);"
+      "  return true;"
+      "})();";
+
+  CefExecuteJavaScriptWithUserGestureForTests(browser->GetMainFrame(), script);
+}
+
+void GrantPopupPermission(CefRefPtr<CefRequestContext> request_context,
+                          const std::string& parent_url) {
+  static bool test_website_setting = []() {
+    return CefCommandLine::GetGlobalCommandLine()->HasSwitch(
+        "test-website-setting");
+  }();
+
+  // The below calls are equivalent.
+  // NOTE: If the popup allow functionality stops working, debug the code in
+  // components/blocked_content/popup_blocker.cc
+  if (test_website_setting) {
+    auto value = CefValue::Create();
+    value->SetInt(CEF_CONTENT_SETTING_VALUE_ALLOW);
+    request_context->SetWebsiteSetting(parent_url, parent_url,
+                                       CEF_CONTENT_SETTING_TYPE_POPUPS, value);
+  } else {
+    request_context->SetContentSetting(parent_url, parent_url,
+                                       CEF_CONTENT_SETTING_TYPE_POPUPS,
+                                       CEF_CONTENT_SETTING_VALUE_ALLOW);
+  }
+}
+
+void CreateTestRequestContext(TestRequestContextMode mode,
+                              const std::string& cache_path,
+                              RCInitCallback init_callback) {
+  DCHECK(!init_callback.is_null());
+  EXPECT_TRUE(cache_path.empty() || mode == TEST_RC_MODE_CUSTOM_WITH_HANDLER);
+
+  if (mode == TEST_RC_MODE_NONE || mode == TEST_RC_MODE_GLOBAL) {
+    // Global contexts are initialized synchronously during startup, so we can
+    // execute the callback immediately.
+    CefRefPtr<CefRequestContext> request_context;
+    if (mode == TEST_RC_MODE_GLOBAL) {
+      request_context = CefRequestContext::GetGlobalContext();
+    }
+
+    CefPostTask(TID_UI,
+                base::BindOnce(std::move(init_callback), request_context));
+    return;
+  }
+
+  class Handler : public CefRequestContextHandler {
+   public:
+    explicit Handler(RCInitCallback init_callback)
+        : init_callback_(std::move(init_callback)) {}
+
+    void OnRequestContextInitialized(
+        CefRefPtr<CefRequestContext> request_context) override {
+      CEF_REQUIRE_UI_THREAD();
+      std::move(init_callback_).Run(request_context);
+    }
+
+   private:
+    RCInitCallback init_callback_;
+    IMPLEMENT_REFCOUNTING(Handler);
+  };
+
+  CefRefPtr<CefRequestContextHandler> rc_handler =
+      new Handler(std::move(init_callback));
+
+  if (mode == TEST_RC_MODE_CUSTOM_WITH_HANDLER) {
     CefRequestContextSettings settings;
-    if (!cache_path.empty())
+    if (!cache_path.empty()) {
       CefString(&settings.cache_path) = cache_path;
-    return CefRequestContext::CreateContext(settings, rc_handler);
+    }
+    CefRequestContext::CreateContext(settings, rc_handler);
+  } else {
+    CefRequestContext::CreateContext(CefRequestContext::GetGlobalContext(),
+                                     rc_handler);
   }
+}
 
-  EXPECT_EQ(mode, TEST_RC_MODE_GLOBAL_WITH_HANDLER);
-  return CefRequestContext::CreateContext(CefRequestContext::GetGlobalContext(),
-                                          rc_handler);
+CefTime CefTimeFrom(CefBaseTime value) {
+  CefTime time;
+  cef_time_from_basetime(value, &time);
+  return time;
+}
+
+CefBaseTime CefBaseTimeFrom(const CefTime& value) {
+  cef_basetime_t temp;
+  cef_time_to_basetime(&value, &temp);
+  return CefBaseTime(temp);
 }

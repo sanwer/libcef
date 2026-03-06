@@ -2,8 +2,7 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include "include/base/cef_bind.h"
-#include "include/cef_pack_strings.h"
+#include "include/base/cef_callback.h"
 #include "include/views/cef_panel.h"
 #include "include/views/cef_panel_delegate.h"
 #include "include/views/cef_scroll_view.h"
@@ -25,7 +24,10 @@ const int kContentPanelSize = TestWindowDelegate::kWSize + 200;
 
 class TestScrollViewDelegate : public CefViewDelegate {
  public:
-  TestScrollViewDelegate() {}
+  TestScrollViewDelegate() = default;
+
+  TestScrollViewDelegate(const TestScrollViewDelegate&) = delete;
+  TestScrollViewDelegate& operator=(const TestScrollViewDelegate&) = delete;
 
   CefSize GetPreferredSize(CefRefPtr<CefView> view) override {
     EXPECT_EQ(kScrollViewID, view->GetID());
@@ -37,12 +39,14 @@ class TestScrollViewDelegate : public CefViewDelegate {
 
  private:
   IMPLEMENT_REFCOUNTING(TestScrollViewDelegate);
-  DISALLOW_COPY_AND_ASSIGN(TestScrollViewDelegate);
 };
 
 class TestPanelDelegate : public CefPanelDelegate {
  public:
-  TestPanelDelegate() {}
+  TestPanelDelegate() = default;
+
+  TestPanelDelegate(const TestPanelDelegate&) = delete;
+  TestPanelDelegate& operator=(const TestPanelDelegate&) = delete;
 
   CefSize GetPreferredSize(CefRefPtr<CefView> view) override {
     EXPECT_EQ(kContentPanelID, view->GetID());
@@ -54,7 +58,6 @@ class TestPanelDelegate : public CefPanelDelegate {
 
  private:
   IMPLEMENT_REFCOUNTING(TestPanelDelegate);
-  DISALLOW_COPY_AND_ASSIGN(TestPanelDelegate);
 };
 
 void RunScrollViewLayout(bool with_delegate, CefRefPtr<CefWindow> window) {
@@ -101,7 +104,9 @@ void RunScrollViewLayout(bool with_delegate, CefRefPtr<CefWindow> window) {
   EXPECT_TRUE(scroll_view->HasVerticalScrollbar());
 
   if (with_delegate) {
-    EXPECT_TRUE(scroll_view_delegate->got_get_preferred_size_);
+    // Layout() of the ScrollView no longer needs to call us for the size,
+    // see https://crrev.com/2701734b44.
+    EXPECT_FALSE(scroll_view_delegate->got_get_preferred_size_);
     EXPECT_TRUE(panel_delegate->got_get_preferred_size_);
   }
 
@@ -117,10 +122,10 @@ void RunScrollViewLayout(bool with_delegate, CefRefPtr<CefWindow> window) {
   const CefSize& content_panel_size = content_panel->GetSize();
   EXPECT_EQ(CefSize(kContentPanelSize, kContentPanelSize), content_panel_size);
 
+  // Platforms that support overlay scrollbars may report 0 width/height when
+  // enabled. We therefore don't verify the returned values directly.
   const int sb_height = scroll_view->GetHorizontalScrollbarHeight();
-  EXPECT_GT(sb_height, 0);
   const int sb_width = scroll_view->GetVerticalScrollbarWidth();
-  EXPECT_GT(sb_width, 0);
 
   // Verify visible content panel region.
   const CefRect& visible_rect = scroll_view->GetVisibleContentRect();
@@ -130,9 +135,10 @@ void RunScrollViewLayout(bool with_delegate, CefRefPtr<CefWindow> window) {
 }
 
 void ScrollViewLayout(CefRefPtr<CefWaitableEvent> event, bool with_delegate) {
-  TestWindowDelegate::Config config;
-  config.on_window_created = base::Bind(RunScrollViewLayout, with_delegate);
-  TestWindowDelegate::RunTest(event, config);
+  auto config = std::make_unique<TestWindowDelegate::Config>();
+  config->on_window_created =
+      base::BindOnce(RunScrollViewLayout, with_delegate);
+  TestWindowDelegate::RunTest(event, std::move(config));
 }
 
 void ScrollViewLayoutWithDelegateImpl(CefRefPtr<CefWaitableEvent> event) {
@@ -148,5 +154,5 @@ void ScrollViewLayoutNoDelegateImpl(CefRefPtr<CefWaitableEvent> event) {
 // Test ScrollView layout. This is primarily to exercise exposed CEF APIs and is
 // not intended to comprehensively test ScrollView-related behavior (which we
 // presume that Chromium is testing).
-SCROLL_VIEW_TEST_ASYNC(ScrollViewLayoutWithDelegate);
-SCROLL_VIEW_TEST_ASYNC(ScrollViewLayoutNoDelegate);
+SCROLL_VIEW_TEST_ASYNC(ScrollViewLayoutWithDelegate)
+SCROLL_VIEW_TEST_ASYNC(ScrollViewLayoutNoDelegate)

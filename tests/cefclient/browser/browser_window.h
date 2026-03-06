@@ -6,7 +6,8 @@
 #define CEF_TESTS_CEFCLIENT_BROWSER_BROWSER_WINDOW_H_
 #pragma once
 
-#include "include/base/cef_scoped_ptr.h"
+#include <memory>
+
 #include "include/cef_browser.h"
 #include "tests/cefclient/browser/client_handler.h"
 #include "tests/cefclient/browser/client_types.h"
@@ -18,12 +19,22 @@ namespace client {
 // indicated.
 class BrowserWindow : public ClientHandler::Delegate {
  public:
+  BrowserWindow(const BrowserWindow&) = delete;
+  BrowserWindow& operator=(const BrowserWindow&) = delete;
   // This interface is implemented by the owner of the BrowserWindow. The
-  // methods of this class will be called on the main thread.
+  // methods of this class will be called on the main thread unless otherwise
+  // indicated.
   class Delegate {
    public:
+    // Returns true if the window should use Alloy style. Safe to call on any
+    // thread.
+    virtual bool UseAlloyStyle() const = 0;
+
     // Called when the browser has been created.
     virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser) = 0;
+
+    // Called when the BrowserWindow is closing.
+    virtual void OnBrowserWindowClosing() {}
 
     // Called when the BrowserWindow has been destroyed.
     virtual void OnBrowserWindowDestroyed() = 0;
@@ -40,6 +51,9 @@ class BrowserWindow : public ClientHandler::Delegate {
     // Auto-resize contents.
     virtual void OnAutoResize(const CefSize& new_size) = 0;
 
+    // Set contents bounds.
+    virtual void OnContentsBounds(const CefRect& new_bounds) = 0;
+
     // Set the loading state.
     virtual void OnSetLoadingState(bool isLoading,
                                    bool canGoBack,
@@ -49,14 +63,18 @@ class BrowserWindow : public ClientHandler::Delegate {
     virtual void OnSetDraggableRegions(
         const std::vector<CefDraggableRegion>& regions) = 0;
 
+    // Called on the UI thread to retrieve root window bounds.
+    virtual bool GetRootWindowScreenRect(CefRect& rect) { return false; }
+
    protected:
-    virtual ~Delegate() {}
+    virtual ~Delegate() = default;
   };
 
   // Create a new browser and native window.
   virtual void CreateBrowser(ClientWindowHandle parent_handle,
                              const CefRect& rect,
                              const CefBrowserSettings& settings,
+                             CefRefPtr<CefDictionaryValue> extra_info,
                              CefRefPtr<CefRequestContext> request_context) = 0;
 
   // Retrieve the configuration that will be used when creating a popup window.
@@ -106,34 +124,35 @@ class BrowserWindow : public ClientHandler::Delegate {
   bool IsClosing() const;
 
  protected:
-  // Allow deletion via scoped_ptr only.
-  friend struct base::DefaultDeleter<BrowserWindow>;
+  // Allow deletion via std::unique_ptr only.
+  friend std::default_delete<BrowserWindow>;
 
   // Constructor may be called on any thread.
   // |delegate| must outlive this object.
   explicit BrowserWindow(Delegate* delegate);
 
   // ClientHandler::Delegate methods.
-  void OnBrowserCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  void OnBrowserClosing(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  void OnBrowserClosed(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  void OnSetAddress(const std::string& url) OVERRIDE;
-  void OnSetTitle(const std::string& title) OVERRIDE;
-  void OnSetFullscreen(bool fullscreen) OVERRIDE;
-  void OnAutoResize(const CefSize& new_size) OVERRIDE;
+  bool UseViews() const override { return false; }
+  bool UseAlloyStyle() const override;
+  void OnBrowserCreated(CefRefPtr<CefBrowser> browser) override;
+  void OnBrowserClosing(CefRefPtr<CefBrowser> browser) override;
+  void OnBrowserClosed(CefRefPtr<CefBrowser> browser) override;
+  void OnSetAddress(const std::string& url) override;
+  void OnSetTitle(const std::string& title) override;
+  void OnSetFullscreen(bool fullscreen) override;
+  void OnAutoResize(const CefSize& new_size) override;
+  void OnContentsBounds(const CefRect& new_bounds) override;
+  bool GetRootWindowScreenRect(CefRect& rect) override;
   void OnSetLoadingState(bool isLoading,
                          bool canGoBack,
-                         bool canGoForward) OVERRIDE;
+                         bool canGoForward) override;
   void OnSetDraggableRegions(
-      const std::vector<CefDraggableRegion>& regions) OVERRIDE;
+      const std::vector<CefDraggableRegion>& regions) override;
 
-  Delegate* delegate_;
+  Delegate* const delegate_;
   CefRefPtr<CefBrowser> browser_;
   CefRefPtr<ClientHandler> client_handler_;
-  bool is_closing_;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(BrowserWindow);
+  bool is_closing_ = false;
 };
 
 }  // namespace client

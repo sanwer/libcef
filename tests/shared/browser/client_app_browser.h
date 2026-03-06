@@ -24,56 +24,70 @@ class ClientAppBrowser : public ClientApp, public CefBrowserProcessHandler {
         CefRefPtr<ClientAppBrowser> app,
         CefRefPtr<CefCommandLine> command_line) {}
 
+    virtual void OnRegisterCustomPreferences(
+        CefRefPtr<ClientAppBrowser> app,
+        cef_preferences_type_t type,
+        CefRawPtr<CefPreferenceRegistrar> registrar) {}
+
     virtual void OnContextInitialized(CefRefPtr<ClientAppBrowser> app) {}
 
-    virtual void OnBeforeChildProcessLaunch(
+    virtual bool OnAlreadyRunningAppRelaunch(
         CefRefPtr<ClientAppBrowser> app,
-        CefRefPtr<CefCommandLine> command_line) {}
+        CefRefPtr<CefCommandLine> command_line,
+        const CefString& current_directory) {
+      return false;
+    }
 
-    virtual void OnRenderProcessThreadCreated(
-        CefRefPtr<ClientAppBrowser> app,
-        CefRefPtr<CefListValue> extra_info) {}
+    virtual CefRefPtr<CefClient> GetDefaultClient(
+        CefRefPtr<ClientAppBrowser> app) {
+      return nullptr;
+    }
   };
 
   typedef std::set<CefRefPtr<Delegate>> DelegateSet;
 
   ClientAppBrowser();
 
+  ClientAppBrowser(const ClientAppBrowser&) = delete;
+  ClientAppBrowser& operator=(const ClientAppBrowser&) = delete;
+
+  // Called to populate |settings| based on |command_line| and other global
+  // state.
+  static void PopulateSettings(CefRefPtr<CefCommandLine> command_line,
+                               CefSettings& settings);
+
  private:
+  // Registers cookieable schemes. Implemented by cefclient in
+  // client_app_delegates_browser.cc
+  static void RegisterCookieableSchemes(
+      std::vector<std::string>& cookieable_schemes);
+
   // Creates all of the Delegate objects. Implemented by cefclient in
   // client_app_delegates_browser.cc
   static void CreateDelegates(DelegateSet& delegates);
 
-  // Create the Linux print handler. Implemented by cefclient in
-  // client_app_delegates_browser.cc
-  static CefRefPtr<CefPrintHandler> CreatePrintHandler();
-
   // CefApp methods.
   void OnBeforeCommandLineProcessing(
       const CefString& process_type,
-      CefRefPtr<CefCommandLine> command_line) OVERRIDE;
-  CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() OVERRIDE {
+      CefRefPtr<CefCommandLine> command_line) override;
+  CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override {
     return this;
   }
 
   // CefBrowserProcessHandler methods.
-  void OnContextInitialized() OVERRIDE;
-  void OnBeforeChildProcessLaunch(
-      CefRefPtr<CefCommandLine> command_line) OVERRIDE;
-  void OnRenderProcessThreadCreated(
-      CefRefPtr<CefListValue> extra_info) OVERRIDE;
-  CefRefPtr<CefPrintHandler> GetPrintHandler() OVERRIDE {
-    return print_handler_;
-  }
-  void OnScheduleMessagePumpWork(int64 delay) OVERRIDE;
+  void OnRegisterCustomPreferences(
+      cef_preferences_type_t type,
+      CefRawPtr<CefPreferenceRegistrar> registrar) override;
+  void OnContextInitialized() override;
+  bool OnAlreadyRunningAppRelaunch(CefRefPtr<CefCommandLine> command_line,
+                                   const CefString& current_directory) override;
+  void OnScheduleMessagePumpWork(int64_t delay) override;
+  CefRefPtr<CefClient> GetDefaultClient() override;
 
   // Set of supported Delegates.
   DelegateSet delegates_;
 
-  CefRefPtr<CefPrintHandler> print_handler_;
-
   IMPLEMENT_REFCOUNTING(ClientAppBrowser);
-  DISALLOW_COPY_AND_ASSIGN(ClientAppBrowser);
 };
 
 }  // namespace client

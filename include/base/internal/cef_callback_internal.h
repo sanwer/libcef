@@ -1,4 +1,5 @@
-// Copyright (c) 2012 Google Inc. All rights reserved.
+// Copyright (c) 2025 Marshall A. Greenblatt. Portions copyright (c) 2012
+// Google Inc. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -35,190 +36,267 @@
 
 #ifndef CEF_INCLUDE_BASE_INTERNAL_CEF_CALLBACK_INTERNAL_H_
 #define CEF_INCLUDE_BASE_INTERNAL_CEF_CALLBACK_INTERNAL_H_
+#pragma once
 
-#include <stddef.h>
+#if defined(USING_CHROMIUM_INCLUDES)
+// When building CEF include the Chromium header directly.
+#include "base/functional/callback_internal.h"
+#else  // !USING_CHROMIUM_INCLUDES
+// The following is substantially similar to the Chromium implementation.
+// If the Chromium implementation diverges the below implementation should be
+// updated to match.
 
-#include "include/base/cef_atomic_ref_count.h"
-#include "include/base/cef_macros.h"
+#include <type_traits>
+#include <utility>
+
+#include "include/base/cef_callback_forward.h"
+#include "include/base/cef_compiler_specific.h"
 #include "include/base/cef_ref_counted.h"
-#include "include/base/cef_scoped_ptr.h"
-#include "include/base/cef_template_util.h"
-
-template <typename T>
-class ScopedVector;
 
 namespace base {
+
+struct FakeBindState;
+
 namespace cef_internal {
-class CallbackBase;
 
-// At the base level, the only task is to add reference counting data. Don't use
-// RefCountedThreadSafe since it requires the destructor to be a virtual method.
-// Creating a vtable for every BindState template instantiation results in a lot
-// of bloat. Its only task is to call the destructor which can be done with a
-// function pointer.
-class BindStateBase {
- protected:
-  explicit BindStateBase(void (*destructor)(BindStateBase*))
-      : ref_count_(0), destructor_(destructor) {}
-  ~BindStateBase() {}
+class BindStateBase;
 
- private:
-  friend class scoped_refptr<BindStateBase>;
-  friend class CallbackBase;
+template <bool is_method,
+          bool is_nullable,
+          bool is_callback,
+          typename Functor,
+          typename... BoundArgs>
+struct BindState;
 
-  void AddRef();
-  void Release();
-
-  AtomicRefCount ref_count_;
-
-  // Pointer to a function that will properly destroy |this|.
-  void (*destructor_)(BindStateBase*);
-
-  DISALLOW_COPY_AND_ASSIGN(BindStateBase);
+struct BindStateBaseRefCountTraits {
+  static void Destruct(const BindStateBase*);
 };
 
-// Holds the Callback methods that don't require specialization to reduce
-// template bloat.
-class CallbackBase {
+template <typename T>
+using PassingType = std::conditional_t<std::is_scalar_v<T>, T, T&&>;
+
+// BindStateBase is used to provide an opaque handle that the Callback
+// class can use to represent a function object with bound arguments.  It
+// behaves as an existential type that is used by a corresponding
+// DoInvoke function to perform the function execution.  This allows
+// us to shield the Callback class from the types of the bound argument via
+// "type erasure."
+// At the base level, the only task is to add reference counting data. Avoid
+// using or inheriting any virtual functions. Creating a vtable for every
+// BindState template instantiation results in a lot of bloat. Its only task is
+// to call the destructor which can be done with a function pointer.
+class BindStateBase
+    : public RefCountedThreadSafe<BindStateBase, BindStateBaseRefCountTraits> {
  public:
-  // Returns true if Callback is null (doesn't refer to anything).
-  bool is_null() const { return bind_state_.get() == NULL; }
+  REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE();
 
-  // Returns the Callback into an uninitialized state.
-  void Reset();
+  // What kind of cancellation query the call to the cancellation traits is
+  // making. This enum could be removed, at the cost of storing an extra
+  // function pointer.
+  enum class CancellationQueryMode : bool {
+    kIsCancelled = false,
+    kMaybeValid = true,
+  };
 
- protected:
+  using InvokeFuncStorage = void (*)();
+
+  BindStateBase(const BindStateBase&) = delete;
+  BindStateBase& operator=(const BindStateBase&) = delete;
+
+ private:
+  using DestructorPtr = void (*)(const BindStateBase*);
+  using QueryCancellationTraitsPtr = bool (*)(const BindStateBase*,
+                                              CancellationQueryMode mode);
+
+  BindStateBase(InvokeFuncStorage polymorphic_invoke, DestructorPtr destructor);
+  BindStateBase(InvokeFuncStorage polymorphic_invoke,
+                DestructorPtr destructor,
+                QueryCancellationTraitsPtr query_cancellation_traits);
+  ~BindStateBase() = default;
+
+  friend struct BindStateBaseRefCountTraits;
+  friend class RefCountedThreadSafe<BindStateBase, BindStateBaseRefCountTraits>;
+
+  friend class BindStateHolder;
+
+  // Allowlist subclasses that access the destructor of BindStateBase.
+  template <bool is_method,
+            bool is_nullable,
+            bool is_callback,
+            typename Functor,
+            typename... BoundArgs>
+  friend struct BindState;
+  friend struct ::base::FakeBindState;
+
+  bool IsCancelled() const {
+    return query_cancellation_traits_(this,
+                                      CancellationQueryMode::kIsCancelled);
+  }
+
+  bool MaybeValid() const {
+    return query_cancellation_traits_(this, CancellationQueryMode::kMaybeValid);
+  }
+
   // In C++, it is safe to cast function pointers to function pointers of
   // another type. It is not okay to use void*. We create a InvokeFuncStorage
   // that that can store our function pointer, and then cast it back to
   // the original type on usage.
-  typedef void (*InvokeFuncStorage)(void);
-
-  // Returns true if this callback equals |other|. |other| may be null.
-  bool Equals(const CallbackBase& other) const;
-
-  // Allow initializing of |bind_state_| via the constructor to avoid default
-  // initialization of the scoped_refptr.  We do not also initialize
-  // |polymorphic_invoke_| here because doing a normal assignment in the
-  // derived Callback templates makes for much nicer compiler errors.
-  explicit CallbackBase(BindStateBase* bind_state);
-
-  // Force the destructor to be instantiated inside this translation unit so
-  // that our subclasses will not get inlined versions.  Avoids more template
-  // bloat.
-  ~CallbackBase();
-
-  scoped_refptr<BindStateBase> bind_state_;
   InvokeFuncStorage polymorphic_invoke_;
+
+  // Pointer to a function that will properly destroy |this|.
+  DestructorPtr destructor_;
+  QueryCancellationTraitsPtr query_cancellation_traits_;
 };
 
-// A helper template to determine if given type is non-const move-only-type,
-// i.e. if a value of the given type should be passed via .Pass() in a
-// destructive way.
-template <typename T>
-struct IsMoveOnlyType {
-  template <typename U>
-  static YesType Test(const typename U::MoveOnlyTypeForCPP03*);
+// Minimal wrapper around a `scoped_refptr<BindStateBase>`. It allows more
+// expensive operations (such as ones that destroy `BindStateBase` or manipulate
+// refcounts) to be defined out-of-line to reduce binary size.
+class TRIVIAL_ABI BindStateHolder {
+ public:
+  using InvokeFuncStorage = BindStateBase::InvokeFuncStorage;
 
-  template <typename U>
-  static NoType Test(...);
+  // Used to construct a null callback.
+  inline constexpr BindStateHolder() noexcept;
 
-  static const bool value =
-      sizeof(Test<T>(0)) == sizeof(YesType) && !is_const<T>::value;
+  // Used to construct a callback by `base::BindOnce()`/`base::BindRepeating().
+  inline explicit BindStateHolder(BindStateBase* bind_state);
+
+  // BindStateHolder is always copyable so it can be used by `OnceCallback` and
+  // `RepeatingCallback`. `OnceCallback` restricts copies so a `BindStateHolder`
+  // used with a `OnceCallback will never be copied.
+  BindStateHolder(const BindStateHolder&);
+  BindStateHolder& operator=(const BindStateHolder&);
+
+  // Subtle: since `this` is marked as TRIVIAL_ABI, the move operations must
+  // leave a moved-from `BindStateHolder` in a trivially destructible state.
+  inline BindStateHolder(BindStateHolder&&) noexcept;
+  BindStateHolder& operator=(BindStateHolder&&) noexcept;
+
+  ~BindStateHolder();
+
+  bool is_null() const { return !bind_state_; }
+  explicit operator bool() const { return !is_null(); }
+
+  bool IsCancelled() const;
+  bool MaybeValid() const;
+
+  void Reset();
+
+  friend bool operator==(const BindStateHolder&,
+                         const BindStateHolder&) = default;
+
+  const scoped_refptr<BindStateBase>& bind_state() const { return bind_state_; }
+
+  InvokeFuncStorage polymorphic_invoke() const {
+    return bind_state_->polymorphic_invoke_;
+  }
+
+ private:
+  scoped_refptr<BindStateBase> bind_state_;
 };
 
-// This is a typetraits object that's used to take an argument type, and
-// extract a suitable type for storing and forwarding arguments.
-//
-// In particular, it strips off references, and converts arrays to
-// pointers for storage; and it avoids accidentally trying to create a
-// "reference of a reference" if the argument is a reference type.
-//
-// This array type becomes an issue for storage because we are passing bound
-// parameters by const reference. In this case, we end up passing an actual
-// array type in the initializer list which C++ does not allow.  This will
-// break passing of C-string literals.
-template <typename T, bool is_move_only = IsMoveOnlyType<T>::value>
-struct CallbackParamTraits {
-  typedef const T& ForwardType;
-  typedef T StorageType;
+constexpr BindStateHolder::BindStateHolder() noexcept = default;
+
+// TODO(dcheng): Try plumbing a scoped_refptr all the way through, since
+// scoped_refptr is marked as TRIVIAL_ABI.
+BindStateHolder::BindStateHolder(BindStateBase* bind_state)
+    : bind_state_(AdoptRef(bind_state)) {}
+
+// Unlike the copy constructor, copy assignment operator, and move assignment
+// operator, the move constructor is defaulted in the header because it
+// generates minimal code: move construction does not change any refcounts, nor
+// does it potentially destroy `BindStateBase`.
+BindStateHolder::BindStateHolder(BindStateHolder&&) noexcept = default;
+
+// Helpers for the `Then()` implementation.
+template <typename OriginalCallback, typename ThenCallback>
+struct ThenHelper;
+
+// Specialization when original callback returns `void`.
+template <template <typename> class OriginalCallback,
+          template <typename> class ThenCallback,
+          typename... OriginalArgs,
+          typename ThenR,
+          typename... ThenArgs>
+struct ThenHelper<OriginalCallback<void(OriginalArgs...)>,
+                  ThenCallback<ThenR(ThenArgs...)>> {
+ private:
+  // For context on this "templated struct with a lambda that asserts" pattern,
+  // see comments in `Invoker<>`.
+  template <bool v = sizeof...(ThenArgs) == 0>
+  struct CorrectNumberOfArgs {
+    static constexpr bool value = [] {
+      static_assert(v,
+                    "|then| callback cannot accept parameters if |this| has a "
+                    "void return type.");
+      return v;
+    }();
+  };
+
+ public:
+  static auto CreateTrampoline() {
+    return [](OriginalCallback<void(OriginalArgs...)> c1,
+              ThenCallback<ThenR(ThenArgs...)> c2,
+              OriginalArgs... c1_args) -> ThenR {
+      if constexpr (CorrectNumberOfArgs<>::value) {
+        std::move(c1).Run(std::forward<OriginalArgs>(c1_args)...);
+        return std::move(c2).Run();
+      }
+    };
+  }
 };
 
-// The Storage should almost be impossible to trigger unless someone manually
-// specifies type of the bind parameters.  However, in case they do,
-// this will guard against us accidentally storing a reference parameter.
-//
-// The ForwardType should only be used for unbound arguments.
-template <typename T>
-struct CallbackParamTraits<T&, false> {
-  typedef T& ForwardType;
-  typedef T StorageType;
+// Specialization when original callback returns a non-void type.
+template <template <typename> class OriginalCallback,
+          template <typename> class ThenCallback,
+          typename OriginalR,
+          typename... OriginalArgs,
+          typename ThenR,
+          typename... ThenArgs>
+struct ThenHelper<OriginalCallback<OriginalR(OriginalArgs...)>,
+                  ThenCallback<ThenR(ThenArgs...)>> {
+ private:
+  template <bool v = sizeof...(ThenArgs) == 1>
+  struct CorrectNumberOfArgs {
+    static constexpr bool value = [] {
+      static_assert(
+          v,
+          "|then| callback must accept exactly one parameter if |this| has a "
+          "non-void return type.");
+      return v;
+    }();
+  };
+
+  template <bool v =
+                // TODO(dcheng): This should probably check is_convertible as
+                // well (same with `AssertBindArgsValidity`).
+            std::is_constructible_v<ThenArgs..., OriginalR&&>>
+  struct ArgsAreConvertible {
+    static constexpr bool value = [] {
+      static_assert(v,
+                    "|then| callback's parameter must be constructible from "
+                    "return type of |this|.");
+      return v;
+    }();
+  };
+
+ public:
+  static auto CreateTrampoline() {
+    return [](OriginalCallback<OriginalR(OriginalArgs...)> c1,
+              ThenCallback<ThenR(ThenArgs...)> c2,
+              OriginalArgs... c1_args) -> ThenR {
+      if constexpr (std::conjunction_v<CorrectNumberOfArgs<>,
+                                       ArgsAreConvertible<>>) {
+        return std::move(c2).Run(
+            std::move(c1).Run(std::forward<OriginalArgs>(c1_args)...));
+      }
+    };
+  }
 };
-
-// Note that for array types, we implicitly add a const in the conversion. This
-// means that it is not possible to bind array arguments to functions that take
-// a non-const pointer. Trying to specialize the template based on a "const
-// T[n]" does not seem to match correctly, so we are stuck with this
-// restriction.
-template <typename T, size_t n>
-struct CallbackParamTraits<T[n], false> {
-  typedef const T* ForwardType;
-  typedef const T* StorageType;
-};
-
-// See comment for CallbackParamTraits<T[n]>.
-template <typename T>
-struct CallbackParamTraits<T[], false> {
-  typedef const T* ForwardType;
-  typedef const T* StorageType;
-};
-
-// Parameter traits for movable-but-not-copyable scopers.
-//
-// Callback<>/Bind() understands movable-but-not-copyable semantics where
-// the type cannot be copied but can still have its state destructively
-// transferred (aka. moved) to another instance of the same type by calling a
-// helper function.  When used with Bind(), this signifies transferal of the
-// object's state to the target function.
-//
-// For these types, the ForwardType must not be a const reference, or a
-// reference.  A const reference is inappropriate, and would break const
-// correctness, because we are implementing a destructive move.  A non-const
-// reference cannot be used with temporaries which means the result of a
-// function or a cast would not be usable with Callback<> or Bind().
-template <typename T>
-struct CallbackParamTraits<T, true> {
-  typedef T ForwardType;
-  typedef T StorageType;
-};
-
-// CallbackForward() is a very limited simulation of C++11's std::forward()
-// used by the Callback/Bind system for a set of movable-but-not-copyable
-// types.  It is needed because forwarding a movable-but-not-copyable
-// argument to another function requires us to invoke the proper move
-// operator to create a rvalue version of the type.  The supported types are
-// whitelisted below as overloads of the CallbackForward() function. The
-// default template compiles out to be a no-op.
-//
-// In C++11, std::forward would replace all uses of this function.  However, it
-// is impossible to implement a general std::forward with C++11 due to a lack
-// of rvalue references.
-//
-// In addition to Callback/Bind, this is used by PostTaskAndReplyWithResult to
-// simulate std::forward() and forward the result of one Callback as a
-// parameter to another callback. This is to support Callbacks that return
-// the movable-but-not-copyable types whitelisted above.
-template <typename T>
-typename enable_if<!IsMoveOnlyType<T>::value, T>::type& CallbackForward(T& t) {
-  return t;
-}
-
-template <typename T>
-typename enable_if<IsMoveOnlyType<T>::value, T>::type CallbackForward(T& t) {
-  return t.Pass();
-}
 
 }  // namespace cef_internal
 }  // namespace base
+
+#endif  // !USING_CHROMIUM_INCLUDES
 
 #endif  // CEF_INCLUDE_BASE_INTERNAL_CEF_CALLBACK_INTERNAL_H_

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=9d02d9da5fb643fd5dfe46e12e535da7d2e874c7$
+// $hash=f729014652b6b3a1abd9844129cce02a9ceda0af$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_PATH_UTIL_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_PATH_UTIL_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -47,8 +51,8 @@ extern "C" {
 #endif
 
 ///
-// Retrieve the path associated with the specified |key|. Returns true (1) on
-// success. Can be called on any thread in the browser process.
+/// Retrieve the path associated with the specified |key|. Returns true (1) on
+/// success. Can be called on any thread in the browser process.
 ///
 CEF_EXPORT int cef_get_path(cef_path_key_t key, cef_string_t* path);
 

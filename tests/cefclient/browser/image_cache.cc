@@ -4,8 +4,11 @@
 
 #include "tests/cefclient/browser/image_cache.h"
 
+#include <algorithm>
+
 #include "tests/shared/browser/file_util.h"
 #include "tests/shared/browser/resource_util.h"
+#include "tests/shared/common/string_util.h"
 
 namespace client {
 
@@ -15,7 +18,7 @@ const char kEmptyId[] = "__empty";
 
 }  // namespace
 
-ImageCache::ImageCache() {}
+ImageCache::ImageCache() = default;
 
 ImageCache::~ImageCache() {
   CEF_REQUIRE_UI_THREAD();
@@ -34,8 +37,9 @@ ImageCache::ImageInfo::ImageInfo(const std::string& id,
     : id_(id), reps_(reps), internal_(internal), force_reload_(force_reload) {
 #ifndef NDEBUG
   DCHECK(!id_.empty());
-  if (id_ != kEmptyId)
+  if (id_ != kEmptyId) {
     DCHECK(!reps_.empty());
+  }
 #endif
 }
 
@@ -50,7 +54,7 @@ ImageCache::ImageInfo ImageCache::ImageInfo::Create1x(
     const std::string& path_1x,
     bool internal) {
   ImageRepSet reps;
-  reps.push_back(ImageRep(path_1x, 1.0f));
+  reps.emplace_back(path_1x, 1.0f);
   return ImageInfo(id, reps, internal, false);
 }
 
@@ -61,8 +65,8 @@ ImageCache::ImageInfo ImageCache::ImageInfo::Create2x(
     const std::string& path_2x,
     bool internal) {
   ImageRepSet reps;
-  reps.push_back(ImageRep(path_1x, 1.0f));
-  reps.push_back(ImageRep(path_2x, 2.0f));
+  reps.emplace_back(path_1x, 1.0f);
+  reps.emplace_back(path_2x, 2.0f);
   return ImageInfo(id, reps, internal, false);
 }
 
@@ -72,7 +76,7 @@ ImageCache::ImageInfo ImageCache::ImageInfo::Create2x(const std::string& id) {
 }
 
 struct ImageCache::ImageContent {
-  ImageContent() {}
+  ImageContent() = default;
 
   struct RepContent {
     RepContent(ImageType type, float scale_factor, const std::string& contents)
@@ -89,26 +93,23 @@ struct ImageCache::ImageContent {
 };
 
 void ImageCache::LoadImages(const ImageInfoSet& image_info,
-                            const LoadImagesCallback& callback) {
+                            LoadImagesCallback callback) {
   DCHECK(!image_info.empty());
   DCHECK(!callback.is_null());
 
   if (!CefCurrentlyOn(TID_UI)) {
-    CefPostTask(TID_UI, base::Bind(&ImageCache::LoadImages, this, image_info,
-                                   callback));
+    CefPostTask(TID_UI, base::BindOnce(&ImageCache::LoadImages, this,
+                                       image_info, std::move(callback)));
     return;
   }
 
   ImageSet images;
   bool missing_images = false;
 
-  ImageInfoSet::const_iterator it = image_info.begin();
-  for (; it != image_info.end(); ++it) {
-    const ImageInfo& info = *it;
-
+  for (const auto& info : image_info) {
     if (info.id_ == kEmptyId) {
       // Image intentionally left empty.
-      images.push_back(NULL);
+      images.push_back(nullptr);
       continue;
     }
 
@@ -125,16 +126,18 @@ void ImageCache::LoadImages(const ImageInfoSet& image_info,
     }
 
     // Load the image.
-    images.push_back(NULL);
-    if (!missing_images)
+    images.push_back(nullptr);
+    if (!missing_images) {
       missing_images = true;
+    }
   }
 
   if (missing_images) {
-    CefPostTask(TID_FILE, base::Bind(&ImageCache::LoadMissing, this, image_info,
-                                     images, callback));
+    CefPostTask(TID_FILE_USER_BLOCKING,
+                base::BindOnce(&ImageCache::LoadMissing, this, image_info,
+                               images, std::move(callback)));
   } else {
-    callback.Run(images);
+    std::move(callback).Run(images);
   }
 }
 
@@ -143,31 +146,35 @@ CefRefPtr<CefImage> ImageCache::GetCachedImage(const std::string& image_id) {
   DCHECK(!image_id.empty());
 
   ImageMap::const_iterator it = image_map_.find(image_id);
-  if (it != image_map_.end())
+  if (it != image_map_.end()) {
     return it->second;
+  }
 
-  return NULL;
+  return nullptr;
 }
 
 // static
 ImageCache::ImageType ImageCache::GetImageType(const std::string& path) {
   std::string ext = file_util::GetFileExtension(path);
-  if (ext.empty())
+  if (ext.empty()) {
     return TYPE_NONE;
+  }
 
-  std::transform(ext.begin(), ext.end(), ext.begin(), tolower);
-  if (ext == "png")
+  ext = AsciiStrToLower(ext);
+  if (ext == "png") {
     return TYPE_PNG;
-  if (ext == "jpg" || ext == "jpeg")
+  }
+  if (ext == "jpg" || ext == "jpeg") {
     return TYPE_JPEG;
+  }
 
   return TYPE_NONE;
 }
 
 void ImageCache::LoadMissing(const ImageInfoSet& image_info,
                              const ImageSet& images,
-                             const LoadImagesCallback& callback) {
-  CEF_REQUIRE_FILE_THREAD();
+                             LoadImagesCallback callback) {
+  CEF_REQUIRE_FILE_USER_BLOCKING_THREAD();
 
   DCHECK_EQ(image_info.size(), images.size());
 
@@ -187,18 +194,16 @@ void ImageCache::LoadMissing(const ImageInfoSet& image_info,
     contents.push_back(content);
   }
 
-  CefPostTask(TID_UI, base::Bind(&ImageCache::UpdateCache, this, image_info,
-                                 contents, callback));
+  CefPostTask(TID_UI, base::BindOnce(&ImageCache::UpdateCache, this, image_info,
+                                     contents, std::move(callback)));
 }
 
 // static
 bool ImageCache::LoadImageContents(const ImageInfo& info,
                                    ImageContent* content) {
-  CEF_REQUIRE_FILE_THREAD();
+  CEF_REQUIRE_FILE_USER_BLOCKING_THREAD();
 
-  ImageRepSet::const_iterator it = info.reps_.begin();
-  for (; it != info.reps_.end(); ++it) {
-    const ImageRep& rep = *it;
+  for (const auto& rep : info.reps_) {
     ImageType rep_type;
     std::string rep_contents;
     if (!LoadImageContents(rep.path_, info.internal_, &rep_type,
@@ -207,8 +212,7 @@ bool ImageCache::LoadImageContents(const ImageInfo& info,
                  << rep.path_;
       return false;
     }
-    content->contents_.push_back(
-        ImageContent::RepContent(rep_type, rep.scale_factor_, rep_contents));
+    content->contents_.emplace_back(rep_type, rep.scale_factor_, rep_contents);
   }
 
   return true;
@@ -219,15 +223,17 @@ bool ImageCache::LoadImageContents(const std::string& path,
                                    bool internal,
                                    ImageType* type,
                                    std::string* contents) {
-  CEF_REQUIRE_FILE_THREAD();
+  CEF_REQUIRE_FILE_USER_BLOCKING_THREAD();
 
   *type = GetImageType(path);
-  if (*type == TYPE_NONE)
+  if (*type == TYPE_NONE) {
     return false;
+  }
 
   if (internal) {
-    if (!LoadBinaryResource(path.c_str(), *contents))
+    if (!LoadBinaryResource(path.c_str(), *contents)) {
       return false;
+    }
   } else if (!file_util::ReadFileToString(path, contents)) {
     return false;
   }
@@ -237,7 +243,7 @@ bool ImageCache::LoadImageContents(const std::string& path,
 
 void ImageCache::UpdateCache(const ImageInfoSet& image_info,
                              const ImageContentSet& contents,
-                             const LoadImagesCallback& callback) {
+                             LoadImagesCallback callback) {
   CEF_REQUIRE_UI_THREAD();
 
   DCHECK_EQ(image_info.size(), contents.size());
@@ -261,7 +267,7 @@ void ImageCache::UpdateCache(const ImageInfoSet& image_info,
     }
   }
 
-  callback.Run(images);
+  std::move(callback).Run(images);
 }
 
 // static
@@ -272,31 +278,30 @@ CefRefPtr<CefImage> ImageCache::CreateImage(const std::string& image_id,
   // Shouldn't be creating an image if one already exists.
   DCHECK(!content.image_);
 
-  if (content.contents_.empty())
-    return NULL;
+  if (content.contents_.empty()) {
+    return nullptr;
+  }
 
   CefRefPtr<CefImage> image = CefImage::CreateImage();
 
-  ImageContent::RepContentSet::const_iterator it = content.contents_.begin();
-  for (; it != content.contents_.end(); ++it) {
-    const ImageContent::RepContent& rep = *it;
+  for (const auto& rep : content.contents_) {
     if (rep.type_ == TYPE_PNG) {
       if (!image->AddPNG(rep.scale_factor_, rep.contents_.c_str(),
                          rep.contents_.size())) {
         LOG(ERROR) << "Failed to create image " << image_id << " for PNG@"
                    << rep.scale_factor_;
-        return NULL;
+        return nullptr;
       }
     } else if (rep.type_ == TYPE_JPEG) {
       if (!image->AddJPEG(rep.scale_factor_, rep.contents_.c_str(),
                           rep.contents_.size())) {
         LOG(ERROR) << "Failed to create image " << image_id << " for JPG@"
                    << rep.scale_factor_;
-        return NULL;
+        return nullptr;
       }
     } else {
       NOTREACHED();
-      return NULL;
+      return nullptr;
     }
   }
 

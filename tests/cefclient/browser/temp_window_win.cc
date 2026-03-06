@@ -7,6 +7,7 @@
 #include <windows.h>
 
 #include "include/base/cef_logging.h"
+#include "tests/shared/browser/util_win.h"
 
 namespace client {
 
@@ -16,7 +17,7 @@ const wchar_t kWndClass[] = L"Client_TempWindow";
 
 // Create the temp window.
 HWND CreateTempWindow() {
-  HINSTANCE hInstance = ::GetModuleHandle(NULL);
+  HINSTANCE hInstance = GetCodeModuleHandle();
 
   WNDCLASSEX wc = {0};
   wc.cbSize = sizeof(wc);
@@ -26,15 +27,15 @@ HWND CreateTempWindow() {
   RegisterClassEx(&wc);
 
   // Create a 1x1 pixel hidden window.
-  return CreateWindow(kWndClass, 0, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN, 0, 0,
-                      1, 1, NULL, NULL, hInstance, NULL);
+  return CreateWindow(kWndClass, nullptr, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
+                      0, 0, 1, 1, nullptr, nullptr, hInstance, nullptr);
 }
 
-TempWindowWin* g_temp_window = NULL;
+TempWindowWin* g_temp_window = nullptr;
 
 }  // namespace
 
-TempWindowWin::TempWindowWin() : hwnd_(NULL) {
+TempWindowWin::TempWindowWin() : hwnd_(nullptr) {
   DCHECK(!g_temp_window);
   g_temp_window = this;
 
@@ -43,7 +44,7 @@ TempWindowWin::TempWindowWin() : hwnd_(NULL) {
 }
 
 TempWindowWin::~TempWindowWin() {
-  g_temp_window = NULL;
+  g_temp_window = nullptr;
   DCHECK(hwnd_);
   DestroyWindow(hwnd_);
 }

@@ -2,7 +2,7 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include "transfer_util.h"
+#include "libcef_dll/transfer_util.h"
 
 void transfer_string_list_contents(cef_string_list_t fromList,
                                    StringList& toList) {
@@ -18,8 +18,9 @@ void transfer_string_list_contents(cef_string_list_t fromList,
 void transfer_string_list_contents(const StringList& fromList,
                                    cef_string_list_t toList) {
   size_t size = fromList.size();
-  for (size_t i = 0; i < size; ++i)
+  for (size_t i = 0; i < size; ++i) {
     cef_string_list_append(toList, fromList[i].GetStruct());
+  }
 }
 
 void transfer_string_map_contents(cef_string_map_t fromMap, StringMap& toMap) {
@@ -36,9 +37,9 @@ void transfer_string_map_contents(cef_string_map_t fromMap, StringMap& toMap) {
 
 void transfer_string_map_contents(const StringMap& fromMap,
                                   cef_string_map_t toMap) {
-  StringMap::const_iterator it = fromMap.begin();
-  for (; it != fromMap.end(); ++it)
-    cef_string_map_append(toMap, it->first.GetStruct(), it->second.GetStruct());
+  for (const auto& [key, value] : fromMap) {
+    cef_string_map_append(toMap, key.GetStruct(), value.GetStruct());
+  }
 }
 
 void transfer_string_multimap_contents(cef_string_multimap_t fromMap,
@@ -56,9 +57,7 @@ void transfer_string_multimap_contents(cef_string_multimap_t fromMap,
 
 void transfer_string_multimap_contents(const StringMultimap& fromMap,
                                        cef_string_multimap_t toMap) {
-  StringMultimap::const_iterator it = fromMap.begin();
-  for (; it != fromMap.end(); ++it) {
-    cef_string_multimap_append(toMap, it->first.GetStruct(),
-                               it->second.GetStruct());
+  for (const auto& [key, value] : fromMap) {
+    cef_string_multimap_append(toMap, key.GetStruct(), value.GetStruct());
   }
 }

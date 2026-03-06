@@ -18,9 +18,10 @@ void VerifyCommandLine(CefRefPtr<CefCommandLine> command_line,
   EXPECT_TRUE(command_line->HasSwitch("switch1"));
   std::string switch1 = command_line->GetSwitchValue("switch1");
   EXPECT_EQ("", switch1);
-  EXPECT_TRUE(command_line->HasSwitch("switch2"));
-  std::string switch2 = command_line->GetSwitchValue("switch2");
-  EXPECT_EQ("val2", switch2);
+  // Switch names are converted to lowercase but values are left unchanged.
+  EXPECT_TRUE(command_line->HasSwitch("SWITCH2"));
+  std::string switch2 = command_line->GetSwitchValue("SWITCH2");
+  EXPECT_EQ("VAL2", switch2);
   EXPECT_TRUE(command_line->HasSwitch("switch3"));
   std::string switch3 = command_line->GetSwitchValue("switch3");
   EXPECT_EQ("val3", switch3);
@@ -35,23 +36,19 @@ void VerifyCommandLine(CefRefPtr<CefCommandLine> command_line,
 
   bool has1 = false, has2 = false, has3 = false, has4 = false;
 
-  CefCommandLine::SwitchMap::const_iterator it = switches.begin();
-  for (; it != switches.end(); ++it) {
-    std::string name = it->first;
-    std::string val = it->second;
-
-    if (name == "switch1") {
+  for (const auto& entry : switches) {
+    if (entry.first == "switch1") {
       has1 = true;
-      EXPECT_EQ("", val);
-    } else if (name == "switch2") {
+      EXPECT_STREQ("", entry.second.ToString().c_str());
+    } else if (entry.first == "switch2") {
       has2 = true;
-      EXPECT_EQ("val2", val);
-    } else if (name == "switch3") {
+      EXPECT_STREQ("VAL2", entry.second.ToString().c_str());
+    } else if (entry.first == "switch3") {
       has3 = true;
-      EXPECT_EQ("val3", val);
-    } else if (name == "switch4") {
+      EXPECT_STREQ("val3", entry.second.ToString().c_str());
+    } else if (entry.first == "switch4") {
       has4 = true;
-      EXPECT_EQ("val 4", val);
+      EXPECT_STREQ("val 4", entry.second.ToString().c_str());
     }
   }
 
@@ -59,6 +56,8 @@ void VerifyCommandLine(CefRefPtr<CefCommandLine> command_line,
   EXPECT_TRUE(has2);
   EXPECT_TRUE(has3);
   EXPECT_TRUE(has4);
+
+  switches.clear();
 
   EXPECT_TRUE(command_line->HasArguments());
 
@@ -69,6 +68,11 @@ void VerifyCommandLine(CefRefPtr<CefCommandLine> command_line,
   EXPECT_EQ(expected_arg1, arg0);
   std::string arg1 = args[1];
   EXPECT_EQ(expected_arg2, arg1);
+
+  command_line->RemoveSwitch("switch1");
+  EXPECT_FALSE(command_line->HasSwitch("switch1"));
+  command_line->GetSwitches(switches);
+  EXPECT_EQ((size_t)3, switches.size());
 
   command_line->Reset();
   EXPECT_FALSE(command_line->HasSwitches());
@@ -82,14 +86,14 @@ void VerifyCommandLine(CefRefPtr<CefCommandLine> command_line,
 // Test creating a command line from argc/argv or string.
 TEST(CommandLineTest, Init) {
   CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
-  EXPECT_TRUE(command_line.get() != NULL);
+  EXPECT_TRUE(command_line.get() != nullptr);
 
 #if defined(OS_WIN)
   command_line->InitFromString(
-      "test.exe --switch1 -switch2=val2 /switch3=val3 "
+      "test.exe --switch1 -switch2=VAL2 /switch3=val3 "
       "-switch4=\"val 4\" arg1 \"arg 2\"");
 #else
-  const char* args[] = {"test.exe",      "--switch1",      "-switch2=val2",
+  const char* args[] = {"test.exe",      "--switch1",      "-switch2=VAL2",
                         "-switch3=val3", "-switch4=val 4", "arg1",
                         "arg 2"};
   command_line->InitFromArgv(sizeof(args) / sizeof(char*), args);
@@ -101,11 +105,11 @@ TEST(CommandLineTest, Init) {
 // Test creating a command line using set and append methods.
 TEST(CommandLineTest, Manual) {
   CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
-  EXPECT_TRUE(command_line.get() != NULL);
+  EXPECT_TRUE(command_line.get() != nullptr);
 
   command_line->SetProgram("test.exe");
   command_line->AppendSwitch("switch1");
-  command_line->AppendSwitchWithValue("switch2", "val2");
+  command_line->AppendSwitchWithValue("switch2", "VAL2");
   command_line->AppendSwitchWithValue("switch3", "val3");
   command_line->AppendSwitchWithValue("switch4", "val 4");
   command_line->AppendArgument("arg1");
@@ -117,11 +121,11 @@ TEST(CommandLineTest, Manual) {
 // Test that any prefixes included with the switches are ignored.
 TEST(CommandLineTest, IgnorePrefixes) {
   CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
-  EXPECT_TRUE(command_line.get() != NULL);
+  EXPECT_TRUE(command_line.get() != nullptr);
 
   command_line->SetProgram("test.exe");
   command_line->AppendSwitch("-switch1");
-  command_line->AppendSwitchWithValue("--switch2", "val2");
+  command_line->AppendSwitchWithValue("--switch2", "VAL2");
   command_line->AppendSwitchWithValue("-switch3", "val3");
   command_line->AppendSwitchWithValue("-switch4", "val 4");
 
@@ -132,4 +136,20 @@ TEST(CommandLineTest, IgnorePrefixes) {
   command_line->AppendArgument(arg2);
 
   VerifyCommandLine(command_line, arg1, arg2);
+}
+
+// Test that command line switch names are converted to lowercase ASCII.
+TEST(CommandLineTest, IgnoreCase) {
+  CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
+  EXPECT_TRUE(command_line.get() != nullptr);
+
+  command_line->SetProgram("test.exe");
+  command_line->AppendSwitch("-Switch1");
+  command_line->AppendSwitchWithValue("-SWITCH2", "VAL2");
+  command_line->AppendSwitchWithValue("-switch3", "val3");
+  command_line->AppendSwitchWithValue("-switch4", "val 4");
+  command_line->AppendArgument("arg1");
+  command_line->AppendArgument("arg 2");
+
+  VerifyCommandLine(command_line);
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4fec87b6907d9c957ea58ac1d1df937799b9a07e$
+// $hash=f07014c5f5e534a01d2abe8c0ea54ad63c15922c$
 //
 
 #include "libcef_dll/cpptoc/resolve_callback_cpptoc.h"
+
+#include "libcef_dll/shutdown_checker.h"
 #include "libcef_dll/transfer_util.h"
 
 namespace {
@@ -23,11 +25,14 @@ void CEF_CALLBACK
 resolve_callback_on_resolve_completed(struct _cef_resolve_callback_t* self,
                                       cef_errorcode_t result,
                                       cef_string_list_t resolved_ips) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Unverified params: resolved_ips
 
   // Translate param: resolved_ips; type: string_vec_byref_const
@@ -47,23 +52,21 @@ CefResolveCallbackCppToC::CefResolveCallbackCppToC() {
   GetStruct()->on_resolve_completed = resolve_callback_on_resolve_completed;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefResolveCallbackCppToC::~CefResolveCallbackCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefResolveCallback> CefCppToCRefCounted<
     CefResolveCallbackCppToC,
     CefResolveCallback,
     cef_resolve_callback_t>::UnwrapDerived(CefWrapperType type,
                                            cef_resolve_callback_t* s) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefResolveCallbackCppToC,
-                                         CefResolveCallback,
-                                         cef_resolve_callback_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefResolveCallbackCppToC,

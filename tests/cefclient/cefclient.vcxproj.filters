@@ -1,6 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="browser\base_client_handler.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="browser\binary_transfer_test.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
     <ClCompile Include="browser\binding_test.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
@@ -25,10 +31,19 @@
     <ClCompile Include="browser\client_handler_std.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
+    <ClCompile Include="browser\client_prefs.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="browser\config_test.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="browser\default_client_handler.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
     <ClCompile Include="browser\dialog_test.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
-    <ClCompile Include="browser\drm_test.cc">
+    <ClCompile Include="browser\hang_test.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
     <ClCompile Include="browser\image_cache.cc">
@@ -38,6 +53,9 @@
       <Filter>cefclient\browser</Filter>
     </ClCompile>
     <ClCompile Include="browser\main_context_impl.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="browser\media_router_test.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
     <ClCompile Include="browser\osr_renderer.cc">
@@ -58,10 +76,16 @@
     <ClCompile Include="browser\root_window_manager.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
+    <ClCompile Include="browser\root_window_views.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
     <ClCompile Include="browser\scheme_test.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
     <ClCompile Include="browser\server_test.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="browser\task_manager_test.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
     <ClCompile Include="browser\test_runner.cc">
@@ -70,16 +94,31 @@
     <ClCompile Include="browser\urlrequest_test.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
+    <ClCompile Include="browser\views_menu_bar.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="browser\views_overlay_browser.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="browser\views_overlay_controls.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="browser\views_style.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="browser\views_window.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
     <ClCompile Include="browser\window_test.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
     <ClCompile Include="browser\window_test_runner.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\browser\client_app_browser.cc">
-      <Filter>shared\browser</Filter>
+    <ClCompile Include="browser\window_test_runner_views.cc">
+      <Filter>cefclient\browser</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\browser\extension_util.cc">
+    <ClCompile Include="..\shared\browser\client_app_browser.cc">
       <Filter>shared\browser</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\browser\file_util.cc">
@@ -103,6 +142,9 @@
     <ClCompile Include="common\scheme_test_common.cc">
       <Filter>cefclient\common</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\common\binary_value_utils.cc">
+      <Filter>shared\common</Filter>
+    </ClCompile>
     <ClCompile Include="..\shared\common\client_app.cc">
       <Filter>shared\common</Filter>
     </ClCompile>
@@ -112,10 +154,16 @@
     <ClCompile Include="..\shared\common\client_switches.cc">
       <Filter>shared\common</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\common\string_util.cc">
+      <Filter>shared\common</Filter>
+    </ClCompile>
     <ClCompile Include="renderer\client_app_delegates_renderer.cc">
       <Filter>cefclient\renderer</Filter>
     </ClCompile>
     <ClCompile Include="renderer\client_renderer.cc">
+      <Filter>cefclient\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\ipc_performance_test.cc">
       <Filter>cefclient\renderer</Filter>
     </ClCompile>
     <ClCompile Include="renderer\performance_test.cc">
@@ -151,10 +199,22 @@
     <ClCompile Include="browser\osr_accessibility_node_win.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
+    <ClCompile Include="browser\osr_d3d11_win.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
     <ClCompile Include="browser\osr_dragdrop_win.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
     <ClCompile Include="browser\osr_ime_handler_win.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="browser\osr_render_handler_win.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="browser\osr_render_handler_win_d3d11.cc">
+      <Filter>cefclient\browser</Filter>
+    </ClCompile>
+    <ClCompile Include="browser\osr_render_handler_win_gl.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
     <ClCompile Include="browser\osr_window_win.cc">
@@ -163,25 +223,10 @@
     <ClCompile Include="browser\resource_util_win_idmap.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
-    <ClCompile Include="browser\root_window_views.cc">
-      <Filter>cefclient\browser</Filter>
-    </ClCompile>
     <ClCompile Include="browser\root_window_win.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
     <ClCompile Include="browser\temp_window_win.cc">
-      <Filter>cefclient\browser</Filter>
-    </ClCompile>
-    <ClCompile Include="browser\views_menu_bar.cc">
-      <Filter>cefclient\browser</Filter>
-    </ClCompile>
-    <ClCompile Include="browser\views_style.cc">
-      <Filter>cefclient\browser</Filter>
-    </ClCompile>
-    <ClCompile Include="browser\views_window.cc">
-      <Filter>cefclient\browser</Filter>
-    </ClCompile>
-    <ClCompile Include="browser\window_test_runner_views.cc">
       <Filter>cefclient\browser</Filter>
     </ClCompile>
     <ClCompile Include="browser\window_test_runner_win.cc">
@@ -198,6 +243,12 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="browser\base_client_handler.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
+    <ClInclude Include="browser\binary_transfer_test.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
     <ClInclude Include="browser\binding_test.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
@@ -219,13 +270,22 @@
     <ClInclude Include="browser\client_handler_std.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
+    <ClInclude Include="browser\client_prefs.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
     <ClInclude Include="browser\client_types.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
+    <ClInclude Include="browser\config_test.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
+    <ClInclude Include="browser\default_client_handler.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
     <ClInclude Include="browser\dialog_test.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
-    <ClInclude Include="browser\drm_test.h">
+    <ClInclude Include="browser\hang_test.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
     <ClInclude Include="browser\image_cache.h">
@@ -237,10 +297,16 @@
     <ClInclude Include="browser\main_context_impl.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
+    <ClInclude Include="browser\media_router_test.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
     <ClInclude Include="browser\osr_dragdrop_events.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
     <ClInclude Include="browser\osr_renderer.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
+    <ClInclude Include="browser\osr_renderer_settings.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
     <ClInclude Include="browser\preferences_test.h">
@@ -258,10 +324,16 @@
     <ClInclude Include="browser\root_window_manager.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
+    <ClInclude Include="browser\root_window_views.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
     <ClInclude Include="browser\scheme_test.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
     <ClInclude Include="browser\server_test.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
+    <ClInclude Include="browser\task_manager_test.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
     <ClInclude Include="browser\temp_window.h">
@@ -273,16 +345,31 @@
     <ClInclude Include="browser\urlrequest_test.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
+    <ClInclude Include="browser\views_menu_bar.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
+    <ClInclude Include="browser\views_overlay_browser.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
+    <ClInclude Include="browser\views_overlay_controls.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
+    <ClInclude Include="browser\views_style.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
+    <ClInclude Include="browser\views_window.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
     <ClInclude Include="browser\window_test.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
     <ClInclude Include="browser\window_test_runner.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\browser\client_app_browser.h">
-      <Filter>shared\browser</Filter>
+    <ClInclude Include="browser\window_test_runner_views.h">
+      <Filter>cefclient\browser</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\browser\extension_util.h">
+    <ClInclude Include="..\shared\browser\client_app_browser.h">
       <Filter>shared\browser</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\browser\file_util.h">
@@ -306,6 +393,9 @@
     <ClInclude Include="common\scheme_test_common.h">
       <Filter>cefclient\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\shared\common\binary_value_utils.h">
+      <Filter>shared\common</Filter>
+    </ClInclude>
     <ClInclude Include="..\shared\common\client_app.h">
       <Filter>shared\common</Filter>
     </ClInclude>
@@ -315,7 +405,13 @@
     <ClInclude Include="..\shared\common\client_switches.h">
       <Filter>shared\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\shared\common\string_util.h">
+      <Filter>shared\common</Filter>
+    </ClInclude>
     <ClInclude Include="renderer\client_renderer.h">
+      <Filter>cefclient\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\ipc_performance_test.h">
       <Filter>cefclient\renderer</Filter>
     </ClInclude>
     <ClInclude Include="renderer\performance_test.h">
@@ -342,34 +438,31 @@
     <ClInclude Include="browser\osr_accessibility_node.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
+    <ClInclude Include="browser\osr_d3d11_win.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
     <ClInclude Include="browser\osr_dragdrop_win.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
     <ClInclude Include="browser\osr_ime_handler_win.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
-    <ClInclude Include="browser\osr_window_win.h">
+    <ClInclude Include="browser\osr_render_handler_win.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
-    <ClInclude Include="browser\root_window_views.h">
+    <ClInclude Include="browser\osr_render_handler_win_d3d11.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
+    <ClInclude Include="browser\osr_render_handler_win_gl.h">
+      <Filter>cefclient\browser</Filter>
+    </ClInclude>
+    <ClInclude Include="browser\osr_window_win.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
     <ClInclude Include="browser\root_window_win.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
     <ClInclude Include="browser\temp_window_win.h">
-      <Filter>cefclient\browser</Filter>
-    </ClInclude>
-    <ClInclude Include="browser\views_menu_bar.h">
-      <Filter>cefclient\browser</Filter>
-    </ClInclude>
-    <ClInclude Include="browser\views_style.h">
-      <Filter>cefclient\browser</Filter>
-    </ClInclude>
-    <ClInclude Include="browser\views_window.h">
-      <Filter>cefclient\browser</Filter>
-    </ClInclude>
-    <ClInclude Include="browser\window_test_runner_views.h">
       <Filter>cefclient\browser</Filter>
     </ClInclude>
     <ClInclude Include="browser\window_test_runner_win.h">
@@ -389,9 +482,6 @@
     <Image Include="resources\menu_icon.2x.png">
       <Filter>cefclient\resources</Filter>
     </Image>
-    <Image Include="resources\extensions\set_page_color\icon.png">
-      <Filter>cefclient\resources\extensions\set_page_color</Filter>
-    </Image>
     <Image Include="..\shared\resources\window_icon.1x.png">
       <Filter>shared\resources</Filter>
     </Image>
@@ -400,7 +490,13 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
+    <None Include="resources\binary_transfer.html">
+      <Filter>cefclient\resources</Filter>
+    </None>
     <None Include="resources\binding.html">
+      <Filter>cefclient\resources</Filter>
+    </None>
+    <None Include="resources\config.html">
       <Filter>cefclient\resources</Filter>
     </None>
     <None Include="resources\dialogs.html">
@@ -409,10 +505,16 @@
     <None Include="resources\draggable.html">
       <Filter>cefclient\resources</Filter>
     </None>
-    <None Include="resources\drm.html">
+    <None Include="resources\hang.html">
+      <Filter>cefclient\resources</Filter>
+    </None>
+    <None Include="resources\ipc_performance.html">
       <Filter>cefclient\resources</Filter>
     </None>
     <None Include="resources\localstorage.html">
+      <Filter>cefclient\resources</Filter>
+    </None>
+    <None Include="resources\media_router.html">
       <Filter>cefclient\resources</Filter>
     </None>
     <None Include="resources\other_tests.html">
@@ -424,6 +526,9 @@
     <None Include="resources\performance2.html">
       <Filter>cefclient\resources</Filter>
     </None>
+    <None Include="resources\pip.html">
+      <Filter>cefclient\resources</Filter>
+    </None>
     <None Include="resources\preferences.html">
       <Filter>cefclient\resources</Filter>
     </None>
@@ -431,6 +536,9 @@
       <Filter>cefclient\resources</Filter>
     </None>
     <None Include="resources\server.html">
+      <Filter>cefclient\resources</Filter>
+    </None>
+    <None Include="resources\task_manager.html">
       <Filter>cefclient\resources</Filter>
     </None>
     <None Include="resources\transparency.html">
@@ -448,18 +556,6 @@
     <None Include="resources\xmlhttprequest.html">
       <Filter>cefclient\resources</Filter>
     </None>
-    <None Include="resources\extensions\set_page_color\README.md">
-      <Filter>cefclient\resources\extensions\set_page_color</Filter>
-    </None>
-    <None Include="resources\extensions\set_page_color\manifest.json">
-      <Filter>cefclient\resources\extensions\set_page_color</Filter>
-    </None>
-    <None Include="resources\extensions\set_page_color\popup.html">
-      <Filter>cefclient\resources\extensions\set_page_color</Filter>
-    </None>
-    <None Include="resources\extensions\set_page_color\popup.js">
-      <Filter>cefclient\resources\extensions\set_page_color</Filter>
-    </None>
     <None Include="..\shared\resources\osr_test.html">
       <Filter>shared\resources</Filter>
     </None>
@@ -469,57 +565,45 @@
     <None Include="..\shared\resources\pdf.pdf">
       <Filter>shared\resources</Filter>
     </None>
-    <None Include="resources\win\cefclient.ico">
-      <Filter>cefclient\resources\win</Filter>
-    </None>
-    <None Include="resources\win\small.ico">
-      <Filter>cefclient\resources\win</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="resources\win\cefclient.rc">
-      <Filter>cefclient\resources\win</Filter>
+    <ResourceCompile Include="win\cefclient.rc">
+      <Filter>cefclient\win</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="cefclient">
-      <UniqueIdentifier>{E49F99DF-9F09-322A-B202-571067C7F229}</UniqueIdentifier>
+      <UniqueIdentifier>{E483E5BE-D6F0-3C73-995A-8E163C74EBA4}</UniqueIdentifier>
     </Filter>
     <Filter Include="cefclient\browser">
-      <UniqueIdentifier>{5CD15084-4AB7-3AE7-B394-2AAB296199CE}</UniqueIdentifier>
+      <UniqueIdentifier>{741207AB-CB36-3CB5-BD4E-30711DFF5272}</UniqueIdentifier>
     </Filter>
     <Filter Include="cefclient\common">
-      <UniqueIdentifier>{8A66A14F-2943-379F-93C9-DCCADCBDB3EA}</UniqueIdentifier>
+      <UniqueIdentifier>{B963D827-09C0-39C9-925C-A4419D5924AC}</UniqueIdentifier>
     </Filter>
     <Filter Include="cefclient\renderer">
-      <UniqueIdentifier>{27D287BE-9D2F-3F30-A281-5237A08ED1F4}</UniqueIdentifier>
+      <UniqueIdentifier>{D79EAC9B-D1E0-3EF1-BFDF-459EF5614262}</UniqueIdentifier>
     </Filter>
     <Filter Include="cefclient\resources">
-      <UniqueIdentifier>{C554F064-2B95-3926-87F2-5F6FB01DD474}</UniqueIdentifier>
+      <UniqueIdentifier>{DFCC871B-67CC-3E6D-A0E8-AAE2226F904A}</UniqueIdentifier>
     </Filter>
-    <Filter Include="cefclient\resources\extensions">
-      <UniqueIdentifier>{BCEE02D5-CA18-3E57-B5E1-539ADC485036}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="cefclient\resources\extensions\set_page_color">
-      <UniqueIdentifier>{93E7E2A1-4D2D-3615-8FC6-65BF0DBDC5DD}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="cefclient\resources\win">
-      <UniqueIdentifier>{C9C3C503-6840-3D0B-BECE-227654EEC1D1}</UniqueIdentifier>
+    <Filter Include="cefclient\win">
+      <UniqueIdentifier>{A8B6DF3E-FF65-318E-90BA-028BBCBF9C85}</UniqueIdentifier>
     </Filter>
     <Filter Include="shared">
-      <UniqueIdentifier>{DB2BDEF0-60DB-363F-8910-01F48627254E}</UniqueIdentifier>
+      <UniqueIdentifier>{25E75354-9B72-3FEE-8DCB-E36E322F2E90}</UniqueIdentifier>
     </Filter>
     <Filter Include="shared\browser">
-      <UniqueIdentifier>{09EDAF1F-D7E5-3297-B0D6-CE725B2C8FB2}</UniqueIdentifier>
+      <UniqueIdentifier>{0266D95E-C62A-3626-8486-CD87E13F54D4}</UniqueIdentifier>
     </Filter>
     <Filter Include="shared\common">
-      <UniqueIdentifier>{5062DDB3-5386-346B-A091-064D4D1F478C}</UniqueIdentifier>
+      <UniqueIdentifier>{F0A41A54-EDDF-304D-8F61-872F0F13F4AA}</UniqueIdentifier>
     </Filter>
     <Filter Include="shared\renderer">
-      <UniqueIdentifier>{93D71929-FCA4-353E-B5EE-2A4CF37036C0}</UniqueIdentifier>
+      <UniqueIdentifier>{EB59FCCE-6B4B-3EFE-8F27-7463B32DBD03}</UniqueIdentifier>
     </Filter>
     <Filter Include="shared\resources">
-      <UniqueIdentifier>{26865021-426B-35F1-A111-4DE3F9EDAAE0}</UniqueIdentifier>
+      <UniqueIdentifier>{ECD7BF70-DEE7-3C4D-BC68-D98F45B7A3D9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

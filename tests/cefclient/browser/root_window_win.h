@@ -10,10 +10,11 @@
 
 #include <commdlg.h>
 
+#include <memory>
 #include <string>
 
-#include "include/base/cef_scoped_ptr.h"
 #include "tests/cefclient/browser/browser_window.h"
+#include "tests/cefclient/browser/osr_renderer_settings.h"
 #include "tests/cefclient/browser/root_window.h"
 
 namespace client {
@@ -24,35 +25,52 @@ namespace client {
 class RootWindowWin : public RootWindow, public BrowserWindow::Delegate {
  public:
   // Constructor may be called on any thread.
-  RootWindowWin();
-  ~RootWindowWin();
+  explicit RootWindowWin(bool use_alloy_style);
+  ~RootWindowWin() override;
+
+  RootWindowWin(const RootWindowWin&) = delete;
+  RootWindowWin& operator=(const RootWindowWin&) = delete;
 
   // RootWindow methods.
   void Init(RootWindow::Delegate* delegate,
-            const RootWindowConfig& config,
-            const CefBrowserSettings& settings) OVERRIDE;
+            std::unique_ptr<RootWindowConfig> config,
+            const CefBrowserSettings& settings) override;
   void InitAsPopup(RootWindow::Delegate* delegate,
                    bool with_controls,
                    bool with_osr,
                    const CefPopupFeatures& popupFeatures,
                    CefWindowInfo& windowInfo,
                    CefRefPtr<CefClient>& client,
-                   CefBrowserSettings& settings) OVERRIDE;
-  void Show(ShowMode mode) OVERRIDE;
-  void Hide() OVERRIDE;
-  void SetBounds(int x, int y, size_t width, size_t height) OVERRIDE;
-  void Close(bool force) OVERRIDE;
-  void SetDeviceScaleFactor(float device_scale_factor) OVERRIDE;
-  float GetDeviceScaleFactor() const OVERRIDE;
-  CefRefPtr<CefBrowser> GetBrowser() const OVERRIDE;
-  ClientWindowHandle GetWindowHandle() const OVERRIDE;
-  bool WithWindowlessRendering() const OVERRIDE;
-  bool WithExtension() const OVERRIDE;
+                   CefBrowserSettings& settings) override;
+  void Show(ShowMode mode) override;
+  void Hide() override;
+  void SetBounds(int x,
+                 int y,
+                 size_t width,
+                 size_t height,
+                 bool content_bounds) override;
+  bool DefaultToContentBounds() const override;
+  void Close(bool force) override;
+  void SetDeviceScaleFactor(float device_scale_factor) override;
+  std::optional<float> GetDeviceScaleFactor() const override;
+  CefRefPtr<CefBrowser> GetBrowser() const override;
+  ClientWindowHandle GetWindowHandle() const override;
+  bool WithWindowlessRendering() const override;
 
  private:
+  void ContinueInitOnUIThread(std::unique_ptr<RootWindowConfig> config,
+                              const CefBrowserSettings& settings);
+  void ContinueInitOnMainThread(std::unique_ptr<RootWindowConfig> config,
+                                const CefBrowserSettings& settings);
+
   void CreateBrowserWindow(const std::string& startup_url);
   void CreateRootWindow(const CefBrowserSettings& settings,
                         bool initially_hidden);
+
+  void GetWindowBoundsAndContinue(
+      const CefRect& dip_bounds,
+      bool content_bounds,
+      base::OnceCallback<void(const CefRect& /*pixel_bounds*/)> next);
 
   // Register the root window class.
   static void RegisterRootClass(HINSTANCE hInstance,
@@ -95,69 +113,86 @@ class RootWindowWin : public RootWindow, public BrowserWindow::Delegate {
   void OnDestroyed();
 
   // BrowserWindow::Delegate methods.
-  void OnBrowserCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  void OnBrowserWindowDestroyed() OVERRIDE;
-  void OnSetAddress(const std::string& url) OVERRIDE;
-  void OnSetTitle(const std::string& title) OVERRIDE;
-  void OnSetFullscreen(bool fullscreen) OVERRIDE;
-  void OnAutoResize(const CefSize& new_size) OVERRIDE;
+  bool UseAlloyStyle() const override { return IsAlloyStyle(); }
+  void OnBrowserCreated(CefRefPtr<CefBrowser> browser) override;
+  void OnBrowserWindowDestroyed() override;
+  void OnSetAddress(const std::string& url) override;
+  void OnSetTitle(const std::string& title) override;
+  void OnSetFullscreen(bool fullscreen) override;
+  void OnAutoResize(const CefSize& new_size) override;
+  void OnContentsBounds(const CefRect& new_bounds) override {
+    RootWindow::SetBounds(new_bounds,
+                          /*content_bounds=*/DefaultToContentBounds());
+  }
   void OnSetLoadingState(bool isLoading,
                          bool canGoBack,
-                         bool canGoForward) OVERRIDE;
+                         bool canGoForward) override;
   void OnSetDraggableRegions(
-      const std::vector<CefDraggableRegion>& regions) OVERRIDE;
+      const std::vector<CefDraggableRegion>& regions) override;
 
   void NotifyDestroyedIfDone();
 
+  void MaybeNotifyScreenInfoChanged();
+
+  // For popups: poll until the browser HWND is available, then call ShowPopup.
+  void TryShowPopupBrowser();
+
+  static void SaveWindowRestoreOnUIThread(const WINDOWPLACEMENT& placement);
+
   // After initialization all members are only accessed on the main thread.
   // Members set during initialization.
-  bool with_controls_;
-  bool with_osr_;
-  bool with_extension_;
-  bool is_popup_;
-  RECT start_rect_;
-  scoped_ptr<BrowserWindow> browser_window_;
+  bool with_controls_ = false;
+  bool always_on_top_ = false;
+  bool with_osr_ = false;
+  OsrRendererSettings osr_settings_;
+  bool is_popup_ = false;
+  CefRect initial_bounds_;
+  cef_show_state_t initial_show_state_ = CEF_SHOW_STATE_NORMAL;
+  float initial_scale_factor_ = 1.0;
+  std::unique_ptr<BrowserWindow> browser_window_;
   CefBrowserSettings browser_settings_;
-  bool initialized_;
 
   // Main window.
-  HWND hwnd_;
+  HWND hwnd_ = nullptr;
 
   // Draggable region.
-  HRGN draggable_region_;
+  HRGN draggable_region_ = nullptr;
 
   // Font for buttons and text fields.
-  HFONT font_;
-  int font_height_;
+  HFONT font_ = nullptr;
+  int font_height_ = 0;
 
   // Buttons.
-  HWND back_hwnd_;
-  HWND forward_hwnd_;
-  HWND reload_hwnd_;
-  HWND stop_hwnd_;
+  HWND back_hwnd_ = nullptr;
+  HWND forward_hwnd_ = nullptr;
+  HWND reload_hwnd_ = nullptr;
+  HWND stop_hwnd_ = nullptr;
 
   // URL text field.
-  HWND edit_hwnd_;
-  WNDPROC edit_wndproc_old_;
+  HWND edit_hwnd_ = nullptr;
+  WNDPROC edit_wndproc_old_ = nullptr;
 
   // Find dialog.
-  HWND find_hwnd_;
-  UINT find_message_id_;
-  WNDPROC find_wndproc_old_;
+  HWND find_hwnd_ = nullptr;
+  UINT find_message_id_ = 0;
+  WNDPROC find_wndproc_old_ = nullptr;
 
   // Find dialog state.
-  FINDREPLACE find_state_;
-  WCHAR find_buff_[80];
+  FINDREPLACE find_state_ = {0};
+  WCHAR find_buff_[80] = {0};
   std::wstring find_what_last_;
-  bool find_next_;
-  bool find_match_case_last_;
+  bool find_next_ = false;
+  bool find_match_case_last_ = false;
 
-  bool window_destroyed_;
-  bool browser_destroyed_;
+  bool window_destroyed_ = false;
+  bool browser_destroyed_ = false;
 
-  bool called_enable_non_client_dpi_scaling_;
+  bool called_enable_non_client_dpi_scaling_ = false;
 
-  DISALLOW_COPY_AND_ASSIGN(RootWindowWin);
+  // For Chrome style popups with multi-threaded message loop: track bounds
+  // for deferred ShowPopup call when browser HWND isn't immediately available.
+  bool pending_show_popup_ = false;
+  CefRect pending_popup_bounds_;
 };
 
 }  // namespace client

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=b7f068f316498e22b657baa43d6aacbc81d14ef9$
+// $hash=89503a6f1fbaaa8e8ad80df5b69e1d3bd54b7c25$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_DISPLAY_CAPI_H_
 #define CEF_INCLUDE_CAPI_VIEWS_CEF_DISPLAY_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -47,97 +51,134 @@ extern "C" {
 #endif
 
 ///
-// This structure typically, but not always, corresponds to a physical display
-// connected to the system. A fake Display may exist on a headless system, or a
-// Display may correspond to a remote, virtual display. All size and position
-// values are in density independent pixels (DIP) unless otherwise indicated.
-// Methods must be called on the browser process UI thread unless otherwise
-// indicated.
+/// This structure typically, but not always, corresponds to a physical display
+/// connected to the system. A fake Display may exist on a headless system, or a
+/// Display may correspond to a remote, virtual display. All size and position
+/// values are in density independent pixel (DIP) coordinates unless otherwise
+/// indicated. Methods must be called on the browser process UI thread unless
+/// otherwise indicated.
+///
+/// For details on coordinate systems and usage see
+/// https://bitbucket.org/chromiumembedded/cef/wiki/GeneralUsage#markdown-
+/// header-coordinate-systems
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_display_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Returns the unique identifier for this Display.
+  /// Returns the unique identifier for this Display.
   ///
-  int64(CEF_CALLBACK* get_id)(struct _cef_display_t* self);
+  int64_t(CEF_CALLBACK* get_id)(struct _cef_display_t* self);
 
   ///
-  // Returns this Display's device pixel scale factor. This specifies how much
-  // the UI should be scaled when the actual output has more pixels than
-  // standard displays (which is around 100~120dpi). The potential return values
-  // differ by platform.
+  /// Returns this Display's device pixel scale factor. This specifies how much
+  /// the UI should be scaled when the actual output has more pixels than
+  /// standard displays (which is around 100~120dpi). The potential return
+  /// values differ by platform. Windowed browsers with 1.0 zoom will have a
+  /// JavaScript `window.devicePixelRatio` value matching the associated
+  /// Display's get_device_scale_factor() value.
   ///
   float(CEF_CALLBACK* get_device_scale_factor)(struct _cef_display_t* self);
 
   ///
-  // Convert |point| from density independent pixels (DIP) to pixel coordinates
-  // using this Display's device scale factor.
+  /// Convert |point| from DIP coordinates to pixel coordinates using this
+  /// Display's device scale factor.
   ///
   void(CEF_CALLBACK* convert_point_to_pixels)(struct _cef_display_t* self,
                                               cef_point_t* point);
 
   ///
-  // Convert |point| from pixel coordinates to density independent pixels (DIP)
-  // using this Display's device scale factor.
+  /// Convert |point| from pixel coordinates to DIP coordinates using this
+  /// Display's device scale factor.
   ///
   void(CEF_CALLBACK* convert_point_from_pixels)(struct _cef_display_t* self,
                                                 cef_point_t* point);
 
   ///
-  // Returns this Display's bounds. This is the full size of the display.
+  /// Returns this Display's bounds in DIP screen coordinates. This is the full
+  /// size of the display.
   ///
   cef_rect_t(CEF_CALLBACK* get_bounds)(struct _cef_display_t* self);
 
   ///
-  // Returns this Display's work area. This excludes areas of the display that
-  // are occupied for window manager toolbars, etc.
+  /// Returns this Display's work area in DIP screen coordinates. This excludes
+  /// areas of the display that are occupied with window manager toolbars, etc.
   ///
   cef_rect_t(CEF_CALLBACK* get_work_area)(struct _cef_display_t* self);
 
   ///
-  // Returns this Display's rotation in degrees.
+  /// Returns this Display's rotation in degrees.
   ///
   int(CEF_CALLBACK* get_rotation)(struct _cef_display_t* self);
 } cef_display_t;
 
 ///
-// Returns the primary Display.
+/// Returns the primary Display.
 ///
-CEF_EXPORT cef_display_t* cef_display_get_primary();
+CEF_EXPORT cef_display_t* cef_display_get_primary(void);
 
 ///
-// Returns the Display nearest |point|. Set |input_pixel_coords| to true (1) if
-// |point| is in pixel coordinates instead of density independent pixels (DIP).
+/// Returns the Display nearest |point|. Set |input_pixel_coords| to true (1) if
+/// |point| is in pixel screen coordinates instead of DIP screen coordinates.
 ///
 CEF_EXPORT cef_display_t* cef_display_get_nearest_point(
     const cef_point_t* point,
     int input_pixel_coords);
 
 ///
-// Returns the Display that most closely intersects |bounds|.  Set
-// |input_pixel_coords| to true (1) if |bounds| is in pixel coordinates instead
-// of density independent pixels (DIP).
+/// Returns the Display that most closely intersects |bounds|.  Set
+/// |input_pixel_coords| to true (1) if |bounds| is in pixel screen coordinates
+/// instead of DIP screen coordinates.
 ///
 CEF_EXPORT cef_display_t* cef_display_get_matching_bounds(
     const cef_rect_t* bounds,
     int input_pixel_coords);
 
 ///
-// Returns the total number of Displays. Mirrored displays are excluded; this
-// function is intended to return the number of distinct, usable displays.
+/// Returns the total number of Displays. Mirrored displays are excluded; this
+/// function is intended to return the number of distinct, usable displays.
 ///
-CEF_EXPORT size_t cef_display_get_count();
+CEF_EXPORT size_t cef_display_get_count(void);
 
 ///
-// Returns all Displays. Mirrored displays are excluded; this function is
-// intended to return distinct, usable displays.
+/// Returns all Displays. Mirrored displays are excluded; this function is
+/// intended to return distinct, usable displays.
 ///
 CEF_EXPORT void cef_display_get_alls(size_t* displaysCount,
                                      cef_display_t** displays);
+
+///
+/// Convert |point| from DIP screen coordinates to pixel screen coordinates.
+/// This function is only used on Windows.
+///
+CEF_EXPORT cef_point_t
+cef_display_convert_screen_point_to_pixels(const cef_point_t* point);
+
+///
+/// Convert |point| from pixel screen coordinates to DIP screen coordinates.
+/// This function is only used on Windows.
+///
+CEF_EXPORT cef_point_t
+cef_display_convert_screen_point_from_pixels(const cef_point_t* point);
+
+///
+/// Convert |rect| from DIP screen coordinates to pixel screen coordinates. This
+/// function is only used on Windows.
+///
+CEF_EXPORT cef_rect_t
+cef_display_convert_screen_rect_to_pixels(const cef_rect_t* rect);
+
+///
+/// Convert |rect| from pixel screen coordinates to DIP screen coordinates. This
+/// function is only used on Windows.
+///
+CEF_EXPORT cef_rect_t
+cef_display_convert_screen_rect_from_pixels(const cef_rect_t* rect);
 
 #ifdef __cplusplus
 }

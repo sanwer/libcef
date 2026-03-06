@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=899e57614c5810d61b61d182ed823cfbd193b4d4$
+// $hash=add51fe5a92199b4aeb6a4832982fe9021aec23a$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_AUTH_CALLBACK_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_AUTH_CALLBACK_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -47,24 +51,26 @@ extern "C" {
 #endif
 
 ///
-// Callback structure used for asynchronous continuation of authentication
-// requests.
+/// Callback structure used for asynchronous continuation of authentication
+/// requests.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_auth_callback_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Continue the authentication request.
+  /// Continue the authentication request.
   ///
   void(CEF_CALLBACK* cont)(struct _cef_auth_callback_t* self,
                            const cef_string_t* username,
                            const cef_string_t* password);
 
   ///
-  // Cancel the authentication request.
+  /// Cancel the authentication request.
   ///
   void(CEF_CALLBACK* cancel)(struct _cef_auth_callback_t* self);
 } cef_auth_callback_t;

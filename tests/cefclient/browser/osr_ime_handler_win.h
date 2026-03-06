@@ -7,6 +7,7 @@
 #pragma once
 
 #include <windows.h>
+
 #include <vector>
 
 #include "include/internal/cef_types_wrappers.h"
@@ -60,7 +61,7 @@ class OsrImeHandlerWin {
   virtual void CancelIME();
 
   // Updates the IME caret position of the given window.
-  void UpdateCaretPosition(int index);
+  void UpdateCaretPosition(uint32_t index);
 
   // Updates the composition range. |selected_range| is the range of characters
   // that have been selected. |character_bounds| is the bounds of each character
@@ -83,7 +84,7 @@ class OsrImeHandlerWin {
   bool GetString(HIMC imm_context, WPARAM lparam, int type, CefString& result);
 
   // Represents whether or not there is an ongoing composition.
-  bool is_composing_;
+  bool is_composing_ = false;
 
   // The current composition character range and its bounds.
   std::vector<CefRect> composition_bounds_;
@@ -94,13 +95,13 @@ class OsrImeHandlerWin {
 
   // Represents whether or not the current input context has created a system
   // caret to set the position of its IME candidate window.
-  bool system_caret_;
+  bool system_caret_ = false;
 
   // The rectangle of the input caret retrieved from a renderer process.
   CefRect ime_rect_;
 
   // The current cursor index in composition string.
-  int cursor_index_;
+  uint32_t cursor_index_;
 
   // The composition range in the string. This may be used to determine the
   // offset in composition bounds.

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4964f811204bfeded07b554e93d66eab0d345919$
+// $hash=059ebe21d326846bdcefc186d9488a764d06d6ca$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_VIEWS_FILL_LAYOUT_CTOCPP_H_
@@ -31,13 +31,17 @@ class CefFillLayoutCToCpp : public CefCToCppRefCounted<CefFillLayoutCToCpp,
                                                        cef_fill_layout_t> {
  public:
   CefFillLayoutCToCpp();
+  virtual ~CefFillLayoutCToCpp();
 
   // CefFillLayout methods.
 
   // CefLayout methods.
-  CefRefPtr<CefBoxLayout> AsBoxLayout() OVERRIDE;
-  CefRefPtr<CefFillLayout> AsFillLayout() OVERRIDE;
-  bool IsValid() OVERRIDE;
+  CefRefPtr<CefBoxLayout> AsBoxLayout() override;
+  CefRefPtr<CefFillLayout> AsFillLayout() override;
+  bool IsValid() override;
 };
+
+constexpr auto CefFillLayoutCToCpp_Wrap = CefFillLayoutCToCpp::Wrap;
+constexpr auto CefFillLayoutCToCpp_Unwrap = CefFillLayoutCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_VIEWS_FILL_LAYOUT_CTOCPP_H_

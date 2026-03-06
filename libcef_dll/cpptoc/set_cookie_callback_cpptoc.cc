@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=6f56ac7fe46b02e448e6c36e09d6462784e08a59$
+// $hash=bca90768b4dd289cce5ef486c623fd17473cbae6$
 //
 
 #include "libcef_dll/cpptoc/set_cookie_callback_cpptoc.h"
+
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -21,11 +23,14 @@ namespace {
 void CEF_CALLBACK
 set_cookie_callback_on_complete(struct _cef_set_cookie_callback_t* self,
                                 int success) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
 
   // Execute
   CefSetCookieCallbackCppToC::Get(self)->OnComplete(success ? true : false);
@@ -39,23 +44,21 @@ CefSetCookieCallbackCppToC::CefSetCookieCallbackCppToC() {
   GetStruct()->on_complete = set_cookie_callback_on_complete;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefSetCookieCallbackCppToC::~CefSetCookieCallbackCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefSetCookieCallback> CefCppToCRefCounted<
     CefSetCookieCallbackCppToC,
     CefSetCookieCallback,
     cef_set_cookie_callback_t>::UnwrapDerived(CefWrapperType type,
                                               cef_set_cookie_callback_t* s) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefSetCookieCallbackCppToC,
-                                         CefSetCookieCallback,
-                                         cef_set_cookie_callback_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefSetCookieCallbackCppToC,

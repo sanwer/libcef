@@ -4,8 +4,13 @@
 
 #include "tests/ceftests/test_suite.h"
 
+#include "include/base/cef_logging.h"
 #include "include/cef_file_util.h"
+#include "include/test/cef_test_helpers.h"
+#include "include/wrapper/cef_scoped_temp_dir.h"
 #include "tests/gtest/include/gtest/gtest.h"
+#include "tests/gtest/teamcity/include/teamcity_gtest.h"
+#include "tests/shared/browser/resource_util.h"
 #include "tests/shared/common/client_switches.h"
 
 namespace {
@@ -38,12 +43,14 @@ void RouteStdioToConsole(bool create_console_if_not_found) {
   if (!AttachConsole(ATTACH_PARENT_PROCESS)) {
     unsigned int result = GetLastError();
     // Was probably already attached.
-    if (result == ERROR_ACCESS_DENIED)
+    if (result == ERROR_ACCESS_DENIED) {
       return;
+    }
     // Don't bother creating a new console for each child process if the
     // parent process is invalid (eg: crashed).
-    if (result == ERROR_GEN_FAILURE)
+    if (result == ERROR_GEN_FAILURE) {
       return;
+    }
     if (create_console_if_not_found) {
       // Make a new console if attaching to parent fails with any other error.
       // It should be ERROR_INVALID_HANDLE at this point, which means the
@@ -82,7 +89,7 @@ void RouteStdioToConsole(bool create_console_if_not_found) {
 }  // namespace
 
 CefTestSuite::CefTestSuite(int argc, char** argv)
-    : argc_(argc), argv_(argc, argv), retval_(0) {
+    : argc_(argc), argv_(argc, argv) {
   g_test_suite = this;
 
   // Keep a representation of the original command-line.
@@ -92,6 +99,18 @@ CefTestSuite::CefTestSuite(int argc, char** argv)
 #else
   command_line_->InitFromArgv(argc, argv);
 #endif
+
+  if (!command_line_->HasSwitch("type")) {
+    // Initialize in the main process only.
+    root_cache_path_ =
+        command_line_->GetSwitchValue(client::switches::kCachePath);
+    if (root_cache_path_.empty()) {
+      CefScopedTempDir temp_dir;
+      CHECK(temp_dir.CreateUniqueTempDir());
+      root_cache_path_ = temp_dir.Take();
+      RegisterTempDirectory(root_cache_path_);
+    }
+  }
 }
 
 CefTestSuite::~CefTestSuite() {
@@ -108,6 +127,12 @@ void CefTestSuite::InitMainProcess() {
 
   // This will modify |argc_| and |argv_|.
   testing::InitGoogleTest(&argc_, argv_.array());
+
+  if (jetbrains::teamcity::underTeamcity()) {
+    auto& listeners = ::testing::UnitTest::GetInstance()->listeners();
+    listeners.Append(
+        new jetbrains::teamcity::TeamcityGoogleTestEventListener());
+  }
 }
 
 // Don't add additional code to this method. Instead add it to Initialize().
@@ -119,18 +144,8 @@ int CefTestSuite::Run() {
 }
 
 void CefTestSuite::GetSettings(CefSettings& settings) const {
-#if defined(OS_WIN)
-  settings.multi_threaded_message_loop =
-      command_line_->HasSwitch(client::switches::kMultiThreadedMessageLoop);
-#endif
-
-  if (!settings.multi_threaded_message_loop) {
-    settings.external_message_pump =
-        command_line_->HasSwitch(client::switches::kExternalMessagePump);
-  }
-
-  CefString(&settings.cache_path) =
-      command_line_->GetSwitchValue(client::switches::kCachePath);
+  CefString(&settings.cache_path) = root_cache_path_;
+  CefString(&settings.root_cache_path) = root_cache_path_;
 
   // Always expose the V8 gc() function to give tests finer-grained control over
   // memory management.
@@ -138,8 +153,9 @@ void CefTestSuite::GetSettings(CefSettings& settings) const {
   // Value of kJavascriptFlags switch.
   std::string other_javascript_flags =
       command_line_->GetSwitchValue("js-flags");
-  if (!other_javascript_flags.empty())
+  if (!other_javascript_flags.empty()) {
     javascript_flags += " " + other_javascript_flags;
+  }
   CefString(&settings.javascript_flags) = javascript_flags;
 
   // Necessary for V8Test.OnUncaughtException tests.
@@ -152,17 +168,6 @@ void CefTestSuite::GetSettings(CefSettings& settings) const {
   CefString(&settings.accept_language_list) = CEF_SETTINGS_ACCEPT_LANGUAGE;
 }
 
-// static
-bool CefTestSuite::GetCachePath(std::string& path) const {
-  if (command_line_->HasSwitch(client::switches::kCachePath)) {
-    // Set the cache_path value.
-    path = command_line_->GetSwitchValue(client::switches::kCachePath);
-    return true;
-  }
-
-  return false;
-}
-
 void CefTestSuite::RegisterTempDirectory(const CefString& directory) {
   base::AutoLock lock_scope(temp_directories_lock_);
   temp_directories_.push_back(directory);
@@ -170,8 +175,8 @@ void CefTestSuite::RegisterTempDirectory(const CefString& directory) {
 
 void CefTestSuite::DeleteTempDirectories() {
   base::AutoLock lock_scope(temp_directories_lock_);
-  for (size_t i = 0U; i < temp_directories_.size(); ++i) {
-    CefDeleteFile(temp_directories_[i], true);
+  for (const auto& temp_directory : temp_directories_) {
+    CefDeleteFile(temp_directory, true);
   }
   temp_directories_.clear();
 }
@@ -182,15 +187,15 @@ void CefTestSuite::PreInitialize() {
 
   // Enable termination on heap corruption.
   // Ignore the result code. Supported starting with XP SP3 and Vista.
-  HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
+  HeapSetInformation(nullptr, HeapEnableTerminationOnCorruption, nullptr, 0);
 #endif
 
-#if defined(OS_LINUX) && defined(USE_AURA)
+#if defined(OS_LINUX)
   // When calling native char conversion functions (e.g wrctomb) we need to
   // have the locale set. In the absence of such a call the "C" locale is the
   // default. In the gtk code (below) gtk_init() implicitly sets a locale.
   setlocale(LC_ALL, "");
-#endif  // defined(OS_LINUX) && defined(USE_AURA)
+#endif  // defined(OS_LINUX)
 
   // Don't add additional code to this function. Instead add it to Initialize().
 }
@@ -199,6 +204,14 @@ void CefTestSuite::Initialize() {
 #if defined(OS_WIN)
   RouteStdioToConsole(true);
 #endif  // defined(OS_WIN)
+
+#if !defined(CEF_TESTS_IN_SRC_DIRECTORY)
+  // Configure the directory that contains test data resources.
+  std::string resource_dir;
+  bool result = client::GetResourceDir(resource_dir);
+  CHECK(result && !resource_dir.empty());
+  CefSetDataDirectoryForTests(resource_dir);
+#endif  // !defined(CEF_TESTS_IN_SRC_DIRECTORY)
 }
 
 void CefTestSuite::Shutdown() {}

@@ -1,16 +1,11 @@
 @Echo Off
 SET BAK_PATH=%PATH%
 SET PLATFORM=x86
-SET CMAKE_PATH=%CD%\cmake-3.4.3-win32-x86\bin;
-SET DEVENV_PATH=C:\Program Files (x86)\Microsoft Visual Studio 10.0\Common7\IDE;
-SET BIN_PATH=%CD%\..\Bin;
+SET CMAKE_PATH=D:\Program\cmake-3.29.2\bin;
+SET DEVENV_PATH=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE;
 SET XCOPY=xcopy /E /Y /I /Q
-SET PATH=%PATH%;%CMAKE_PATH%;%DEVENV_PATH%;%BIN_PATH%
+SET PATH=%PATH%;%CMAKE_PATH%;%DEVENV_PATH%
 
-7z x cef_binary_3.2623.1401.gb90a3be_windows32.7z
-7z x cmake-3.4.3-win32-x86.zip
-
-CD cef_binary_3.2623.1401.gb90a3be_windows32
 CMake .
 
 :quit

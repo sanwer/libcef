@@ -8,6 +8,22 @@
 
 namespace client {
 
+namespace {
+
+LARGE_INTEGER qi_freq_ = {};
+
+}  // namespace
+
+uint64_t GetTimeNow() {
+  if (!qi_freq_.HighPart && !qi_freq_.LowPart) {
+    QueryPerformanceFrequency(&qi_freq_);
+  }
+  LARGE_INTEGER t = {};
+  QueryPerformanceCounter(&t);
+  return static_cast<uint64_t>((t.QuadPart / double(qi_freq_.QuadPart)) *
+                               1000000);
+}
+
 void SetUserDataPtr(HWND hWnd, void* ptr) {
   SetLastError(ERROR_SUCCESS);
   LONG_PTR result =
@@ -18,7 +34,7 @@ void SetUserDataPtr(HWND hWnd, void* ptr) {
 WNDPROC SetWndProcPtr(HWND hWnd, WNDPROC wndProc) {
   WNDPROC old =
       reinterpret_cast<WNDPROC>(::GetWindowLongPtr(hWnd, GWLP_WNDPROC));
-  CHECK(old != NULL);
+  CHECK(old != nullptr);
   LONG_PTR result = ::SetWindowLongPtr(hWnd, GWLP_WNDPROC,
                                        reinterpret_cast<LONG_PTR>(wndProc));
   CHECK(result != 0 || GetLastError() == ERROR_SUCCESS);
@@ -28,52 +44,66 @@ WNDPROC SetWndProcPtr(HWND hWnd, WNDPROC wndProc) {
 std::wstring GetResourceString(UINT id) {
 #define MAX_LOADSTRING 100
   TCHAR buff[MAX_LOADSTRING] = {0};
-  LoadString(::GetModuleHandle(NULL), id, buff, MAX_LOADSTRING);
+  LoadString(GetCodeModuleHandle(), id, buff, MAX_LOADSTRING);
   return buff;
 }
 
 int GetCefMouseModifiers(WPARAM wparam) {
   int modifiers = 0;
-  if (wparam & MK_CONTROL)
+  if (wparam & MK_CONTROL) {
     modifiers |= EVENTFLAG_CONTROL_DOWN;
-  if (wparam & MK_SHIFT)
+  }
+  if (wparam & MK_SHIFT) {
     modifiers |= EVENTFLAG_SHIFT_DOWN;
-  if (IsKeyDown(VK_MENU))
+  }
+  if (IsKeyDown(VK_MENU)) {
     modifiers |= EVENTFLAG_ALT_DOWN;
-  if (wparam & MK_LBUTTON)
+  }
+  if (wparam & MK_LBUTTON) {
     modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-  if (wparam & MK_MBUTTON)
+  }
+  if (wparam & MK_MBUTTON) {
     modifiers |= EVENTFLAG_MIDDLE_MOUSE_BUTTON;
-  if (wparam & MK_RBUTTON)
+  }
+  if (wparam & MK_RBUTTON) {
     modifiers |= EVENTFLAG_RIGHT_MOUSE_BUTTON;
+  }
 
   // Low bit set from GetKeyState indicates "toggled".
-  if (::GetKeyState(VK_NUMLOCK) & 1)
+  if (::GetKeyState(VK_NUMLOCK) & 1) {
     modifiers |= EVENTFLAG_NUM_LOCK_ON;
-  if (::GetKeyState(VK_CAPITAL) & 1)
+  }
+  if (::GetKeyState(VK_CAPITAL) & 1) {
     modifiers |= EVENTFLAG_CAPS_LOCK_ON;
+  }
   return modifiers;
 }
 
 int GetCefKeyboardModifiers(WPARAM wparam, LPARAM lparam) {
   int modifiers = 0;
-  if (IsKeyDown(VK_SHIFT))
+  if (IsKeyDown(VK_SHIFT)) {
     modifiers |= EVENTFLAG_SHIFT_DOWN;
-  if (IsKeyDown(VK_CONTROL))
+  }
+  if (IsKeyDown(VK_CONTROL)) {
     modifiers |= EVENTFLAG_CONTROL_DOWN;
-  if (IsKeyDown(VK_MENU))
+  }
+  if (IsKeyDown(VK_MENU)) {
     modifiers |= EVENTFLAG_ALT_DOWN;
+  }
 
   // Low bit set from GetKeyState indicates "toggled".
-  if (::GetKeyState(VK_NUMLOCK) & 1)
+  if (::GetKeyState(VK_NUMLOCK) & 1) {
     modifiers |= EVENTFLAG_NUM_LOCK_ON;
-  if (::GetKeyState(VK_CAPITAL) & 1)
+  }
+  if (::GetKeyState(VK_CAPITAL) & 1) {
     modifiers |= EVENTFLAG_CAPS_LOCK_ON;
+  }
 
   switch (wparam) {
     case VK_RETURN:
-      if ((lparam >> 16) & KF_EXTENDED)
+      if ((lparam >> 16) & KF_EXTENDED) {
         modifiers |= EVENTFLAG_IS_KEY_PAD;
+      }
       break;
     case VK_INSERT:
     case VK_DELETE:
@@ -85,8 +115,9 @@ int GetCefKeyboardModifiers(WPARAM wparam, LPARAM lparam) {
     case VK_DOWN:
     case VK_LEFT:
     case VK_RIGHT:
-      if (!((lparam >> 16) & KF_EXTENDED))
+      if (!((lparam >> 16) & KF_EXTENDED)) {
         modifiers |= EVENTFLAG_IS_KEY_PAD;
+      }
       break;
     case VK_NUMLOCK:
     case VK_NUMPAD0:
@@ -108,22 +139,25 @@ int GetCefKeyboardModifiers(WPARAM wparam, LPARAM lparam) {
       modifiers |= EVENTFLAG_IS_KEY_PAD;
       break;
     case VK_SHIFT:
-      if (IsKeyDown(VK_LSHIFT))
+      if (IsKeyDown(VK_LSHIFT)) {
         modifiers |= EVENTFLAG_IS_LEFT;
-      else if (IsKeyDown(VK_RSHIFT))
+      } else if (IsKeyDown(VK_RSHIFT)) {
         modifiers |= EVENTFLAG_IS_RIGHT;
+      }
       break;
     case VK_CONTROL:
-      if (IsKeyDown(VK_LCONTROL))
+      if (IsKeyDown(VK_LCONTROL)) {
         modifiers |= EVENTFLAG_IS_LEFT;
-      else if (IsKeyDown(VK_RCONTROL))
+      } else if (IsKeyDown(VK_RCONTROL)) {
         modifiers |= EVENTFLAG_IS_RIGHT;
+      }
       break;
     case VK_MENU:
-      if (IsKeyDown(VK_LMENU))
+      if (IsKeyDown(VK_LMENU)) {
         modifiers |= EVENTFLAG_IS_LEFT;
-      else if (IsKeyDown(VK_RMENU))
+      } else if (IsKeyDown(VK_RMENU)) {
         modifiers |= EVENTFLAG_IS_RIGHT;
+      }
       break;
     case VK_LWIN:
       modifiers |= EVENTFLAG_IS_LEFT;
@@ -147,14 +181,23 @@ float GetDeviceScaleFactor() {
     // This value is safe to cache for the life time of the app since the user
     // must logout to change the DPI setting. This value also applies to all
     // screens.
-    HDC screen_dc = ::GetDC(NULL);
+    HDC screen_dc = ::GetDC(nullptr);
     int dpi_x = GetDeviceCaps(screen_dc, LOGPIXELSX);
     scale_factor = static_cast<float>(dpi_x) / 96.0f;
-    ::ReleaseDC(NULL, screen_dc);
+    ::ReleaseDC(nullptr, screen_dc);
     initialized = true;
   }
 
   return scale_factor;
+}
+
+HINSTANCE GetCodeModuleHandle() {
+  HMODULE hModule = nullptr;
+  CHECK(::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                                GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                            reinterpret_cast<LPCWSTR>(GetCodeModuleHandle),
+                            &hModule));
+  return hModule;
 }
 
 }  // namespace client

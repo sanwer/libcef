@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=67f215de80386072ee41b2f59e42bf3c2c72b1a7$
+// $hash=a81be20e174b5787e4d13234088f306f0da2a9a1$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_RUN_FILE_DIALOG_CALLBACK_CPPTOC_H_
@@ -34,6 +34,12 @@ class CefRunFileDialogCallbackCppToC
                                  cef_run_file_dialog_callback_t> {
  public:
   CefRunFileDialogCallbackCppToC();
+  virtual ~CefRunFileDialogCallbackCppToC();
 };
+
+constexpr auto CefRunFileDialogCallbackCppToC_Wrap =
+    CefRunFileDialogCallbackCppToC::Wrap;
+constexpr auto CefRunFileDialogCallbackCppToC_Unwrap =
+    CefRunFileDialogCallbackCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_RUN_FILE_DIALOG_CALLBACK_CPPTOC_H_

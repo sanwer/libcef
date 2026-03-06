@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,17 +9,22 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=39b74063d934e0b907b6e3b40bb8534f2500572d$
+// $hash=ce00f3f34e8ed2f7d8b330416b2d1d00c562293f$
 //
 
 #include "libcef_dll/ctocpp/callback_ctocpp.h"
 
+#include "libcef_dll/shutdown_checker.h"
+
 // VIRTUAL METHODS - Body may be edited by hand.
 
-void CefCallbackCToCpp::Continue() {
-  cef_callback_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, cont))
+NO_SANITIZE("cfi-icall") void CefCallbackCToCpp::Continue() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->cont) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -27,10 +32,13 @@ void CefCallbackCToCpp::Continue() {
   _struct->cont(_struct);
 }
 
-void CefCallbackCToCpp::Cancel() {
-  cef_callback_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, cancel))
+NO_SANITIZE("cfi-icall") void CefCallbackCToCpp::Cancel() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->cancel) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -42,20 +50,19 @@ void CefCallbackCToCpp::Cancel() {
 
 CefCallbackCToCpp::CefCallbackCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefCallbackCToCpp::~CefCallbackCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 cef_callback_t*
 CefCToCppRefCounted<CefCallbackCToCpp, CefCallback, cef_callback_t>::
     UnwrapDerived(CefWrapperType type, CefCallback* c) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount
-    CefCToCppRefCounted<CefCallbackCToCpp, CefCallback, cef_callback_t>::
-        DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefCallbackCToCpp,

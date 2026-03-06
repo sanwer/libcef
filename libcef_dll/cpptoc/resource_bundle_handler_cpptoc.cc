@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=e01566e28d56c6683221adb319e49f72dca23121$
+// $hash=8584f2790a454d504857d2278c7cb602491b9b56$
 //
 
 #include "libcef_dll/cpptoc/resource_bundle_handler_cpptoc.h"
+
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -22,15 +24,19 @@ int CEF_CALLBACK resource_bundle_handler_get_localized_string(
     struct _cef_resource_bundle_handler_t* self,
     int string_id,
     cef_string_t* string) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
   // Verify param: string; type: string_byref
   DCHECK(string);
-  if (!string)
+  if (!string) {
     return 0;
+  }
 
   // Translate param: string; type: string_byref
   CefString stringStr(string);
@@ -48,19 +54,24 @@ int CEF_CALLBACK resource_bundle_handler_get_data_resource(
     int resource_id,
     void** data,
     size_t* data_size) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
   // Verify param: data; type: simple_byref
   DCHECK(data);
-  if (!data)
+  if (!data) {
     return 0;
+  }
   // Verify param: data_size; type: simple_byref
   DCHECK(data_size);
-  if (!data_size)
+  if (!data_size) {
     return 0;
+  }
 
   // Translate param: data; type: simple_byref
   void* dataVal = data ? *data : NULL;
@@ -72,11 +83,13 @@ int CEF_CALLBACK resource_bundle_handler_get_data_resource(
       resource_id, dataVal, data_sizeVal);
 
   // Restore param: data; type: simple_byref
-  if (data)
+  if (data) {
     *data = dataVal;
+  }
   // Restore param: data_size; type: simple_byref
-  if (data_size)
+  if (data_size) {
     *data_size = data_sizeVal;
+  }
 
   // Return type: bool
   return _retval;
@@ -88,19 +101,24 @@ int CEF_CALLBACK resource_bundle_handler_get_data_resource_for_scale(
     cef_scale_factor_t scale_factor,
     void** data,
     size_t* data_size) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
   // Verify param: data; type: simple_byref
   DCHECK(data);
-  if (!data)
+  if (!data) {
     return 0;
+  }
   // Verify param: data_size; type: simple_byref
   DCHECK(data_size);
-  if (!data_size)
+  if (!data_size) {
     return 0;
+  }
 
   // Translate param: data; type: simple_byref
   void* dataVal = data ? *data : NULL;
@@ -113,11 +131,13 @@ int CEF_CALLBACK resource_bundle_handler_get_data_resource_for_scale(
           resource_id, scale_factor, dataVal, data_sizeVal);
 
   // Restore param: data; type: simple_byref
-  if (data)
+  if (data) {
     *data = dataVal;
+  }
   // Restore param: data_size; type: simple_byref
-  if (data_size)
+  if (data_size) {
     *data_size = data_sizeVal;
+  }
 
   // Return type: bool
   return _retval;
@@ -135,6 +155,12 @@ CefResourceBundleHandlerCppToC::CefResourceBundleHandlerCppToC() {
       resource_bundle_handler_get_data_resource_for_scale;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefResourceBundleHandlerCppToC::~CefResourceBundleHandlerCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefResourceBundleHandler> CefCppToCRefCounted<
     CefResourceBundleHandlerCppToC,
@@ -142,17 +168,9 @@ CefRefPtr<CefResourceBundleHandler> CefCppToCRefCounted<
     cef_resource_bundle_handler_t>::UnwrapDerived(CefWrapperType type,
                                                   cef_resource_bundle_handler_t*
                                                       s) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<
-    CefResourceBundleHandlerCppToC,
-    CefResourceBundleHandler,
-    cef_resource_bundle_handler_t>::DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType

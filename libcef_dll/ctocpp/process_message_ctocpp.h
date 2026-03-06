@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=7f2d387d2f6a87cdbec3c5e2f1b3d53863f17c4c$
+// $hash=0871617392ad6bcd359c4bdc96877dc4d143bb73$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_PROCESS_MESSAGE_CTOCPP_H_
@@ -32,13 +32,18 @@ class CefProcessMessageCToCpp
                                  cef_process_message_t> {
  public:
   CefProcessMessageCToCpp();
+  virtual ~CefProcessMessageCToCpp();
 
   // CefProcessMessage methods.
-  bool IsValid() OVERRIDE;
-  bool IsReadOnly() OVERRIDE;
-  CefRefPtr<CefProcessMessage> Copy() OVERRIDE;
-  CefString GetName() OVERRIDE;
-  CefRefPtr<CefListValue> GetArgumentList() OVERRIDE;
+  bool IsValid() override;
+  bool IsReadOnly() override;
+  CefRefPtr<CefProcessMessage> Copy() override;
+  CefString GetName() override;
+  CefRefPtr<CefListValue> GetArgumentList() override;
+  CefRefPtr<CefSharedMemoryRegion> GetSharedMemoryRegion() override;
 };
+
+constexpr auto CefProcessMessageCToCpp_Wrap = CefProcessMessageCToCpp::Wrap;
+constexpr auto CefProcessMessageCToCpp_Unwrap = CefProcessMessageCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_PROCESS_MESSAGE_CTOCPP_H_

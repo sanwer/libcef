@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=d9cedd8c411dd064eacde55a95d6e05303dea365$
+// $hash=0df22d0fee8302bea96f2e5951b36de60c93bf65$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_DOWNLOAD_HANDLER_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_DOWNLOAD_HANDLER_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_browser_capi.h"
@@ -49,19 +53,21 @@ extern "C" {
 #endif
 
 ///
-// Callback structure used to asynchronously continue a download.
+/// Callback structure used to asynchronously continue a download.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_before_download_callback_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Call to continue the download. Set |download_path| to the full file path
-  // for the download including the file name or leave blank to use the
-  // suggested name and the default temp directory. Set |show_dialog| to true
-  // (1) if you do wish to show the default "Save As" dialog.
+  /// Call to continue the download. Set |download_path| to the full file path
+  /// for the download including the file name or leave blank to use the
+  /// suggested name and the default temp directory. Set |show_dialog| to true
+  /// (1) if you do wish to show the default "Save As" dialog.
   ///
   void(CEF_CALLBACK* cont)(struct _cef_before_download_callback_t* self,
                            const cef_string_t* download_path,
@@ -69,48 +75,65 @@ typedef struct _cef_before_download_callback_t {
 } cef_before_download_callback_t;
 
 ///
-// Callback structure used to asynchronously cancel a download.
+/// Callback structure used to asynchronously cancel a download.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_download_item_callback_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Call to cancel the download.
+  /// Call to cancel the download.
   ///
   void(CEF_CALLBACK* cancel)(struct _cef_download_item_callback_t* self);
 
   ///
-  // Call to pause the download.
+  /// Call to pause the download.
   ///
   void(CEF_CALLBACK* pause)(struct _cef_download_item_callback_t* self);
 
   ///
-  // Call to resume the download.
+  /// Call to resume the download.
   ///
   void(CEF_CALLBACK* resume)(struct _cef_download_item_callback_t* self);
 } cef_download_item_callback_t;
 
 ///
-// Structure used to handle file downloads. The functions of this structure will
-// called on the browser process UI thread.
+/// Structure used to handle file downloads. The functions of this structure
+/// will called on the browser process UI thread.
+///
+/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_download_handler_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Called before a download begins. |suggested_name| is the suggested name for
-  // the download file. By default the download will be canceled. Execute
-  // |callback| either asynchronously or in this function to continue the
-  // download if desired. Do not keep a reference to |download_item| outside of
-  // this function.
+  /// Called before a download begins in response to a user-initiated action
+  /// (e.g. alt + link click or link click that returns a `Content-Disposition:
+  /// attachment` response from the server). |url| is the target download URL
+  /// and |request_function| is the target function (GET, POST, etc). Return
+  /// true (1) to proceed with the download or false (0) to cancel the download.
   ///
-  void(CEF_CALLBACK* on_before_download)(
+  int(CEF_CALLBACK* can_download)(struct _cef_download_handler_t* self,
+                                  struct _cef_browser_t* browser,
+                                  const cef_string_t* url,
+                                  const cef_string_t* request_method);
+
+  ///
+  /// Called before a download begins. |suggested_name| is the suggested name
+  /// for the download file. Return true (1) and execute |callback| either
+  /// asynchronously or in this function to continue or cancel the download.
+  /// Return false (0) to proceed with default handling (cancel with Alloy
+  /// style, download shelf with Chrome style). Do not keep a reference to
+  /// |download_item| outside of this function.
+  ///
+  int(CEF_CALLBACK* on_before_download)(
       struct _cef_download_handler_t* self,
       struct _cef_browser_t* browser,
       struct _cef_download_item_t* download_item,
@@ -118,11 +141,11 @@ typedef struct _cef_download_handler_t {
       struct _cef_before_download_callback_t* callback);
 
   ///
-  // Called when a download's status or progress information has been updated.
-  // This may be called multiple times before and after on_before_download().
-  // Execute |callback| either asynchronously or in this function to cancel the
-  // download if desired. Do not keep a reference to |download_item| outside of
-  // this function.
+  /// Called when a download's status or progress information has been updated.
+  /// This may be called multiple times before and after on_before_download().
+  /// Execute |callback| either asynchronously or in this function to cancel the
+  /// download if desired. Do not keep a reference to |download_item| outside of
+  /// this function.
   ///
   void(CEF_CALLBACK* on_download_updated)(
       struct _cef_download_handler_t* self,

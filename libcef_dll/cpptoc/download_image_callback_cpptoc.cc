@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,13 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=ac61a6f04c6533a937dd50fb0e99879bb63f2178$
+// $hash=2036f25c8c7bdd30ec9a70f43d22fcdf93d58f1c$
 //
 
 #include "libcef_dll/cpptoc/download_image_callback_cpptoc.h"
+
 #include "libcef_dll/ctocpp/image_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -24,20 +26,24 @@ void CEF_CALLBACK download_image_callback_on_download_image_finished(
     const cef_string_t* image_url,
     int http_status_code,
     struct _cef_image_t* image) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: image_url; type: string_byref_const
   DCHECK(image_url);
-  if (!image_url)
+  if (!image_url) {
     return;
+  }
   // Unverified params: image
 
   // Execute
   CefDownloadImageCallbackCppToC::Get(self)->OnDownloadImageFinished(
-      CefString(image_url), http_status_code, CefImageCToCpp::Wrap(image));
+      CefString(image_url), http_status_code, CefImageCToCpp_Wrap(image));
 }
 
 }  // namespace
@@ -49,6 +55,12 @@ CefDownloadImageCallbackCppToC::CefDownloadImageCallbackCppToC() {
       download_image_callback_on_download_image_finished;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefDownloadImageCallbackCppToC::~CefDownloadImageCallbackCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefDownloadImageCallback> CefCppToCRefCounted<
     CefDownloadImageCallbackCppToC,
@@ -56,17 +68,9 @@ CefRefPtr<CefDownloadImageCallback> CefCppToCRefCounted<
     cef_download_image_callback_t>::UnwrapDerived(CefWrapperType type,
                                                   cef_download_image_callback_t*
                                                       s) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<
-    CefDownloadImageCallbackCppToC,
-    CefDownloadImageCallback,
-    cef_download_image_callback_t>::DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b3c307b1cc2d4bc4877d8d1862e5ef77101289d8$
+// $hash=54db8835fa55eedecff0df32ed3389ac6e22f10f$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_STREAM_READER_CTOCPP_H_
@@ -31,13 +31,17 @@ class CefStreamReaderCToCpp : public CefCToCppRefCounted<CefStreamReaderCToCpp,
                                                          cef_stream_reader_t> {
  public:
   CefStreamReaderCToCpp();
+  virtual ~CefStreamReaderCToCpp();
 
   // CefStreamReader methods.
-  size_t Read(void* ptr, size_t size, size_t n) OVERRIDE;
-  int Seek(int64 offset, int whence) OVERRIDE;
-  int64 Tell() OVERRIDE;
-  int Eof() OVERRIDE;
-  bool MayBlock() OVERRIDE;
+  size_t Read(void* ptr, size_t size, size_t n) override;
+  int Seek(int64_t offset, int whence) override;
+  int64_t Tell() override;
+  int Eof() override;
+  bool MayBlock() override;
 };
+
+constexpr auto CefStreamReaderCToCpp_Wrap = CefStreamReaderCToCpp::Wrap;
+constexpr auto CefStreamReaderCToCpp_Unwrap = CefStreamReaderCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_STREAM_READER_CTOCPP_H_

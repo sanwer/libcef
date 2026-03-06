@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=05909b1ba907aaf0d4df78f41fb7d21498f9643b$
+// $hash=de937285b5fd128285b3bdcaad41e7302a4d1987$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_TEST_TRANSLATOR_TEST_SCOPED_CLIENT_CPPTOC_H_
@@ -32,6 +32,26 @@ class CefTranslatorTestScopedClientCppToC
                              cef_translator_test_scoped_client_t> {
  public:
   CefTranslatorTestScopedClientCppToC();
+  virtual ~CefTranslatorTestScopedClientCppToC();
 };
+
+constexpr auto CefTranslatorTestScopedClientCppToC_WrapOwn =
+    CefTranslatorTestScopedClientCppToC::WrapOwn;
+constexpr auto CefTranslatorTestScopedClientCppToC_WrapRaw =
+    CefTranslatorTestScopedClientCppToC::WrapRaw;
+constexpr auto CefTranslatorTestScopedClientCppToC_UnwrapOwn =
+    CefTranslatorTestScopedClientCppToC::UnwrapOwn;
+constexpr auto CefTranslatorTestScopedClientCppToC_UnwrapRaw =
+    CefTranslatorTestScopedClientCppToC::UnwrapRaw;
+constexpr auto CefTranslatorTestScopedClientCppToC_GetWrapper =
+    CefTranslatorTestScopedClientCppToC::GetWrapper;
+
+inline cef_translator_test_scoped_client_t*
+CefTranslatorTestScopedClientCppToC_WrapRawAndRelease(
+    CefRawPtr<CefTranslatorTestScopedClient> c) {
+  auto [ownerPtr, structPtr] = CefTranslatorTestScopedClientCppToC_WrapRaw(c);
+  ownerPtr.release();
+  return structPtr;
+}
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_TEST_TRANSLATOR_TEST_SCOPED_CLIENT_CPPTOC_H_

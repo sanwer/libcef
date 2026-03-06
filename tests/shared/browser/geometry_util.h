@@ -16,7 +16,13 @@ CefRect LogicalToDevice(const CefRect& value, float device_scale_factor);
 
 // Convert |value| from device coordinates to logical coordinates.
 int DeviceToLogical(int value, float device_scale_factor);
+CefRect DeviceToLogical(const CefRect& value, float device_scale_factor);
 void DeviceToLogical(CefMouseEvent& value, float device_scale_factor);
+void DeviceToLogical(CefTouchEvent& value, float device_scale_factor);
+
+// Fit |window| inside |display|. Coordinates are relative to the upper-left
+// corner of the display.
+void ConstrainWindowBounds(const CefRect& display, CefRect& window);
 
 }  // namespace client
 

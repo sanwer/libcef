@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=ca069c86d9b09fb6f939ce72682e15ce95571ead$
+// $hash=998158196fdbff4445978a92c8865ce981b4d955$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_APP_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_APP_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_browser_process_handler_capi.h"
@@ -54,25 +58,28 @@ extern "C" {
 struct _cef_app_t;
 
 ///
-// Implement this structure to provide handler implementations. Methods will be
-// called by the process and/or thread indicated.
+/// Implement this structure to provide handler implementations. Methods will be
+/// called by the process and/or thread indicated.
+///
+/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_app_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Provides an opportunity to view and/or modify command-line arguments before
-  // processing by CEF and Chromium. The |process_type| value will be NULL for
-  // the browser process. Do not keep a reference to the cef_command_line_t
-  // object passed to this function. The CefSettings.command_line_args_disabled
-  // value can be used to start with an NULL command-line object. Any values
-  // specified in CefSettings that equate to command-line arguments will be set
-  // before this function is called. Be cautious when using this function to
-  // modify command-line arguments for non-browser processes as this may result
-  // in undefined behavior including crashes.
+  /// Provides an opportunity to view and/or modify command-line arguments
+  /// before processing by CEF and Chromium. The |process_type| value will be
+  /// NULL for the browser process. Do not keep a reference to the
+  /// cef_command_line_t object passed to this function. The
+  /// cef_settings_t.command_line_args_disabled value can be used to start with
+  /// an NULL command-line object. Any values specified in CefSettings that
+  /// equate to command-line arguments will be set before this function is
+  /// called. Be cautious when using this function to modify command-line
+  /// arguments for non-browser processes as this may result in undefined
+  /// behavior including crashes.
   ///
   void(CEF_CALLBACK* on_before_command_line_processing)(
       struct _cef_app_t* self,
@@ -80,119 +87,154 @@ typedef struct _cef_app_t {
       struct _cef_command_line_t* command_line);
 
   ///
-  // Provides an opportunity to register custom schemes. Do not keep a reference
-  // to the |registrar| object. This function is called on the main thread for
-  // each process and the registered schemes should be the same across all
-  // processes.
+  /// Provides an opportunity to register custom schemes. Do not keep a
+  /// reference to the |registrar| object. This function is called on the main
+  /// thread for each process and the registered schemes should be the same
+  /// across all processes.
   ///
   void(CEF_CALLBACK* on_register_custom_schemes)(
       struct _cef_app_t* self,
       struct _cef_scheme_registrar_t* registrar);
 
   ///
-  // Return the handler for resource bundle events. If
-  // CefSettings.pack_loading_disabled is true (1) a handler must be returned.
-  // If no handler is returned resources will be loaded from pack files. This
-  // function is called by the browser and render processes on multiple threads.
+  /// Return the handler for resource bundle events. If no handler is returned
+  /// resources will be loaded from pack files. This function is called by the
+  /// browser and render processes on multiple threads.
   ///
   struct _cef_resource_bundle_handler_t*(
       CEF_CALLBACK* get_resource_bundle_handler)(struct _cef_app_t* self);
 
   ///
-  // Return the handler for functionality specific to the browser process. This
-  // function is called on multiple threads in the browser process.
+  /// Return the handler for functionality specific to the browser process. This
+  /// function is called on multiple threads in the browser process.
   ///
   struct _cef_browser_process_handler_t*(
       CEF_CALLBACK* get_browser_process_handler)(struct _cef_app_t* self);
 
   ///
-  // Return the handler for functionality specific to the render process. This
-  // function is called on the render process main thread.
+  /// Return the handler for functionality specific to the render process. This
+  /// function is called on the render process main thread.
   ///
   struct _cef_render_process_handler_t*(
       CEF_CALLBACK* get_render_process_handler)(struct _cef_app_t* self);
 } cef_app_t;
 
 ///
-// This function should be called from the application entry point function to
-// execute a secondary process. It can be used to run secondary processes from
-// the browser client executable (default behavior) or from a separate
-// executable specified by the CefSettings.browser_subprocess_path value. If
-// called for the browser process (identified by no "type" command-line value)
-// it will return immediately with a value of -1. If called for a recognized
-// secondary process it will block until the process should exit and then return
-// the process exit code. The |application| parameter may be NULL. The
-// |windows_sandbox_info| parameter is only used on Windows and may be NULL (see
-// cef_sandbox_win.h for details).
+/// This function should be called from the application entry point function to
+/// execute a secondary process. It can be used to run secondary processes from
+/// the browser client executable (default behavior) or from a separate
+/// executable specified by the cef_settings_t.browser_subprocess_path value. If
+/// called for the browser process (identified by no "type" command-line value)
+/// it will return immediately with a value of -1. If called for a recognized
+/// secondary process it will block until the process should exit and then
+/// return the process exit code. The |application| parameter may be NULL. The
+/// |windows_sandbox_info| parameter is only used on Windows and may be NULL
+/// (see cef_sandbox_win.h for details).
 ///
-CEF_EXPORT int cef_execute_process(const struct _cef_main_args_t* args,
+CEF_EXPORT int cef_execute_process(const cef_main_args_t* args,
                                    cef_app_t* application,
                                    void* windows_sandbox_info);
 
 ///
-// This function should be called on the main application thread to initialize
-// the CEF browser process. The |application| parameter may be NULL. A return
-// value of true (1) indicates that it succeeded and false (0) indicates that it
-// failed. The |windows_sandbox_info| parameter is only used on Windows and may
-// be NULL (see cef_sandbox_win.h for details).
+/// This function should be called on the main application thread to initialize
+/// the CEF browser process. The |application| parameter may be NULL. Returns
+/// true (1) if initialization succeeds. Returns false (0) if initialization
+/// fails or if early exit is desired (for example, due to process singleton
+/// relaunch behavior). If this function returns false (0) then the application
+/// should exit immediately without calling any other CEF functions except,
+/// optionally, CefGetExitCode. The |windows_sandbox_info| parameter is only
+/// used on Windows and may be NULL (see cef_sandbox_win.h for details).
 ///
-CEF_EXPORT int cef_initialize(const struct _cef_main_args_t* args,
+CEF_EXPORT int cef_initialize(const cef_main_args_t* args,
                               const struct _cef_settings_t* settings,
                               cef_app_t* application,
                               void* windows_sandbox_info);
 
 ///
-// This function should be called on the main application thread to shut down
-// the CEF browser process before the application exits.
+/// This function can optionally be called on the main application thread after
+/// CefInitialize to retrieve the initialization exit code. When CefInitialize
+/// returns true (1) the exit code will be 0 (CEF_RESULT_CODE_NORMAL_EXIT).
+/// Otherwise, see cef_resultcode_t for possible exit code values including
+/// browser process initialization errors and normal early exit conditions (such
+/// as CEF_RESULT_CODE_NORMAL_EXIT_PROCESS_NOTIFIED for process singleton
+/// relaunch behavior).
 ///
-CEF_EXPORT void cef_shutdown();
+CEF_EXPORT int cef_get_exit_code(void);
 
 ///
-// Perform a single iteration of CEF message loop processing. This function is
-// provided for cases where the CEF message loop must be integrated into an
-// existing application message loop. Use of this function is not recommended
-// for most users; use either the cef_run_message_loop() function or
-// CefSettings.multi_threaded_message_loop if possible. When using this function
-// care must be taken to balance performance against excessive CPU usage. It is
-// recommended to enable the CefSettings.external_message_pump option when using
-// this function so that
-// cef_browser_process_handler_t::on_schedule_message_pump_work() callbacks can
-// facilitate the scheduling process. This function should only be called on the
-// main application thread and only if cef_initialize() is called with a
-// CefSettings.multi_threaded_message_loop value of false (0). This function
-// will not block.
+/// This function should be called on the main application thread to shut down
+/// the CEF browser process before the application exits. Do not call any other
+/// CEF functions after calling this function.
 ///
-CEF_EXPORT void cef_do_message_loop_work();
+CEF_EXPORT void cef_shutdown(void);
 
 ///
-// Run the CEF message loop. Use this function instead of an application-
-// provided message loop to get the best balance between performance and CPU
-// usage. This function should only be called on the main application thread and
-// only if cef_initialize() is called with a
-// CefSettings.multi_threaded_message_loop value of false (0). This function
-// will block until a quit message is received by the system.
+/// Perform a single iteration of CEF message loop processing. This function is
+/// provided for cases where the CEF message loop must be integrated into an
+/// existing application message loop. Use of this function is not recommended
+/// for most users; use either the cef_run_message_loop() function or
+/// cef_settings_t.multi_threaded_message_loop if possible. When using this
+/// function care must be taken to balance performance against excessive CPU
+/// usage. It is recommended to enable the cef_settings_t.external_message_pump
+/// option when using this function so that
+/// cef_browser_process_handler_t::on_schedule_message_pump_work() callbacks can
+/// facilitate the scheduling process. This function should only be called on
+/// the main application thread and only if cef_initialize() is called with a
+/// cef_settings_t.multi_threaded_message_loop value of false (0). This function
+/// will not block.
 ///
-CEF_EXPORT void cef_run_message_loop();
+CEF_EXPORT void cef_do_message_loop_work(void);
 
 ///
-// Quit the CEF message loop that was started by calling cef_run_message_loop().
-// This function should only be called on the main application thread and only
-// if cef_run_message_loop() was used.
+/// Run the CEF message loop. Use this function instead of an application-
+/// provided message loop to get the best balance between performance and CPU
+/// usage. This function should only be called on the main application thread
+/// and only if cef_initialize() is called with a
+/// cef_settings_t.multi_threaded_message_loop value of false (0). This function
+/// will block until a quit message is received by the system.
 ///
-CEF_EXPORT void cef_quit_message_loop();
+CEF_EXPORT void cef_run_message_loop(void);
 
 ///
-// Set to true (1) before calling Windows APIs like TrackPopupMenu that enter a
-// modal message loop. Set to false (0) after exiting the modal message loop.
+/// Quit the CEF message loop that was started by calling
+/// cef_run_message_loop(). This function should only be called on the main
+/// application thread and only if cef_run_message_loop() was used.
 ///
-CEF_EXPORT void cef_set_osmodal_loop(int osModalLoop);
+CEF_EXPORT void cef_quit_message_loop(void);
 
+#if CEF_API_ADDED(14100)
 ///
-// Call during process startup to enable High-DPI support on Windows 7 or newer.
-// Older versions of Windows should be left DPI-unaware because they do not
-// support DirectWrite and GDI fonts are kerned very badly.
+/// Set to true (1) before calling OS APIs on the CEF UI thread that will enter
+/// a native message loop (see usage restrictions below). Set to false (0) after
+/// exiting the native message loop. On Windows, use the CefSetOSModalLoop
+/// function instead in cases like native top menus where resize of the browser
+/// content is not required, or in cases like printer APIs where reentrancy
+/// safety cannot be guaranteed.
 ///
-CEF_EXPORT void cef_enable_highdpi_support();
+/// Nested processing of Chromium tasks is disabled by default because common
+/// controls and/or printer functions may use nested native message loops that
+/// lead to unplanned reentrancy. This function re-enables nested processing in
+/// the scope of an upcoming native message loop. It must only be used in cases
+/// where the stack is reentrancy safe and processing nestable tasks is
+/// explicitly safe. Do not use in cases (like the printer example) where an OS
+/// API may experience unplanned reentrancy as a result of a new task executing
+/// immediately.
+///
+/// For instance,
+/// - The UI thread is running a message loop.
+/// - It receives a task #1 and executes it.
+/// - The task #1 implicitly starts a nested message loop. For example, via
+///   Windows APIs such as MessageBox or GetSaveFileName, or default handling of
+///   a user-initiated drag/resize operation (e.g. DefWindowProc handling of
+///   WM_SYSCOMMAND for SC_MOVE/SC_SIZE).
+/// - The UI thread receives a task #2 before or while in this second message
+///   loop.
+/// - With NestableTasksAllowed set to true (1), the task #2 will run right
+///   away. Otherwise, it will be executed right after task #1 completes at
+///   "thread message loop level".
+///
+CEF_EXPORT void cef_set_nestable_tasks_allowed(int allowed);
+#endif
 
 #ifdef __cplusplus
 }

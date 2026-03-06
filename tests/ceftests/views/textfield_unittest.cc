@@ -2,8 +2,7 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include "include/base/cef_bind.h"
-#include "include/cef_pack_strings.h"
+#include "include/base/cef_callback.h"
 #include "include/views/cef_textfield.h"
 #include "include/views/cef_textfield_delegate.h"
 #include "include/wrapper/cef_closure_task.h"
@@ -31,10 +30,15 @@
 
 namespace {
 
-void TextfieldContentsImpl() {
+void RunTextfieldContents(CefRefPtr<CefWindow> window) {
   CefRefPtr<CefTextfield> textfield = CefTextfield::CreateTextfield(nullptr);
   EXPECT_TRUE(textfield.get());
   EXPECT_TRUE(textfield->AsTextfield().get());
+
+  // Must be added to a parent window before retrieving the style to avoid
+  // a CHECK() in View::GetNativeTheme(). See https://crbug.com/1056756.
+  window->AddChildView(textfield);
+  window->Layout();
 
   // Test defaults.
   EXPECT_TRUE(textfield->GetText().empty());
@@ -59,12 +63,12 @@ void TextfieldContentsImpl() {
 
   // Test select range.
   EXPECT_FALSE(textfield->HasSelection());
-  EXPECT_EQ(
-      CefRange(static_cast<int>(cursor_pos), static_cast<int>(cursor_pos)),
-      textfield->GetSelectedRange());
-  textfield->SelectRange(CefRange(0, static_cast<int>(cursor_pos)));
+  EXPECT_EQ(CefRange(static_cast<uint32_t>(cursor_pos),
+                     static_cast<uint32_t>(cursor_pos)),
+            textfield->GetSelectedRange());
+  textfield->SelectRange(CefRange(0, static_cast<uint32_t>(cursor_pos)));
   EXPECT_TRUE(textfield->HasSelection());
-  EXPECT_EQ(CefRange(0, static_cast<int>(cursor_pos)),
+  EXPECT_EQ(CefRange(0, static_cast<uint32_t>(cursor_pos)),
             textfield->GetSelectedRange());
   EXPECT_STREQ(kText, textfield->GetSelectedText().ToString().c_str());
   EXPECT_EQ(cursor_pos, textfield->GetCursorPosition());
@@ -84,32 +88,43 @@ void TextfieldContentsImpl() {
   EXPECT_TRUE(textfield->HasSelection());
 
   cursor_pos = sizeof(kReplaceText) + sizeof(kAppendText) - 2;
-  EXPECT_EQ(CefRange(0, static_cast<int>(cursor_pos)),
+  EXPECT_EQ(CefRange(0, static_cast<uint32_t>(cursor_pos)),
             textfield->GetSelectedRange());
   EXPECT_EQ(cursor_pos, textfield->GetCursorPosition());
 
   // Test clear selection.
   textfield->ClearSelection();
   EXPECT_FALSE(textfield->HasSelection());
-  EXPECT_EQ(
-      CefRange(static_cast<int>(cursor_pos), static_cast<int>(cursor_pos)),
-      textfield->GetSelectedRange());
+  EXPECT_EQ(CefRange(static_cast<uint32_t>(cursor_pos),
+                     static_cast<uint32_t>(cursor_pos)),
+            textfield->GetSelectedRange());
   EXPECT_EQ(cursor_pos, textfield->GetCursorPosition());
 
   // Test selection with command.
-  EXPECT_TRUE(textfield->IsCommandEnabled(IDS_APP_SELECT_ALL));
-  textfield->ExecuteCommand(IDS_APP_SELECT_ALL);
+  EXPECT_TRUE(textfield->IsCommandEnabled(CEF_TFC_SELECT_ALL));
+  textfield->ExecuteCommand(CEF_TFC_SELECT_ALL);
   EXPECT_TRUE(textfield->HasSelection());
-  EXPECT_EQ(CefRange(0, static_cast<int>(cursor_pos)),
+  EXPECT_EQ(CefRange(0, static_cast<uint32_t>(cursor_pos)),
             textfield->GetSelectedRange());
   EXPECT_EQ(cursor_pos, textfield->GetCursorPosition());
 
   textfield->ClearEditHistory();
 }
 
-void TextfieldStyleImpl() {
+void TextfieldContentsImpl(CefRefPtr<CefWaitableEvent> event) {
+  auto config = std::make_unique<TestWindowDelegate::Config>();
+  config->on_window_created = base::BindOnce(RunTextfieldContents);
+  TestWindowDelegate::RunTest(event, std::move(config));
+}
+
+void RunTextfieldStyle(CefRefPtr<CefWindow> window) {
   CefRefPtr<CefTextfield> textfield = CefTextfield::CreateTextfield(nullptr);
   EXPECT_TRUE(textfield.get());
+
+  // Must be added to a parent window before retrieving the style to avoid
+  // a CHECK() in View::GetNativeTheme(). See https://crbug.com/1056756.
+  window->AddChildView(textfield);
+  window->Layout();
 
   // Test defaults.
   EXPECT_FALSE(textfield->IsPasswordInput());
@@ -160,11 +175,17 @@ void TextfieldStyleImpl() {
   textfield->SetAccessibleName("MyTextfield");
 }
 
+void TextfieldStyleImpl(CefRefPtr<CefWaitableEvent> event) {
+  auto config = std::make_unique<TestWindowDelegate::Config>();
+  config->on_window_created = base::BindOnce(RunTextfieldStyle);
+  TestWindowDelegate::RunTest(event, std::move(config));
+}
+
 }  // namespace
 
 // Test Textfield getters/setters.
-TEXTFIELD_TEST(TextfieldContents);
-TEXTFIELD_TEST(TextfieldStyle);
+TEXTFIELD_TEST_ASYNC(TextfieldContents)
+TEXTFIELD_TEST_ASYNC(TextfieldStyle)
 
 namespace {
 
@@ -173,7 +194,7 @@ const int kTextfieldID = 1;
 // Contents need to be supported by the TranslateKey function.
 const char kTestInputMessage[] = "Test Message";
 
-void TranslateKey(int c, int* keycode, uint32* modifiers) {
+void TranslateKey(int c, int* keycode, uint32_t* modifiers) {
   *keycode = VKEY_UNKNOWN;
   *modifiers = 0;
 
@@ -189,7 +210,10 @@ void TranslateKey(int c, int* keycode, uint32* modifiers) {
 
 class TestTextfieldDelegate : public CefTextfieldDelegate {
  public:
-  TestTextfieldDelegate() {}
+  TestTextfieldDelegate() = default;
+
+  TestTextfieldDelegate(const TestTextfieldDelegate&) = delete;
+  TestTextfieldDelegate& operator=(const TestTextfieldDelegate&) = delete;
 
   bool OnKeyEvent(CefRefPtr<CefTextfield> textfield,
                   const CefKeyEvent& event) override {
@@ -199,18 +223,21 @@ class TestTextfieldDelegate : public CefTextfieldDelegate {
     if (event.type == KEYEVENT_RAWKEYDOWN &&
         event.windows_key_code == VKEY_RETURN) {
       // Got the whole string. Finish the test asynchronously.
-      CefPostTask(TID_UI, base::Bind(&TestTextfieldDelegate::FinishTest, this,
-                                     textfield));
+      CefPostTask(TID_UI, base::BindOnce(&TestTextfieldDelegate::FinishTest,
+                                         this, textfield));
       return true;
     }
 
     if (event.type == KEYEVENT_CHAR) {
       int keycode;
-      uint32 modifiers;
+      uint32_t modifiers;
       TranslateKey(kTestInputMessage[index_++], &keycode, &modifiers);
 
       EXPECT_EQ(keycode, event.windows_key_code);
+      // Shift modifier is sometimes missing on macOS, see issue #2774.
+#if !defined(OS_MAC)
       EXPECT_EQ(modifiers, event.modifiers);
+#endif
     }
 
     return false;
@@ -236,8 +263,20 @@ class TestTextfieldDelegate : public CefTextfieldDelegate {
   size_t after_user_action_ct_ = 0;
 
   IMPLEMENT_REFCOUNTING(TestTextfieldDelegate);
-  DISALLOW_COPY_AND_ASSIGN(TestTextfieldDelegate);
 };
+
+void SendKeyEvents(CefRefPtr<CefWindow> window) {
+  // Send the contents of |kTestInputMessage| to the textfield.
+  for (size_t i = 0; i < sizeof(kTestInputMessage) - 1; ++i) {
+    int keycode;
+    uint32_t modifiers;
+    TranslateKey(kTestInputMessage[i], &keycode, &modifiers);
+    window->SendKeyPress(keycode, modifiers);
+  }
+
+  // Send return to end the text input.
+  window->SendKeyPress(VKEY_RETURN, 0);
+}
 
 void RunTextfieldKeyEvent(CefRefPtr<CefWindow> window) {
   CefRefPtr<CefTextfield> textfield =
@@ -263,23 +302,16 @@ void RunTextfieldKeyEvent(CefRefPtr<CefWindow> window) {
   // Give input focus to the textfield.
   textfield->RequestFocus();
 
-  // Send the contents of |kTestInputMessage| to the textfield.
-  for (size_t i = 0; i < sizeof(kTestInputMessage) - 1; ++i) {
-    int keycode;
-    uint32 modifiers;
-    TranslateKey(kTestInputMessage[i], &keycode, &modifiers);
-    window->SendKeyPress(keycode, modifiers);
-  }
-
-  // Send return to end the text input.
-  window->SendKeyPress(VKEY_RETURN, 0);
+  // Continue after a short delay so that the focus change completes before we
+  // attempt to send key events.
+  CefPostDelayedTask(TID_UI, base::BindOnce(&SendKeyEvents, window), 100);
 }
 
 void TextfieldKeyEventImpl(CefRefPtr<CefWaitableEvent> event) {
-  TestWindowDelegate::Config config;
-  config.on_window_created = base::Bind(RunTextfieldKeyEvent);
-  config.close_window = false;
-  TestWindowDelegate::RunTest(event, config);
+  auto config = std::make_unique<TestWindowDelegate::Config>();
+  config->on_window_created = base::BindOnce(RunTextfieldKeyEvent);
+  config->close_window = false;
+  TestWindowDelegate::RunTest(event, std::move(config));
 }
 
 }  // namespace
@@ -287,4 +319,4 @@ void TextfieldKeyEventImpl(CefRefPtr<CefWaitableEvent> event) {
 // Test Textfield input and events. This is primarily to exercise exposed CEF
 // APIs and is not intended to comprehensively test Textfield-related behavior
 // (which we presume that Chromium is testing).
-TEXTFIELD_TEST_ASYNC(TextfieldKeyEvent);
+TEXTFIELD_TEST_ASYNC(TextfieldKeyEvent)

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=ef0bd5a95e3c494b7b80f9be249017ec1b27db9d$
+// $hash=45634b3299bedf309cfdf4d64da7f5502739a101$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_TRACE_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_TRACE_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_callback_capi.h"
@@ -48,20 +52,22 @@ extern "C" {
 #endif
 
 ///
-// Implement this structure to receive notification when tracing has completed.
-// The functions of this structure will be called on the browser process UI
-// thread.
+/// Implement this structure to receive notification when tracing has completed.
+/// The functions of this structure will be called on the browser process UI
+/// thread.
+///
+/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_end_tracing_callback_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Called after all processes have sent their trace data. |tracing_file| is
-  // the path at which tracing data was written. The client is responsible for
-  // deleting |tracing_file|.
+  /// Called after all processes have sent their trace data. |tracing_file| is
+  /// the path at which tracing data was written. The client is responsible for
+  /// deleting |tracing_file|.
   ///
   void(CEF_CALLBACK* on_end_tracing_complete)(
       struct _cef_end_tracing_callback_t* self,
@@ -69,47 +75,49 @@ typedef struct _cef_end_tracing_callback_t {
 } cef_end_tracing_callback_t;
 
 ///
-// Start tracing events on all processes. Tracing is initialized asynchronously
-// and |callback| will be executed on the UI thread after initialization is
-// complete.
-//
-// If CefBeginTracing was called previously, or if a CefEndTracingAsync call is
-// pending, CefBeginTracing will fail and return false (0).
-//
-// |categories| is a comma-delimited list of category wildcards. A category can
-// have an optional '-' prefix to make it an excluded category. Having both
-// included and excluded categories in the same list is not supported.
-//
-// Example: "test_MyTest*" Example: "test_MyTest*,test_OtherStuff" Example:
-// "-excluded_category1,-excluded_category2"
-//
-// This function must be called on the browser process UI thread.
+/// Start tracing events on all processes. Tracing is initialized asynchronously
+/// and |callback| will be executed on the UI thread after initialization is
+/// complete.
+///
+/// If CefBeginTracing was called previously, or if a CefEndTracingAsync call is
+/// pending, CefBeginTracing will fail and return false (0).
+///
+/// |categories| is a comma-delimited list of category wildcards. A category can
+/// have an optional '-' prefix to make it an excluded category. Having both
+/// included and excluded categories in the same list is not supported.
+///
+/// Examples:
+/// - "test_MyTest*"
+/// - "test_MyTest*,test_OtherStuff"
+/// - "-excluded_category1,-excluded_category2"
+///
+/// This function must be called on the browser process UI thread.
 ///
 CEF_EXPORT int cef_begin_tracing(const cef_string_t* categories,
                                  struct _cef_completion_callback_t* callback);
 
 ///
-// Stop tracing events on all processes.
-//
-// This function will fail and return false (0) if a previous call to
-// CefEndTracingAsync is already pending or if CefBeginTracing was not called.
-//
-// |tracing_file| is the path at which tracing data will be written and
-// |callback| is the callback that will be executed once all processes have sent
-// their trace data. If |tracing_file| is NULL a new temporary file path will be
-// used. If |callback| is NULL no trace data will be written.
-//
-// This function must be called on the browser process UI thread.
+/// Stop tracing events on all processes.
+///
+/// This function will fail and return false (0) if a previous call to
+/// CefEndTracingAsync is already pending or if CefBeginTracing was not called.
+///
+/// |tracing_file| is the path at which tracing data will be written and
+/// |callback| is the callback that will be executed once all processes have
+/// sent their trace data. If |tracing_file| is NULL a new temporary file path
+/// will be used. If |callback| is NULL no trace data will be written.
+///
+/// This function must be called on the browser process UI thread.
 ///
 CEF_EXPORT int cef_end_tracing(const cef_string_t* tracing_file,
                                cef_end_tracing_callback_t* callback);
 
 ///
-// Returns the current system trace time or, if none is defined, the current
-// high-res time. Can be used by clients to synchronize with the time
-// information in trace events.
+/// Returns the current system trace time or, if none is defined, the current
+/// high-res time. Can be used by clients to synchronize with the time
+/// information in trace events.
 ///
-CEF_EXPORT int64 cef_now_from_system_trace_time();
+CEF_EXPORT int64_t cef_now_from_system_trace_time(void);
 
 #ifdef __cplusplus
 }

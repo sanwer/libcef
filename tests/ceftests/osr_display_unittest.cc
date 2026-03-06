@@ -2,9 +2,8 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
-
 #include "tests/ceftests/routing_test_handler.h"
 #include "tests/gtest/include/gtest/gtest.h"
 
@@ -20,13 +19,12 @@ const int kOsrHeight = 400;
 
 class DisplayTestHandler : public RoutingTestHandler, public CefRenderHandler {
  public:
-  DisplayTestHandler() : status_(START) {}
+  DisplayTestHandler() = default;
 
   CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
 
-  bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override {
+  void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override {
     rect = CefRect(0, 0, kOsrWidth, kOsrHeight);
-    return true;
   }
 
   bool GetScreenInfo(CefRefPtr<CefBrowser> browser,
@@ -45,12 +43,14 @@ class DisplayTestHandler : public RoutingTestHandler, public CefRenderHandler {
     if (!got_paint_[status_]) {
       got_paint_[status_].yes();
 
-      if (status_ == START)
+      if (status_ == START) {
         OnStartIfDone();
-      else if (status_ == SHOW)
-        CefPostTask(TID_UI, base::Bind(&DisplayTestHandler::DestroyTest, this));
-      else
-        EXPECT_FALSE(true);  // Not reached.
+      } else if (status_ == SHOW) {
+        CefPostTask(TID_UI,
+                    base::BindOnce(&DisplayTestHandler::DestroyTest, this));
+      } else {
+        ADD_FAILURE();
+      }
     }
   }
 
@@ -68,7 +68,7 @@ class DisplayTestHandler : public RoutingTestHandler, public CefRenderHandler {
 
   bool OnQuery(CefRefPtr<CefBrowser> browser,
                CefRefPtr<CefFrame> frame,
-               int64 query_id,
+               int64_t query_id,
                const CefString& request,
                bool persistent,
                CefRefPtr<Callback> callback) override {
@@ -82,7 +82,7 @@ class DisplayTestHandler : public RoutingTestHandler, public CefRenderHandler {
         got_navigate_msg_.yes();
         // Wait a bit to verify no OnPaint callback.
         CefPostDelayedTask(
-            TID_UI, base::Bind(&DisplayTestHandler::OnNavigate, this), 250);
+            TID_UI, base::BindOnce(&DisplayTestHandler::OnNavigate, this), 250);
       }
     }
     callback->Success("");
@@ -113,18 +113,20 @@ class DisplayTestHandler : public RoutingTestHandler, public CefRenderHandler {
     windowInfo.SetAsWindowless(kNullWindowHandle);
 #endif
 
-    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, NULL);
+    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, nullptr,
+                                  nullptr);
   }
 
   std::string GetPageContents(const std::string& name,
                               const std::string& status) {
-    return "<html><body>Page1<script>window.testQuery({request:'" +
+    return "<html><body>" + name + "<script>window.testQuery({request:'" +
            std::string(kTestMsg) + ":" + status + "'});</script></body></html>";
   }
 
   void OnStartIfDone() {
-    if (got_start_msg_ && got_paint_[START])
-      CefPostTask(TID_UI, base::Bind(&DisplayTestHandler::OnStart, this));
+    if (got_start_msg_ && got_paint_[START]) {
+      CefPostTask(TID_UI, base::BindOnce(&DisplayTestHandler::OnStart, this));
+    }
   }
 
   void OnStart() {
@@ -155,7 +157,7 @@ class DisplayTestHandler : public RoutingTestHandler, public CefRenderHandler {
     SHOW,
     STATUS_COUNT,
   };
-  Status status_;
+  Status status_ = START;
 
   TrackCallback got_paint_[STATUS_COUNT];
   TrackCallback got_start_msg_;
@@ -169,6 +171,221 @@ class DisplayTestHandler : public RoutingTestHandler, public CefRenderHandler {
 // Test that browser visibility is not changed due to navigation.
 TEST(OSRTest, NavigateWhileHidden) {
   CefRefPtr<DisplayTestHandler> handler = new DisplayTestHandler();
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+}
+
+namespace {
+
+const char kOsrPopupJSOtherClientMainUrl[] =
+    "http://www.tests-pjse.com/main.html";
+
+class OsrPopupJSOtherClientTestHandler : public TestHandler,
+                                         public CefRenderHandler {
+ public:
+  explicit OsrPopupJSOtherClientTestHandler(CefRefPtr<CefClient> other) {
+    other_ = other;
+  }
+
+  CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
+
+  void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override {
+    rect = CefRect(0, 0, kOsrWidth, kOsrHeight);
+  }
+
+  void OnPaint(CefRefPtr<CefBrowser> browser,
+               PaintElementType type,
+               const RectList& dirtyRects,
+               const void* buffer,
+               int width,
+               int height) override {}
+
+  void RunTest() override {
+    AddResource(kOsrPopupJSOtherClientMainUrl, "<html>Main</html>",
+                "text/html");
+
+    // Create the browser.
+    CreateOSRBrowser(kOsrPopupJSOtherClientMainUrl);
+
+    // Time out the test after a reasonable period of time.
+    SetTestTimeout();
+  }
+
+  bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
+                     CefRefPtr<CefFrame> frame,
+                     int popup_id,
+                     const CefString& target_url,
+                     const CefString& target_frame_name,
+                     cef_window_open_disposition_t target_disposition,
+                     bool user_gesture,
+                     const CefPopupFeatures& popupFeatures,
+                     CefWindowInfo& windowInfo,
+                     CefRefPtr<CefClient>& client,
+                     CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue>& extra_info,
+                     bool* no_javascript_access) override {
+#if defined(OS_WIN)
+    windowInfo.SetAsWindowless(GetDesktopWindow());
+#else
+    windowInfo.SetAsWindowless(kNullWindowHandle);
+#endif
+
+    client = other_;
+
+    got_before_popup_.yes();
+    return false;
+  }
+
+  void Close(CefRefPtr<CefBrowser> browser) {
+    browser->StopLoad();
+    CloseBrowser(browser, true);
+  }
+
+  void OnAfterCreated(CefRefPtr<CefBrowser> browser) override {
+    TestHandler::OnAfterCreated(browser);
+    if (browser->IsPopup()) {
+      got_after_created_popup_.yes();
+    }
+  }
+
+  void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                            bool isLoading,
+                            bool canGoBack,
+                            bool canGoForward) override {
+    if (isLoading) {
+      return;
+    }
+
+    if (browser->IsPopup()) {
+      got_load_end_popup_.yes();
+      CefPostDelayedTask(
+          TID_UI,
+          base::BindOnce(&OsrPopupJSOtherClientTestHandler::Close, this,
+                         browser),
+          100);
+    } else {
+      browser->GetMainFrame()->LoadURL("javascript:window.open('about:blank')");
+    }
+  }
+
+  void OnBeforeClose(CefRefPtr<CefBrowser> browser) override {
+    TestHandler::OnBeforeClose(browser);
+    other_ = nullptr;
+    if (browser->IsPopup()) {
+      got_before_close_popup_.yes();
+      DestroyTest();
+    }
+  }
+
+ private:
+  void CreateOSRBrowser(const CefString& url) {
+    CefWindowInfo windowInfo;
+    CefBrowserSettings settings;
+
+#if defined(OS_WIN)
+    windowInfo.SetAsWindowless(GetDesktopWindow());
+#else
+    windowInfo.SetAsWindowless(kNullWindowHandle);
+#endif
+
+    CefBrowserHost::CreateBrowser(windowInfo, this, url, settings, nullptr,
+                                  nullptr);
+  }
+
+  void DestroyTest() override {
+    EXPECT_TRUE(got_after_created_popup_);
+    EXPECT_TRUE(got_load_end_popup_);
+    EXPECT_TRUE(got_before_close_popup_);
+    EXPECT_TRUE(got_before_popup_);
+    TestHandler::DestroyTest();
+  }
+
+  TrackCallback got_before_popup_;
+  TrackCallback got_after_created_popup_;
+  TrackCallback got_load_end_popup_;
+  TrackCallback got_before_close_popup_;
+  CefRefPtr<CefClient> other_;
+
+  IMPLEMENT_REFCOUNTING(OsrPopupJSOtherClientTestHandler);
+};
+
+class OsrPopupJSOtherCefClient : public CefClient,
+                                 public CefLoadHandler,
+                                 public CefLifeSpanHandler,
+                                 public CefRenderHandler {
+ public:
+  OsrPopupJSOtherCefClient() { handler_ = nullptr; }
+
+  void SetHandler(CefRefPtr<OsrPopupJSOtherClientTestHandler> handler) {
+    handler_ = handler;
+  }
+
+  CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
+
+  CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
+
+  CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
+
+  void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                            bool isLoading,
+                            bool canGoBack,
+                            bool canGoForward) override {
+    if (handler_) {
+      handler_->OnLoadingStateChange(browser, isLoading, canGoBack,
+                                     canGoForward);
+    }
+  }
+
+  void OnAfterCreated(CefRefPtr<CefBrowser> browser) override {
+    handler_->OnAfterCreated(browser);
+  }
+
+  void OnBeforeClose(CefRefPtr<CefBrowser> browser) override {
+    handler_->OnBeforeClose(browser);
+    handler_ = nullptr;
+  }
+
+  bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
+                     CefRefPtr<CefFrame> frame,
+                     int popup_id,
+                     const CefString& target_url,
+                     const CefString& target_frame_name,
+                     cef_window_open_disposition_t target_disposition,
+                     bool user_gesture,
+                     const CefPopupFeatures& popupFeatures,
+                     CefWindowInfo& windowInfo,
+                     CefRefPtr<CefClient>& client,
+                     CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue>& extra_info,
+                     bool* no_javascript_access) override {
+    return true;
+  }
+
+  void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override {
+    rect = CefRect(0, 0, kOsrWidth, kOsrHeight);
+  }
+
+  void OnPaint(CefRefPtr<CefBrowser> browser,
+               PaintElementType type,
+               const RectList& dirtyRects,
+               const void* buffer,
+               int width,
+               int height) override {}
+
+ private:
+  CefRefPtr<OsrPopupJSOtherClientTestHandler> handler_;
+
+  IMPLEMENT_REFCOUNTING(OsrPopupJSOtherCefClient);
+};
+
+}  // namespace
+
+// Test creation of an OSR-popup with another client.
+TEST(OSRTest, OsrPopupJSOtherClient) {
+  CefRefPtr<OsrPopupJSOtherCefClient> client = new OsrPopupJSOtherCefClient();
+  CefRefPtr<OsrPopupJSOtherClientTestHandler> handler =
+      new OsrPopupJSOtherClientTestHandler(client);
+  client->SetHandler(handler);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 }

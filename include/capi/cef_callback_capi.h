@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=41c1f253d23f062f96debd7184f3b5e5dac03a89$
+// $hash=5ebf25032d5758b7c6d97181787ad763fd5d3675$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_CALLBACK_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_CALLBACK_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 
@@ -47,36 +51,40 @@ extern "C" {
 #endif
 
 ///
-// Generic callback structure used for asynchronous continuation.
+/// Generic callback structure used for asynchronous continuation.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_callback_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Continue processing.
+  /// Continue processing.
   ///
   void(CEF_CALLBACK* cont)(struct _cef_callback_t* self);
 
   ///
-  // Cancel processing.
+  /// Cancel processing.
   ///
   void(CEF_CALLBACK* cancel)(struct _cef_callback_t* self);
 } cef_callback_t;
 
 ///
-// Generic callback structure used for asynchronous completion.
+/// Generic callback structure used for asynchronous completion.
+///
+/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_completion_callback_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Method that will be called once the task is complete.
+  /// Method that will be called once the task is complete.
   ///
   void(CEF_CALLBACK* on_complete)(struct _cef_completion_callback_t* self);
 } cef_completion_callback_t;

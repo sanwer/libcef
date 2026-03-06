@@ -5,10 +5,9 @@
 #include "include/wrapper/cef_zip_archive.h"
 
 #include <algorithm>
+#include <memory>
 
 #include "include/base/cef_logging.h"
-#include "include/base/cef_macros.h"
-#include "include/base/cef_scoped_ptr.h"
 #include "include/cef_stream.h"
 #include "include/cef_zip_reader.h"
 #include "include/wrapper/cef_byte_read_handler.h"
@@ -28,10 +27,13 @@ CefString ToLower(const CefString& str) {
 
 class CefZipFile : public CefZipArchive::File {
  public:
-  CefZipFile() : data_size_(0) {}
+  CefZipFile() = default;
+
+  CefZipFile(const CefZipFile&) = delete;
+  CefZipFile& operator=(const CefZipFile&) = delete;
 
   bool Initialize(size_t data_size) {
-    data_.reset(new unsigned char[data_size]);
+    data_.reset(new (std::nothrow) unsigned char[data_size]);
     if (data_) {
       data_size_ = data_size;
       return true;
@@ -42,11 +44,11 @@ class CefZipFile : public CefZipArchive::File {
     }
   }
 
-  virtual const unsigned char* GetData() const OVERRIDE { return data_.get(); }
+  const unsigned char* GetData() const override { return data_.get(); }
 
-  virtual size_t GetDataSize() const OVERRIDE { return data_size_; }
+  size_t GetDataSize() const override { return data_size_; }
 
-  virtual CefRefPtr<CefStreamReader> GetStreamReader() const OVERRIDE {
+  CefRefPtr<CefStreamReader> GetStreamReader() const override {
     CefRefPtr<CefReadHandler> handler(new CefByteReadHandler(
         data_.get(), data_size_, const_cast<CefZipFile*>(this)));
     return CefStreamReader::CreateForHandler(handler);
@@ -55,20 +57,19 @@ class CefZipFile : public CefZipArchive::File {
   unsigned char* data() { return data_.get(); }
 
  private:
-  size_t data_size_;
-  scoped_ptr<unsigned char[]> data_;
+  size_t data_size_ = 0;
+  std::unique_ptr<unsigned char[]> data_;
 
   IMPLEMENT_REFCOUNTING(CefZipFile);
-  DISALLOW_COPY_AND_ASSIGN(CefZipFile);
 };
 
 }  // namespace
 
 // CefZipArchive implementation
 
-CefZipArchive::CefZipArchive() {}
+CefZipArchive::CefZipArchive() = default;
 
-CefZipArchive::~CefZipArchive() {}
+CefZipArchive::~CefZipArchive() = default;
 
 size_t CefZipArchive::Load(CefRefPtr<CefStreamReader> stream,
                            const CefString& password,
@@ -76,11 +77,13 @@ size_t CefZipArchive::Load(CefRefPtr<CefStreamReader> stream,
   base::AutoLock lock_scope(lock_);
 
   CefRefPtr<CefZipReader> reader(CefZipReader::Create(stream));
-  if (!reader.get())
+  if (!reader.get()) {
     return 0;
+  }
 
-  if (!reader->MoveToFirstFile())
+  if (!reader->MoveToFirstFile()) {
     return 0;
+  }
 
   FileMap::iterator it;
   size_t count = 0;
@@ -92,22 +95,25 @@ size_t CefZipArchive::Load(CefRefPtr<CefStreamReader> stream,
       continue;
     }
 
-    if (!reader->OpenFile(password))
+    if (!reader->OpenFile(password)) {
       break;
+    }
 
     const CefString& name = ToLower(reader->GetFileName());
 
     it = contents_.find(name);
     if (it != contents_.end()) {
-      if (overwriteExisting)
+      if (overwriteExisting) {
         contents_.erase(it);
-      else  // Skip files that already exist.
+      } else {  // Skip files that already exist.
         continue;
+      }
     }
 
     CefRefPtr<CefZipFile> contents = new CefZipFile();
-    if (!contents->Initialize(size))
+    if (!contents->Initialize(size)) {
       continue;
+    }
     unsigned char* data = contents->data();
     size_t offset = 0;
 
@@ -148,9 +154,10 @@ CefRefPtr<CefZipArchive::File> CefZipArchive::GetFile(
     const CefString& fileName) const {
   base::AutoLock lock_scope(lock_);
   FileMap::const_iterator it = contents_.find(ToLower(fileName));
-  if (it != contents_.end())
+  if (it != contents_.end()) {
     return it->second;
-  return NULL;
+  }
+  return nullptr;
 }
 
 bool CefZipArchive::RemoveFile(const CefString& fileName) {

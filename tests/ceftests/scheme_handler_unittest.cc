@@ -3,53 +3,39 @@
 // can be found in the LICENSE file.
 
 #include <algorithm>
+#include <sstream>
+#include <vector>
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "include/cef_callback.h"
 #include "include/cef_origin_whitelist.h"
+#include "include/cef_request_context.h"
+#include "include/cef_request_context_handler.h"
 #include "include/cef_scheme.h"
+#include "include/test/cef_test_helpers.h"
 #include "include/wrapper/cef_closure_task.h"
+#include "include/wrapper/cef_stream_resource_handler.h"
 #include "tests/ceftests/test_handler.h"
 #include "tests/ceftests/test_suite.h"
+#include "tests/ceftests/test_util.h"
 
 namespace {
 
 class TestResults {
  public:
-  TestResults() : status_code(0), sub_status_code(0), delay(0) {}
+  TestResults() = default;
 
-  void reset() {
-    url.clear();
-    html.clear();
-    status_code = 0;
-    response_error_code = ERR_NONE;
-    expected_error_code = ERR_NONE;
-    redirect_url.clear();
-    sub_url.clear();
-    sub_html.clear();
-    sub_status_code = 0;
-    sub_allow_origin.clear();
-    exit_url.clear();
-    accept_language.clear();
-    delay = 0;
-    got_request.reset();
-    got_read.reset();
-    got_output.reset();
-    got_redirect.reset();
-    got_error.reset();
-    got_sub_request.reset();
-    got_sub_read.reset();
-    got_sub_success.reset();
-  }
+  // Used for running tests in a custom request context.
+  CefRefPtr<CefRequestContext> request_context;
 
   std::string url;
   std::string html;
-  int status_code;
+  int status_code = 200;
 
   // Error code set on the response.
-  cef_errorcode_t response_error_code;
+  cef_errorcode_t response_error_code = ERR_NONE;
   // Error code expected in OnLoadError.
-  cef_errorcode_t expected_error_code;
+  cef_errorcode_t expected_error_code = ERR_NONE;
 
   // Used for testing redirects
   std::string redirect_url;
@@ -57,25 +43,32 @@ class TestResults {
   // Used for testing XHR requests
   std::string sub_url;
   std::string sub_html;
-  int sub_status_code;
+  int sub_status_code = 200;
   std::string sub_allow_origin;
   std::string sub_redirect_url;
   std::string exit_url;
 
-  // Used for testing per-browser Accept-Language.
+  // Used for testing XSS requests
+  bool needs_same_origin_policy_relaxation = false;
+
+  // Used for testing Accept-Language.
   std::string accept_language;
 
-  // Delay for returning scheme handler results.
-  int delay;
+  // Used for testing received console messages.
+  std::vector<std::string> console_messages;
 
-  TrackCallback got_request, got_read, got_output, got_redirect, got_error,
-      got_sub_redirect, got_sub_request, got_sub_read, got_sub_success;
+  // Delay for returning scheme handler results.
+  int delay = 0;
+
+  TrackCallback got_request, got_read, got_output, got_sub_output, got_redirect,
+      got_error, got_sub_error, got_sub_redirect, got_sub_request, got_sub_read,
+      git_exit_success, got_exit_request;
 };
 
 // Current scheme handler object. Used when destroying the test from
 // ClientSchemeHandler::ProcessRequest().
 class TestSchemeHandler;
-TestSchemeHandler* g_current_handler = NULL;
+TestSchemeHandler* g_current_handler = nullptr;
 
 class TestSchemeHandler : public TestHandler {
  public:
@@ -83,15 +76,8 @@ class TestSchemeHandler : public TestHandler {
     g_current_handler = this;
   }
 
-  void PopulateBrowserSettings(CefBrowserSettings* settings) override {
-    if (!test_results_->accept_language.empty()) {
-      CefString(&settings->accept_language_list) =
-          test_results_->accept_language;
-    }
-  }
-
   void RunTest() override {
-    CreateBrowser(test_results_->url);
+    CreateBrowser(test_results_->url, test_results_->request_context);
 
     // Time out the test after a reasonable period of time.
     SetTestTimeout();
@@ -99,20 +85,55 @@ class TestSchemeHandler : public TestHandler {
 
   // Necessary to make the method public in order to destroy the test from
   // ClientSchemeHandler::ProcessRequest().
-  void DestroyTest() override { TestHandler::DestroyTest(); }
+  void DestroyTest() override {
+    EXPECT_TRUE(test_results_->console_messages.empty())
+        << "Did not receive expected console message: "
+        << test_results_->console_messages.front();
+
+    TestHandler::DestroyTest();
+  }
+
+  void DestroyTestIfDone() {
+    if (!test_results_->exit_url.empty() && !test_results_->got_exit_request) {
+      return;
+    }
+
+    if (!test_results_->sub_url.empty() &&
+        !(test_results_->got_sub_output || test_results_->got_sub_error ||
+          test_results_->got_exit_request)) {
+      return;
+    }
+
+    if (!(test_results_->got_output || test_results_->got_error)) {
+      return;
+    }
+
+    DestroyTest();
+  }
+
+  bool IsExitURL(const std::string& url) const {
+    return !test_results_->exit_url.empty() &&
+           url.find(test_results_->exit_url) != std::string::npos;
+  }
 
   cef_return_value_t OnBeforeResourceLoad(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
       CefRefPtr<CefRequest> request,
-      CefRefPtr<CefRequestCallback> callback) override {
-    std::string newUrl = request->GetURL();
-    if (!test_results_->exit_url.empty() &&
-        newUrl.find(test_results_->exit_url) != std::string::npos) {
+      CefRefPtr<CefCallback> callback) override {
+    if (request->GetResourceType() == RT_FAVICON) {
+      // Ignore favicon requests.
+      return RV_CANCEL;
+    }
+
+    const std::string& newUrl = request->GetURL();
+    if (IsExitURL(newUrl)) {
+      test_results_->got_exit_request.yes();
       // XHR tests use an exit URL to destroy the test.
-      if (newUrl.find("SUCCESS") != std::string::npos)
-        test_results_->got_sub_success.yes();
-      DestroyTest();
+      if (newUrl.find("SUCCESS") != std::string::npos) {
+        test_results_->git_exit_success.yes();
+      }
+      DestroyTestIfDone();
       return RV_CANCEL;
     }
 
@@ -139,17 +160,21 @@ class TestSchemeHandler : public TestHandler {
   void OnLoadEnd(CefRefPtr<CefBrowser> browser,
                  CefRefPtr<CefFrame> frame,
                  int httpStatusCode) override {
-    std::string url = frame->GetURL();
-    if (url == test_results_->url || (test_results_->status_code != 200 &&
-                                      test_results_->status_code != 0)) {
+    const std::string& url = frame->GetURL();
+    if (url == test_results_->url) {
       test_results_->got_output.yes();
+    } else if (url == test_results_->sub_url) {
+      test_results_->got_sub_output.yes();
+    } else if (IsExitURL(url)) {
+      return;
+    }
 
+    if (url == test_results_->url || test_results_->status_code != 200) {
       // Test that the status code is correct.
       EXPECT_EQ(httpStatusCode, test_results_->status_code);
-
-      if (test_results_->sub_url.empty())
-        DestroyTest();
     }
+
+    DestroyTestIfDone();
   }
 
   void OnLoadError(CefRefPtr<CefBrowser> browser,
@@ -157,25 +182,61 @@ class TestSchemeHandler : public TestHandler {
                    ErrorCode errorCode,
                    const CefString& errorText,
                    const CefString& failedUrl) override {
-    test_results_->got_error.yes();
-    // Tests sometimes also fail with ERR_ABORTED.
-    if (!(test_results_->expected_error_code == 0 &&
-          errorCode == ERR_ABORTED)) {
-      EXPECT_EQ(test_results_->expected_error_code, errorCode);
+    const std::string& url = failedUrl;
+    if (url == test_results_->url) {
+      test_results_->got_error.yes();
+    } else if (url == test_results_->sub_url) {
+      test_results_->got_sub_error.yes();
+    } else if (IsExitURL(url)) {
+      return;
     }
-    DestroyTest();
+
+    // Tests sometimes also fail with ERR_ABORTED or ERR_UNKNOWN_URL_SCHEME.
+    if (!(test_results_->expected_error_code == 0 &&
+          (errorCode == ERR_ABORTED || errorCode == ERR_UNKNOWN_URL_SCHEME))) {
+      EXPECT_EQ(test_results_->expected_error_code, errorCode)
+          << failedUrl.ToString();
+    }
+
+    DestroyTestIfDone();
+  }
+
+  bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
+                        cef_log_severity_t level,
+                        const CefString& message,
+                        const CefString& source,
+                        int line) override {
+    bool expected = false;
+    const std::string& actual = message.ToString();
+
+    auto it = std::find_if(test_results_->console_messages.begin(),
+                           test_results_->console_messages.end(),
+                           [&actual](const std::string& possible) {
+                             return actual.find(possible) == 0U;
+                           });
+
+    if (it != test_results_->console_messages.end()) {
+      expected = true;
+      test_results_->console_messages.erase(it);
+    }
+
+    EXPECT_TRUE(expected) << "Unexpected console message: "
+                          << message.ToString();
+    return TestHandler::OnConsoleMessage(browser, level, message, source, line);
   }
 
  protected:
-  TestResults* test_results_;
+  TestResults* const test_results_;
 
   IMPLEMENT_REFCOUNTING(TestSchemeHandler);
 };
 
-class ClientSchemeHandler : public CefResourceHandler {
+class ClientSchemeHandlerOld : public CefResourceHandler {
  public:
-  explicit ClientSchemeHandler(TestResults* tr)
-      : test_results_(tr), offset_(0), is_sub_(false), has_delayed_(false) {}
+  explicit ClientSchemeHandlerOld(TestResults* tr) : test_results_(tr) {}
+
+  ClientSchemeHandlerOld(const ClientSchemeHandlerOld&) = delete;
+  ClientSchemeHandlerOld& operator=(const ClientSchemeHandlerOld&) = delete;
 
   bool ProcessRequest(CefRefPtr<CefRequest> request,
                       CefRefPtr<CefCallback> callback) override {
@@ -190,15 +251,17 @@ class ClientSchemeHandler : public CefResourceHandler {
     if (is_sub_) {
       test_results_->got_sub_request.yes();
 
-      if (!test_results_->sub_html.empty())
+      if (!test_results_->sub_html.empty()) {
         handled = true;
+      }
     } else {
       EXPECT_EQ(url, test_results_->url);
 
       test_results_->got_request.yes();
 
-      if (!test_results_->html.empty())
+      if (!test_results_->html.empty()) {
         handled = true;
+      }
     }
 
     std::string accept_language;
@@ -206,27 +269,28 @@ class ClientSchemeHandler : public CefResourceHandler {
     CefRequest::HeaderMap::iterator headerIter;
     request->GetHeaderMap(headerMap);
     headerIter = headerMap.find("Accept-Language");
-    if (headerIter != headerMap.end())
+    if (headerIter != headerMap.end()) {
       accept_language = headerIter->second;
+    }
     EXPECT_TRUE(!accept_language.empty());
 
     if (!test_results_->accept_language.empty()) {
-      // Value from CefBrowserSettings.accept_language set in
-      // PopulateBrowserSettings().
+      // Value from CefRequestContextSettings.accept_language_list.
       EXPECT_STREQ(test_results_->accept_language.data(),
                    accept_language.data());
     } else {
-      // Value from CefSettings.accept_language set in
-      // CefTestSuite::GetSettings().
-      EXPECT_STREQ(CEF_SETTINGS_ACCEPT_LANGUAGE, accept_language.data());
+      // CEF_SETTINGS_ACCEPT_LANGUAGE value from
+      // CefSettings.accept_language_list set in CefTestSuite::GetSettings()
+      // and expanded internally by ComputeAcceptLanguageFromPref.
+      EXPECT_STREQ("en-GB,en;q=0.9", accept_language.data());
     }
 
     if (handled) {
       if (test_results_->delay > 0) {
         // Continue after the delay.
-        CefPostDelayedTask(TID_IO,
-                           base::Bind(&CefCallback::Continue, callback.get()),
-                           test_results_->delay);
+        CefPostDelayedTask(
+            TID_IO, base::BindOnce(&CefCallback::Continue, callback.get()),
+            test_results_->delay);
       } else {
         // Continue immediately.
         callback->Continue();
@@ -239,24 +303,25 @@ class ClientSchemeHandler : public CefResourceHandler {
     }
 
     // Response was canceled.
-    if (g_current_handler)
+    if (g_current_handler) {
       g_current_handler->DestroyTest();
+    }
     return false;
   }
 
   void GetResponseHeaders(CefRefPtr<CefResponse> response,
-                          int64& response_length,
+                          int64_t& response_length,
                           CefString& redirectUrl) override {
+    CefResponse::HeaderMap headers;
+
     if (is_sub_) {
       response->SetStatus(test_results_->sub_status_code);
 
       if (!test_results_->sub_allow_origin.empty()) {
         // Set the Access-Control-Allow-Origin header to allow cross-domain
         // scripting.
-        CefResponse::HeaderMap headers;
         headers.insert(std::make_pair("Access-Control-Allow-Origin",
                                       test_results_->sub_allow_origin));
-        response->SetHeaderMap(headers);
       }
 
       if (!test_results_->sub_html.empty()) {
@@ -275,6 +340,15 @@ class ClientSchemeHandler : public CefResourceHandler {
         response_length = test_results_->html.size();
       }
     }
+
+    if (test_results_->needs_same_origin_policy_relaxation) {
+      // Apply same-origin policy relaxation for document.domain.
+      headers.insert(std::make_pair("Origin-Agent-Cluster", "?0"));
+    }
+
+    if (!headers.empty()) {
+      response->SetHeaderMap(headers);
+    }
   }
 
   void Cancel() override { EXPECT_TRUE(CefCurrentlyOn(TID_IO)); }
@@ -288,10 +362,11 @@ class ClientSchemeHandler : public CefResourceHandler {
     if (test_results_->delay > 0) {
       if (!has_delayed_) {
         // Continue after a delay.
-        CefPostDelayedTask(TID_IO,
-                           base::Bind(&ClientSchemeHandler::ContinueAfterDelay,
-                                      this, callback),
-                           test_results_->delay);
+        CefPostDelayedTask(
+            TID_IO,
+            base::BindOnce(&ClientSchemeHandlerOld::ContinueAfterDelay, this,
+                           callback),
+            test_results_->delay);
         bytes_read = 0;
         return true;
       }
@@ -332,10 +407,239 @@ class ClientSchemeHandler : public CefResourceHandler {
     callback->Continue();
   }
 
-  TestResults* test_results_;
-  size_t offset_;
-  bool is_sub_;
-  bool has_delayed_;
+  TestResults* const test_results_;
+  size_t offset_ = 0;
+  bool is_sub_ = false;
+  bool has_delayed_ = false;
+
+  IMPLEMENT_REFCOUNTING(ClientSchemeHandlerOld);
+};
+
+class ClientSchemeHandler : public CefResourceHandler {
+ public:
+  explicit ClientSchemeHandler(TestResults* tr) : test_results_(tr) {}
+
+  ClientSchemeHandler(const ClientSchemeHandler&) = delete;
+  ClientSchemeHandler& operator=(const ClientSchemeHandler&) = delete;
+
+  bool Open(CefRefPtr<CefRequest> request,
+            bool& handle_request,
+            CefRefPtr<CefCallback> callback) override {
+    EXPECT_FALSE(CefCurrentlyOn(TID_UI) || CefCurrentlyOn(TID_IO));
+
+    if (request->GetResourceType() == RT_FAVICON) {
+      // Ignore favicon requests.
+      return false;
+    }
+
+    bool handled = false;
+
+    std::string url = request->GetURL();
+    is_sub_ =
+        (!test_results_->sub_url.empty() && test_results_->sub_url == url);
+
+    if (is_sub_) {
+      test_results_->got_sub_request.yes();
+
+      if (!test_results_->sub_html.empty()) {
+        handled = true;
+      }
+    } else {
+      EXPECT_EQ(url, test_results_->url);
+
+      test_results_->got_request.yes();
+
+      if (!test_results_->html.empty()) {
+        handled = true;
+      }
+    }
+
+    std::string accept_language;
+    CefRequest::HeaderMap headerMap;
+    CefRequest::HeaderMap::iterator headerIter;
+    request->GetHeaderMap(headerMap);
+    headerIter = headerMap.find("Accept-Language");
+    if (headerIter != headerMap.end()) {
+      accept_language = headerIter->second;
+    }
+    EXPECT_TRUE(!accept_language.empty());
+
+    if (!test_results_->accept_language.empty()) {
+      // Value from CefRequestContextSettings.accept_language_list.
+      EXPECT_STREQ(test_results_->accept_language.data(),
+                   accept_language.data());
+    } else {
+      // CEF_SETTINGS_ACCEPT_LANGUAGE value from
+      // CefSettings.accept_language_list set in CefTestSuite::GetSettings()
+      // and expanded internally by ComputeAcceptLanguageFromPref.
+      if (CefIsFeatureEnabledForTests("ReduceAcceptLanguage")) {
+        EXPECT_TRUE(accept_language == "en-GB" ||
+                    accept_language == "en-GB,en;q=0.9")
+            << accept_language;
+      } else {
+        EXPECT_STREQ("en-GB,en;q=0.9", accept_language.data());
+      }
+    }
+
+    // Continue or cancel the request immediately based on the return value.
+    handle_request = true;
+
+    if (handled) {
+      if (test_results_->delay > 0) {
+        // Continue after the delay.
+        handle_request = false;
+        CefPostDelayedTask(
+            TID_FILE_USER_BLOCKING,
+            base::BindOnce(&CefCallback::Continue, callback.get()),
+            test_results_->delay);
+      }
+      return true;
+    } else if (test_results_->response_error_code != ERR_NONE) {
+      // Propagate the error code.
+      return true;
+    }
+
+    // Response was canceled.
+    if (g_current_handler) {
+      g_current_handler->DestroyTest();
+    }
+    return false;
+  }
+
+  bool ProcessRequest(CefRefPtr<CefRequest> request,
+                      CefRefPtr<CefCallback> callback) override {
+    if (request->GetResourceType() == RT_FAVICON) {
+      // Ignore favicon requests.
+      return false;
+    }
+
+    EXPECT_TRUE(false);  // Not reached.
+    return false;
+  }
+
+  void GetResponseHeaders(CefRefPtr<CefResponse> response,
+                          int64_t& response_length,
+                          CefString& redirectUrl) override {
+    CefResponse::HeaderMap headers;
+
+    if (is_sub_) {
+      response->SetStatus(test_results_->sub_status_code);
+
+      if (!test_results_->sub_allow_origin.empty()) {
+        // Set the Access-Control-Allow-Origin header to allow cross-domain
+        // scripting.
+        headers.insert(std::make_pair("Access-Control-Allow-Origin",
+                                      test_results_->sub_allow_origin));
+      }
+
+      if (!test_results_->sub_html.empty()) {
+        response->SetMimeType("text/html");
+        response_length = test_results_->sub_html.size();
+      }
+    } else if (!test_results_->redirect_url.empty()) {
+      redirectUrl = test_results_->redirect_url;
+    } else if (test_results_->response_error_code != ERR_NONE) {
+      response->SetError(test_results_->response_error_code);
+    } else {
+      response->SetStatus(test_results_->status_code);
+
+      if (!test_results_->html.empty()) {
+        response->SetMimeType("text/html");
+        response_length = test_results_->html.size();
+      }
+    }
+
+    if (test_results_->needs_same_origin_policy_relaxation) {
+      // Apply same-origin policy relaxation for document.domain.
+      headers.insert(std::make_pair("Origin-Agent-Cluster", "?0"));
+    }
+
+    if (!headers.empty()) {
+      response->SetHeaderMap(headers);
+    }
+  }
+
+  void Cancel() override { EXPECT_TRUE(CefCurrentlyOn(TID_IO)); }
+
+  bool Read(void* data_out,
+            int bytes_to_read,
+            int& bytes_read,
+            CefRefPtr<CefResourceReadCallback> callback) override {
+    EXPECT_FALSE(CefCurrentlyOn(TID_UI) || CefCurrentlyOn(TID_IO));
+
+    if (test_results_->delay > 0) {
+      if (!has_delayed_) {
+        // Continue after a delay.
+        CefPostDelayedTask(
+            TID_FILE_USER_BLOCKING,
+            base::BindOnce(&ClientSchemeHandler::ContinueAfterDelay, this,
+                           data_out, bytes_to_read, callback),
+            test_results_->delay);
+        bytes_read = 0;
+        return true;
+      }
+
+      has_delayed_ = false;
+    }
+
+    return GetData(data_out, bytes_to_read, bytes_read);
+  }
+
+  bool ReadResponse(void* data_out,
+                    int bytes_to_read,
+                    int& bytes_read,
+                    CefRefPtr<CefCallback> callback) override {
+    EXPECT_TRUE(false);  // Not reached.
+    bytes_read = -2;
+    return false;
+  }
+
+ private:
+  void ContinueAfterDelay(void* data_out,
+                          int bytes_to_read,
+                          CefRefPtr<CefResourceReadCallback> callback) {
+    EXPECT_FALSE(CefCurrentlyOn(TID_UI) || CefCurrentlyOn(TID_IO));
+
+    has_delayed_ = true;
+
+    int bytes_read = 0;
+    GetData(data_out, bytes_to_read, bytes_read);
+    callback->Continue(bytes_read);
+  }
+
+  bool GetData(void* data_out, int bytes_to_read, int& bytes_read) {
+    std::string* data;
+
+    if (is_sub_) {
+      test_results_->got_sub_read.yes();
+      data = &test_results_->sub_html;
+    } else {
+      test_results_->got_read.yes();
+      data = &test_results_->html;
+    }
+
+    // Default to response complete.
+    bool has_data = false;
+    bytes_read = 0;
+
+    size_t size = data->size();
+    if (offset_ < size) {
+      int transfer_size =
+          std::min(bytes_to_read, static_cast<int>(size - offset_));
+      memcpy(data_out, data->c_str() + offset_, transfer_size);
+      offset_ += transfer_size;
+
+      bytes_read = transfer_size;
+      has_data = true;
+    }
+
+    return has_data;
+  }
+
+  TestResults* const test_results_;
+  size_t offset_ = 0;
+  bool is_sub_ = false;
+  bool has_delayed_ = false;
 
   IMPLEMENT_REFCOUNTING(ClientSchemeHandler);
 };
@@ -344,65 +648,78 @@ class ClientSchemeHandlerFactory : public CefSchemeHandlerFactory {
  public:
   explicit ClientSchemeHandlerFactory(TestResults* tr) : test_results_(tr) {}
 
+  ClientSchemeHandlerFactory(const ClientSchemeHandlerFactory&) = delete;
+  ClientSchemeHandlerFactory& operator=(const ClientSchemeHandlerFactory&) =
+      delete;
+
   CefRefPtr<CefResourceHandler> Create(CefRefPtr<CefBrowser> browser,
                                        CefRefPtr<CefFrame> frame,
                                        const CefString& scheme_name,
                                        CefRefPtr<CefRequest> request) override {
     EXPECT_TRUE(CefCurrentlyOn(TID_IO));
+    if (TestOldResourceAPI()) {
+      return new ClientSchemeHandlerOld(test_results_);
+    }
     return new ClientSchemeHandler(test_results_);
   }
 
-  TestResults* test_results_;
+  TestResults* const test_results_;
 
   IMPLEMENT_REFCOUNTING(ClientSchemeHandlerFactory);
 };
 
-// Global test results object.
-TestResults g_TestResults;
-
 // If |domain| is empty the scheme will be registered as non-standard.
-void RegisterTestScheme(const std::string& scheme, const std::string& domain) {
-  g_TestResults.reset();
-
-  EXPECT_TRUE(CefRegisterSchemeHandlerFactory(
-      scheme, domain, new ClientSchemeHandlerFactory(&g_TestResults)));
+void RegisterTestScheme(TestResults* test_results,
+                        const std::string& scheme,
+                        const std::string& domain) {
+  if (test_results->request_context) {
+    EXPECT_TRUE(test_results->request_context->RegisterSchemeHandlerFactory(
+        scheme, domain, new ClientSchemeHandlerFactory(test_results)));
+  } else {
+    EXPECT_TRUE(CefRegisterSchemeHandlerFactory(
+        scheme, domain, new ClientSchemeHandlerFactory(test_results)));
+  }
   WaitForIOThread();
 }
 
-void ClearTestSchemes() {
-  EXPECT_TRUE(CefClearSchemeHandlerFactories());
+void ClearTestSchemes(TestResults* test_results) {
+  if (test_results->request_context) {
+    EXPECT_TRUE(test_results->request_context->ClearSchemeHandlerFactories());
+  } else {
+    EXPECT_TRUE(CefClearSchemeHandlerFactories());
+  }
   WaitForIOThread();
 }
 
 struct XHRTestSettings {
-  XHRTestSettings() : synchronous(true) {}
+  XHRTestSettings() = default;
 
   std::string url;
   std::string sub_url;
   std::string sub_allow_origin;
   std::string sub_redirect_url;
-  bool synchronous;
+  bool synchronous = true;
 };
 
-void SetUpXHR(const XHRTestSettings& settings) {
-  g_TestResults.sub_url = settings.sub_url;
-  g_TestResults.sub_html = "SUCCESS";
-  g_TestResults.sub_status_code = 200;
-  g_TestResults.sub_allow_origin = settings.sub_allow_origin;
-  g_TestResults.sub_redirect_url = settings.sub_redirect_url;
+void SetUpXHR(TestResults* test_results, const XHRTestSettings& settings) {
+  test_results->sub_url = settings.sub_url;
+  test_results->sub_html = "SUCCESS";
+  test_results->sub_allow_origin = settings.sub_allow_origin;
+  test_results->sub_redirect_url = settings.sub_redirect_url;
 
   std::string request_url;
-  if (!settings.sub_redirect_url.empty())
+  if (!settings.sub_redirect_url.empty()) {
     request_url = settings.sub_redirect_url;
-  else
+  } else {
     request_url = settings.sub_url;
+  }
 
-  g_TestResults.url = settings.url;
+  test_results->url = settings.url;
   std::stringstream ss;
   ss << "<html><head>"
         "<script language=\"JavaScript\">"
         "function onResult(val) {"
-        "  document.location = \"http://tests/exit?result=\"+val;"
+        "  document.location = \"https://tests/exit?result=\"+val;"
         "}"
         "function execXMLHttpRequest() {";
   if (settings.synchronous) {
@@ -433,7 +750,6 @@ void SetUpXHR(const XHRTestSettings& settings) {
           "  }"
           "};"
           "xhr.onerror = function(e) {"
-          "  console.log('XMLHttpRequest failed with error ' + e);"
           "  onResult('FAILURE');"
           "};"
           "xhr.send()";
@@ -443,26 +759,85 @@ void SetUpXHR(const XHRTestSettings& settings) {
         "</head><body onload=\"execXMLHttpRequest();\">"
         "Running execXMLHttpRequest..."
         "</body></html>";
-  g_TestResults.html = ss.str();
-  g_TestResults.status_code = 200;
+  test_results->html = ss.str();
 
-  g_TestResults.exit_url = "http://tests/exit";
+  test_results->exit_url = "https://tests/exit";
 }
 
-void SetUpXSS(const std::string& url,
+struct FetchTestSettings {
+  FetchTestSettings() = default;
+
+  std::string url;
+  std::string sub_url;
+  std::string sub_allow_origin;
+  std::string sub_redirect_url;
+};
+
+void SetUpFetch(TestResults* test_results, const FetchTestSettings& settings) {
+  test_results->sub_url = settings.sub_url;
+  test_results->sub_html = "SUCCESS";
+  test_results->sub_allow_origin = settings.sub_allow_origin;
+  test_results->sub_redirect_url = settings.sub_redirect_url;
+
+  std::string request_url;
+  if (!settings.sub_redirect_url.empty()) {
+    request_url = settings.sub_redirect_url;
+  } else {
+    request_url = settings.sub_url;
+  }
+
+  test_results->url = settings.url;
+  std::stringstream ss;
+  ss << "<html><head>"
+        "<script language=\"JavaScript\">"
+        "function onResult(val) {"
+        "  document.location = \"https://tests/exit?result=\"+val;"
+        "}"
+        "function execFetchHttpRequest() {";
+  ss << "fetch('" << request_url.c_str()
+     << "')"
+        ".then(function(response) {"
+        "  if (response.status === 200) {"
+        "      response.text().then(function(text) {"
+        "          onResult(text);"
+        "      }).catch(function(e) {"
+        "          onResult('FAILURE');        "
+        "      });"
+        "  } else {"
+        "      onResult('FAILURE');"
+        "  }"
+        "}).catch(function(e) {"
+        "  onResult('FAILURE');"
+        "});"
+     << "}"
+        "</script>"
+        "</head><body onload=\"execFetchHttpRequest();\">"
+        "Running execFetchHttpRequest..."
+        "</body></html>";
+  test_results->html = ss.str();
+
+  test_results->exit_url = "https://tests/exit";
+}  // namespace
+
+void SetUpXSS(TestResults* test_results,
+              const std::string& url,
               const std::string& sub_url,
               const std::string& domain = std::string()) {
   // 1. Load |url| which contains an iframe.
-  // 2. The iframe loads |xss_url|.
-  // 3. |xss_url| tries to call a JS function in |url|.
-  // 4. |url| tries to call a JS function in |xss_url|.
+  // 2. The iframe loads |sub_url|.
+  // 3. |sub_url| tries to call a JS function in |url|.
+  // 4. |url| tries to call a JS function in |sub_url|.
 
   std::stringstream ss;
   std::string domain_line;
-  if (!domain.empty())
+  if (!domain.empty()) {
     domain_line = "document.domain = '" + domain + "';";
+    if (url.starts_with("http") && sub_url.starts_with("http")) {
+      test_results->needs_same_origin_policy_relaxation = true;
+    }
+  }
 
-  g_TestResults.sub_url = sub_url;
+  test_results->sub_url = sub_url;
   ss << "<html><head>"
         "<script language=\"JavaScript\">"
      << domain_line
@@ -473,17 +848,16 @@ void SetUpXSS(const std::string& url,
         "  var result = 'FAILURE';"
         "  try {"
         "    result = parent.getResult();"
-        "  } catch(e) {}"
-        "  document.location = \"http://tests/exit?result=\"+result;"
+        "  } catch(e) { console.log(e.stack); }"
+        "  document.location = \"https://tests/exit?result=\"+result;"
         "}"
         "</script>"
         "</head><body onload=\"execXSSRequest();\">"
         "Running execXSSRequest..."
         "</body></html>";
-  g_TestResults.sub_html = ss.str();
-  g_TestResults.sub_status_code = 200;
+  test_results->sub_html = ss.str();
 
-  g_TestResults.url = url;
+  test_results->url = url;
   ss.str("");
   ss << "<html><head>"
         "<script language=\"JavaScript\">"
@@ -492,7 +866,7 @@ void SetUpXSS(const std::string& url,
         "function getResult() {"
         "  try {"
         "    return document.getElementById('s').contentWindow.getResult();"
-        "  } catch(e) {}"
+        "  } catch(e) { console.log(e.stack); }"
         "  return 'FAILURE';"
         "}"
         "</script>"
@@ -501,1159 +875,2047 @@ void SetUpXSS(const std::string& url,
      << sub_url.c_str()
      << "\" id=\"s\">"
         "</body></html>";
-  g_TestResults.html = ss.str();
-  g_TestResults.status_code = 200;
+  test_results->html = ss.str();
 
-  g_TestResults.exit_url = "http://tests/exit";
+  test_results->exit_url = "https://tests/exit";
 }
 
 }  // namespace
 
 // Test that scheme registration/unregistration works as expected.
 TEST(SchemeHandlerTest, Registration) {
-  RegisterTestScheme("customstd", "test");
-  g_TestResults.url = "customstd://test/run.html";
-  g_TestResults.html =
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test");
+  test_results.url = "customstd://test/run.html";
+  test_results.html =
       "<html><head></head><body><h1>Success!</h1></body></html>";
-  g_TestResults.status_code = 200;
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
 
   // Unregister the handler.
-  EXPECT_TRUE(CefRegisterSchemeHandlerFactory("customstd", "test", NULL));
+  EXPECT_TRUE(CefRegisterSchemeHandlerFactory("customstd", "test", nullptr));
   WaitForIOThread();
 
-  g_TestResults.got_request.reset();
-  g_TestResults.got_read.reset();
-  g_TestResults.got_output.reset();
-  g_TestResults.expected_error_code = ERR_UNKNOWN_URL_SCHEME;
+  test_results.got_request.reset();
+  test_results.got_read.reset();
+  test_results.got_output.reset();
+  test_results.expected_error_code = ERR_UNKNOWN_URL_SCHEME;
   handler->ExecuteTest();
 
-  EXPECT_TRUE(g_TestResults.got_error);
-  EXPECT_FALSE(g_TestResults.got_request);
-  EXPECT_FALSE(g_TestResults.got_read);
-  EXPECT_FALSE(g_TestResults.got_output);
+  EXPECT_TRUE(test_results.got_error);
+  EXPECT_FALSE(test_results.got_request);
+  EXPECT_FALSE(test_results.got_read);
+  EXPECT_FALSE(test_results.got_output);
 
   // Re-register the handler.
   EXPECT_TRUE(CefRegisterSchemeHandlerFactory(
-      "customstd", "test", new ClientSchemeHandlerFactory(&g_TestResults)));
+      "customstd", "test", new ClientSchemeHandlerFactory(&test_results)));
   WaitForIOThread();
 
-  g_TestResults.got_error.reset();
-  g_TestResults.expected_error_code = ERR_NONE;
+  test_results.got_error.reset();
+  test_results.expected_error_code = ERR_NONE;
   handler->ExecuteTest();
 
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_FALSE(g_TestResults.got_error);
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
+  EXPECT_FALSE(test_results.got_error);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can return normal results.
 TEST(SchemeHandlerTest, CustomStandardNormalResponse) {
-  RegisterTestScheme("customstd", "test");
-  g_TestResults.url = "customstd://test/run.html";
-  g_TestResults.html =
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test");
+  test_results.url = "customstd://test/run.html";
+  test_results.html =
       "<html><head></head><body><h1>Success!</h1></body></html>";
-  g_TestResults.status_code = 200;
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can return normal results with delayed
 // responses.
 TEST(SchemeHandlerTest, CustomStandardNormalResponseDelayed) {
-  RegisterTestScheme("customstd", "test");
-  g_TestResults.url = "customstd://test/run.html";
-  g_TestResults.html =
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test");
+  test_results.url = "customstd://test/run.html";
+  test_results.html =
       "<html><head></head><body><h1>Success!</h1></body></html>";
-  g_TestResults.status_code = 200;
-  g_TestResults.delay = 100;
+  test_results.delay = 100;
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom nonstandard scheme can return normal results.
 TEST(SchemeHandlerTest, CustomNonStandardNormalResponse) {
-  RegisterTestScheme("customnonstd", std::string());
-  g_TestResults.url = "customnonstd:some%20value";
-  g_TestResults.html =
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customnonstd", std::string());
+  test_results.url = "customnonstd:some%20value";
+  test_results.html =
       "<html><head></head><body><h1>Success!</h1></body></html>";
-  g_TestResults.status_code = 200;
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can return an error code.
 TEST(SchemeHandlerTest, CustomStandardErrorResponse) {
-  RegisterTestScheme("customstd", "test");
-  g_TestResults.url = "customstd://test/run.html";
-  g_TestResults.html = "<html><head></head><body><h1>404</h1></body></html>";
-  g_TestResults.status_code = 404;
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test");
+  test_results.url = "customstd://test/run.html";
+  test_results.html = "<html><head></head><body><h1>404</h1></body></html>";
+  test_results.status_code = 404;
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can return a CEF error code in the
 // response.
 TEST(SchemeHandlerTest, CustomStandardErrorCodeResponse) {
-  RegisterTestScheme("customstd", "test");
-  g_TestResults.url = "customstd://test/run.html";
-  g_TestResults.response_error_code = ERR_FILE_TOO_BIG;
-  g_TestResults.expected_error_code = ERR_FILE_TOO_BIG;
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test");
+  test_results.url = "customstd://test/run.html";
+  test_results.response_error_code = ERR_FILE_TOO_BIG;
+  test_results.expected_error_code = ERR_FILE_TOO_BIG;
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_FALSE(g_TestResults.got_read);
-  EXPECT_FALSE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_error);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_FALSE(test_results.got_read);
+  EXPECT_FALSE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_error);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom nonstandard scheme can return an error code.
 TEST(SchemeHandlerTest, CustomNonStandardErrorResponse) {
-  RegisterTestScheme("customnonstd", std::string());
-  g_TestResults.url = "customnonstd:some%20value";
-  g_TestResults.html = "<html><head></head><body><h1>404</h1></body></html>";
-  g_TestResults.status_code = 404;
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customnonstd", std::string());
+  test_results.url = "customnonstd:some%20value";
+  test_results.html = "<html><head></head><body><h1>404</h1></body></html>";
+  test_results.status_code = 404;
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that custom standard scheme handling fails when the scheme name is
 // incorrect.
 TEST(SchemeHandlerTest, CustomStandardNameNotHandled) {
-  RegisterTestScheme("customstd", "test");
-  g_TestResults.url = "customstd2://test/run.html";
-  g_TestResults.expected_error_code = ERR_UNKNOWN_URL_SCHEME;
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test");
+  test_results.url = "customstd2://test/run.html";
+  test_results.expected_error_code = ERR_UNKNOWN_URL_SCHEME;
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_FALSE(g_TestResults.got_request);
-  EXPECT_FALSE(g_TestResults.got_read);
-  EXPECT_FALSE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_error);
+  EXPECT_FALSE(test_results.got_request);
+  EXPECT_FALSE(test_results.got_read);
+  EXPECT_FALSE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_error);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that custom nonstandard scheme handling fails when the scheme name is
 // incorrect.
 TEST(SchemeHandlerTest, CustomNonStandardNameNotHandled) {
-  RegisterTestScheme("customnonstd", std::string());
-  g_TestResults.url = "customnonstd2:some%20value";
-  g_TestResults.expected_error_code = ERR_UNKNOWN_URL_SCHEME;
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customnonstd", std::string());
+  test_results.url = "customnonstd2:some%20value";
+  test_results.expected_error_code = ERR_UNKNOWN_URL_SCHEME;
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_FALSE(g_TestResults.got_request);
-  EXPECT_FALSE(g_TestResults.got_read);
-  EXPECT_FALSE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_error);
+  EXPECT_FALSE(test_results.got_request);
+  EXPECT_FALSE(test_results.got_read);
+  EXPECT_FALSE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_error);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that custom standard scheme handling fails when the domain name is
 // incorrect.
 TEST(SchemeHandlerTest, CustomStandardDomainNotHandled) {
-  RegisterTestScheme("customstd", "test");
-  g_TestResults.url = "customstd://noexist/run.html";
-  g_TestResults.expected_error_code = ERR_FAILED;
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test");
+  test_results.url = "customstd://noexist/run.html";
+  test_results.expected_error_code = ERR_UNKNOWN_URL_SCHEME;
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_FALSE(g_TestResults.got_request);
-  EXPECT_FALSE(g_TestResults.got_read);
-  EXPECT_FALSE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_error);
+  EXPECT_FALSE(test_results.got_request);
+  EXPECT_FALSE(test_results.got_read);
+  EXPECT_FALSE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_error);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can return no response.
 TEST(SchemeHandlerTest, CustomStandardNoResponse) {
-  RegisterTestScheme("customstd", "test");
-  g_TestResults.url = "customstd://test/run.html";
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test");
+  test_results.url = "customstd://test/run.html";
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_FALSE(g_TestResults.got_read);
-  EXPECT_FALSE(g_TestResults.got_output);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_FALSE(test_results.got_read);
+  EXPECT_FALSE(test_results.got_output);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom nonstandard scheme can return no response.
 TEST(SchemeHandlerTest, CustomNonStandardNoResponse) {
-  RegisterTestScheme("customnonstd", std::string());
-  g_TestResults.url = "customnonstd:some%20value";
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customnonstd", std::string());
+  test_results.url = "customnonstd:some%20value";
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_FALSE(g_TestResults.got_read);
-  EXPECT_FALSE(g_TestResults.got_output);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_FALSE(test_results.got_read);
+  EXPECT_FALSE(test_results.got_output);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can generate redirects.
 TEST(SchemeHandlerTest, CustomStandardRedirect) {
-  RegisterTestScheme("customstd", "test");
-  g_TestResults.url = "customstd://test/run.html";
-  g_TestResults.redirect_url = "customstd://test/redirect.html";
-  g_TestResults.html =
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test");
+  test_results.url = "customstd://test/run.html";
+  test_results.redirect_url = "customstd://test/redirect.html";
+  test_results.html =
       "<html><head></head><body><h1>Redirected</h1></body></html>";
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_redirect);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_redirect);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom nonstandard scheme can generate redirects.
 TEST(SchemeHandlerTest, CustomNonStandardRedirect) {
-  RegisterTestScheme("customnonstd", std::string());
-  g_TestResults.url = "customnonstd:some%20value";
-  g_TestResults.redirect_url = "customnonstd:some%20other%20value";
-  g_TestResults.html =
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customnonstd", std::string());
+  test_results.url = "customnonstd:some%20value";
+  test_results.redirect_url = "customnonstd:some%20other%20value";
+  test_results.html =
       "<html><head></head><body><h1>Redirected</h1></body></html>";
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_redirect);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_redirect);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can generate same origin XHR requests.
 TEST(SchemeHandlerTest, CustomStandardXHRSameOriginSync) {
-  RegisterTestScheme("customstd", "test");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test");
 
   XHRTestSettings settings;
   settings.url = "customstd://test/run.html";
   settings.sub_url = "customstd://test/xhr.html";
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can generate same origin XHR requests.
 TEST(SchemeHandlerTest, CustomStandardXHRSameOriginAsync) {
-  RegisterTestScheme("customstd", "test");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test");
 
   XHRTestSettings settings;
   settings.url = "customstd://test/run.html";
   settings.sub_url = "customstd://test/xhr.html";
   settings.synchronous = false;
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
-// Test that a custom nonstandard scheme can generate same origin XHR requests.
+// Test that custom nonstandard schemes are treated as unique origins that
+// cannot generate XHR requests.
 TEST(SchemeHandlerTest, CustomNonStandardXHRSameOriginSync) {
-  RegisterTestScheme("customnonstd", std::string());
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customnonstd", std::string());
 
   XHRTestSettings settings;
   settings.url = "customnonstd:some%20value";
   settings.sub_url = "customnonstd:xhr%20value";
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  test_results.console_messages.push_back(
+      "Access to XMLHttpRequest at 'customnonstd:xhr%20value' from origin "
+      "'null' has been blocked by CORS policy: Cross origin requests are only "
+      "supported for protocol schemes:");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_FALSE(test_results.got_sub_request);
+  EXPECT_FALSE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
-// Test that a custom nonstandard scheme can generate same origin XHR requests.
+// Test that custom nonstandard schemes are treated as unique origins that
+// cannot generate XHR requests.
 TEST(SchemeHandlerTest, CustomNonStandardXHRSameOriginAsync) {
-  RegisterTestScheme("customnonstd", std::string());
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customnonstd", std::string());
 
   XHRTestSettings settings;
   settings.url = "customnonstd:some%20value";
   settings.sub_url = "customnonstd:xhr%20value";
   settings.synchronous = false;
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  test_results.console_messages.push_back(
+      "Access to XMLHttpRequest at 'customnonstd:xhr%20value' from origin "
+      "'null' has been blocked by CORS policy: Cross origin requests are only "
+      "supported for protocol schemes:");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_FALSE(test_results.got_sub_request);
+  EXPECT_FALSE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
+}
+
+// Test that a non fetch enabled custom standard scheme can't generate same
+// origin Fetch requests.
+TEST(SchemeHandlerTest, CustomStandardFetchSameOrigin) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test");
+
+  FetchTestSettings settings;
+  settings.url = "customstd://test/run.html";
+  settings.sub_url = "customstd://test/fetch.html";
+  SetUpFetch(&test_results, settings);
+
+  test_results.console_messages.push_back(
+      "Fetch API cannot load customstd://test/fetch.html. URL scheme "
+      "\"customstd\" is not supported.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_FALSE(test_results.got_sub_request);
+  EXPECT_FALSE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
+
+  ClearTestSchemes(&test_results);
+}
+
+// Test that a fetch enabled custom standard scheme can generate same origin
+// Fetch requests.
+TEST(SchemeHandlerTest, FetchCustomStandardFetchSameOrigin) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstdfetch", "test");
+
+  FetchTestSettings settings;
+  settings.url = "customstdfetch://test/run.html";
+  settings.sub_url = "customstdfetch://test/fetch.html";
+  SetUpFetch(&test_results, settings);
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
+
+  ClearTestSchemes(&test_results);
+}
+
+// Test that custom nonstandard schemes are treated as unique origins that
+// cannot generate Fetch requests.
+TEST(SchemeHandlerTest, CustomNonStandardFetchSameOrigin) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customnonstd", std::string());
+
+  FetchTestSettings settings;
+  settings.url = "customnonstd:some%20value";
+  settings.sub_url = "customnonstd:xhr%20value";
+  SetUpFetch(&test_results, settings);
+
+  test_results.console_messages.push_back(
+      "Fetch API cannot load customnonstd:xhr%20value. URL scheme "
+      "\"customnonstd\" is not supported.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_FALSE(test_results.got_sub_request);
+  EXPECT_FALSE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
+
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can generate same origin XSS requests.
 TEST(SchemeHandlerTest, CustomStandardXSSSameOrigin) {
-  RegisterTestScheme("customstd", "test");
-  SetUpXSS("customstd://test/run.html", "customstd://test/iframe.html");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test");
+  SetUpXSS(&test_results, "customstd://test/run.html",
+           "customstd://test/iframe.html");
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
-// Test that a custom nonstandard scheme can generate same origin XSS requests.
+// Test that custom nonstandard schemes are treated as unique origins that
+// cannot generate XSS requests.
 TEST(SchemeHandlerTest, CustomNonStandardXSSSameOrigin) {
-  RegisterTestScheme("customnonstd", std::string());
-  SetUpXSS("customnonstd:some%20value", "customnonstd:xhr%20value");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customnonstd", std::string());
+  SetUpXSS(&test_results, "customnonstd:some%20value",
+           "customnonstd:xhr%20value");
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  test_results.console_messages.push_back(
+      "SecurityError: Failed to read a named property 'getResult' from "
+      "'Window': Blocked a frame with origin \"null\" from accessing a "
+      "cross-origin frame.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme cannot generate cross-domain XHR requests
 // by default. Behavior should be the same as with HTTP.
 TEST(SchemeHandlerTest, CustomStandardXHRDifferentOriginSync) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://test2/xhr.html";
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  test_results.console_messages.push_back(
+      "Access to XMLHttpRequest at 'customstd://test2/xhr.html' from origin "
+      "'customstd://test1' has been blocked by CORS policy: No "
+      "'Access-Control-Allow-Origin' header is present on the requested "
+      "resource.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_FALSE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_FALSE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme cannot generate cross-domain XHR requests
 // by default. Behavior should be the same as with HTTP.
 TEST(SchemeHandlerTest, CustomStandardXHRDifferentOriginAsync) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://test2/xhr.html";
   settings.synchronous = false;
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  test_results.console_messages.push_back(
+      "Access to XMLHttpRequest at 'customstd://test2/xhr.html' from origin "
+      "'customstd://test1' has been blocked by CORS policy: No "
+      "'Access-Control-Allow-Origin' header is present on the requested "
+      "resource.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_FALSE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_FALSE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
+}
+
+// Test that a custom standard scheme cannot generate cross-domain Fetch
+// requests by default. Behavior should be the same as with HTTP.
+TEST(SchemeHandlerTest, CustomStandardFetchDifferentOrigin) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstdfetch", "test1");
+  RegisterTestScheme(&test_results, "customstdfetch", "test2");
+
+  FetchTestSettings settings;
+  settings.url = "customstdfetch://test1/run.html";
+  settings.sub_url = "customstdfetch://test2/fetch.html";
+  SetUpFetch(&test_results, settings);
+
+  test_results.console_messages.push_back(
+      "Access to fetch at 'customstdfetch://test2/fetch.html' from origin "
+      "'customstdfetch://test1' has been blocked by CORS policy: No "
+      "'Access-Control-Allow-Origin' header is present on the requested "
+      "resource.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_FALSE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
+
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme cannot generate cross-domain XSS requests
 // by default.
 TEST(SchemeHandlerTest, CustomStandardXSSDifferentOrigin) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
-  SetUpXSS("customstd://test1/run.html", "customstd://test2/iframe.html");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
+  SetUpXSS(&test_results, "customstd://test1/run.html",
+           "customstd://test2/iframe.html");
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  test_results.console_messages.push_back(
+      "SecurityError: Failed to read a named property 'getResult' from "
+      "'Window': Blocked a frame with origin \"customstd://test2\" from "
+      "accessing a cross-origin frame.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_FALSE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
+}
+
+// Test that a cross-protocol iframe load succeeds, and that the custom
+// standard scheme cannot generate XSS requests to the HTTP protocol by default.
+TEST(SchemeHandlerTest, CustomStandardXSSDifferentProtocolHttp) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "https", "test2");
+  SetUpXSS(&test_results, "customstd://test1/run.html",
+           "https://test2/iframe.html");
+
+  test_results.console_messages.push_back(
+      "SecurityError: Failed to read a named property 'getResult' from "
+      "'Window': Blocked a frame with origin \"https://test2\" from accessing "
+      "a cross-origin frame.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
+
+  ClearTestSchemes(&test_results);
+}
+
+// Test that a cross-protocol iframe load succeeds, and that the custom
+// standard scheme cannot generate XSS requests to a non-standard scheme by
+// default.
+TEST(SchemeHandlerTest, CustomStandardXSSDifferentProtocolCustomNonStandard) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customnonstd", std::string());
+  SetUpXSS(&test_results, "customstd://test1/run.html",
+           "customnonstd:some%20value");
+
+  test_results.console_messages.push_back(
+      "SecurityError: Failed to read a named property 'getResult' from "
+      "'Window': Blocked a frame with origin \"null\" from accessing a "
+      "cross-origin frame.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
+
+  ClearTestSchemes(&test_results);
+}
+
+// Test that a cross-protocol iframe load succeeds, and that the HTTP protocol
+// cannot generate XSS requests to the custom standard scheme by default.
+TEST(SchemeHandlerTest, HttpXSSDifferentProtocolCustomStandard) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "https", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
+  SetUpXSS(&test_results, "https://test1/run.html",
+           "customstd://test2/iframe.html");
+
+  test_results.console_messages.push_back(
+      "SecurityError: Failed to read a named property 'getResult' from "
+      "'Window': Blocked a frame with origin \"customstd://test2\" from "
+      "accessing a cross-origin frame.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
+
+  ClearTestSchemes(&test_results);
+}
+
+// Test that a cross-protocol iframe load succeeds, and that the HTTP protocol
+// cannot generate XSS requests to the custom non-standard scheme by default.
+TEST(SchemeHandlerTest, HttpXSSDifferentProtocolCustomNonStandard) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "https", "test1");
+  RegisterTestScheme(&test_results, "customnonstd", std::string());
+  SetUpXSS(&test_results, "https://test1/run.html",
+           "customnonstd:some%20value");
+
+  test_results.console_messages.push_back(
+      "SecurityError: Failed to read a named property 'getResult' from "
+      "'Window': Blocked a frame with origin \"null\" from accessing a "
+      "cross-origin frame.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
+
+  ClearTestSchemes(&test_results);
 }
 
 // Test that an HTTP scheme cannot generate cross-domain XHR requests by
 // default.
 TEST(SchemeHandlerTest, HttpXHRDifferentOriginSync) {
-  RegisterTestScheme("http", "test1");
-  RegisterTestScheme("http", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "https", "test1");
+  RegisterTestScheme(&test_results, "https", "test2");
 
   XHRTestSettings settings;
-  settings.url = "http://test1/run.html";
-  settings.sub_url = "http://test2/xhr.html";
-  SetUpXHR(settings);
+  settings.url = "https://test1/run.html";
+  settings.sub_url = "https://test2/xhr.html";
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  test_results.console_messages.push_back(
+      "Access to XMLHttpRequest at 'https://test2/xhr.html' from origin "
+      "'https://test1' has been blocked by CORS policy: No "
+      "'Access-Control-Allow-Origin' header is present on the requested "
+      "resource.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_FALSE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_FALSE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that an HTTP scheme cannot generate cross-domain XHR requests by
 // default.
 TEST(SchemeHandlerTest, HttpXHRDifferentOriginAsync) {
-  RegisterTestScheme("http", "test1");
-  RegisterTestScheme("http", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "https", "test1");
+  RegisterTestScheme(&test_results, "https", "test2");
 
   XHRTestSettings settings;
-  settings.url = "http://test1/run.html";
-  settings.sub_url = "http://test2/xhr.html";
+  settings.url = "https://test1/run.html";
+  settings.sub_url = "https://test2/xhr.html";
   settings.synchronous = false;
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  test_results.console_messages.push_back(
+      "Access to XMLHttpRequest at 'https://test2/xhr.html' from origin "
+      "'https://test1' has been blocked by CORS policy: No "
+      "'Access-Control-Allow-Origin' header is present on the requested "
+      "resource.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_FALSE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_FALSE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
+}
+
+// Test that an HTTP scheme cannot generate cross-domain Fetch requests by
+// default.
+TEST(SchemeHandlerTest, HttpFetchDifferentOriginAsync) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "https", "test1");
+  RegisterTestScheme(&test_results, "https", "test2");
+
+  FetchTestSettings settings;
+  settings.url = "https://test1/run.html";
+  settings.sub_url = "https://test2/fetch.html";
+  SetUpFetch(&test_results, settings);
+
+  test_results.console_messages.push_back(
+      "Access to fetch at 'https://test2/fetch.html' from origin "
+      "'https://test1' "
+      "has been blocked by CORS policy: No 'Access-Control-Allow-Origin' "
+      "header is present on the requested resource.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_FALSE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
+
+  ClearTestSchemes(&test_results);
 }
 
 // Test that an HTTP scheme cannot generate cross-domain XSS requests by
 // default.
 TEST(SchemeHandlerTest, HttpXSSDifferentOrigin) {
-  RegisterTestScheme("http", "test1");
-  RegisterTestScheme("http", "test2");
-  SetUpXSS("http://test1/run.html", "http://test2/xss.html");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "https", "test1");
+  RegisterTestScheme(&test_results, "https", "test2");
+  SetUpXSS(&test_results, "https://test1/run.html", "https://test2/xss.html");
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  test_results.console_messages.push_back(
+      "SecurityError: Failed to read a named property 'getResult' from "
+      "'Window': Blocked a frame with origin \"https://test2\" from accessing "
+      "a cross-origin frame.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_FALSE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can generate cross-domain XHR requests
 // when setting the Access-Control-Allow-Origin header. Should behave the same
 // as HTTP.
 TEST(SchemeHandlerTest, CustomStandardXHRDifferentOriginWithHeaderSync) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://test2/xhr.html";
   settings.sub_allow_origin = "customstd://test1";
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can generate cross-domain XHR requests
 // when setting the Access-Control-Allow-Origin header. Should behave the same
 // as HTTP.
 TEST(SchemeHandlerTest, CustomStandardXHRDifferentOriginWithHeaderAsync) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://test2/xhr.html";
   settings.sub_allow_origin = "customstd://test1";
   settings.synchronous = false;
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
+}
+
+// Test that a custom standard scheme can generate cross-domain Fetch requests
+// when setting the Access-Control-Allow-Origin header. Should behave the same
+// as HTTP.
+TEST(SchemeHandlerTest, CustomStandardFetchDifferentOriginWithHeader) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstdfetch", "test1");
+  RegisterTestScheme(&test_results, "customstdfetch", "test2");
+
+  FetchTestSettings settings;
+  settings.url = "customstdfetch://test1/run.html";
+  settings.sub_url = "customstdfetch://test2/fetch.html";
+  settings.sub_allow_origin = "customstdfetch://test1";
+  SetUpFetch(&test_results, settings);
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
+
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can generate cross-domain XHR requests
 // when using the cross-origin whitelist.
 TEST(SchemeHandlerTest, CustomStandardXHRDifferentOriginWithWhitelistSync1) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://test2/xhr.html";
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
   EXPECT_TRUE(CefAddCrossOriginWhitelistEntry("customstd://test1", "customstd",
                                               "test2", false));
   WaitForUIThread();
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
   EXPECT_TRUE(CefClearCrossOriginWhitelist());
   WaitForUIThread();
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Same as above but origin whitelist matches any domain.
 TEST(SchemeHandlerTest, CustomStandardXHRDifferentOriginWithWhitelistSync2) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://test2/xhr.html";
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
   EXPECT_TRUE(CefAddCrossOriginWhitelistEntry("customstd://test1", "customstd",
                                               CefString(), true));
   WaitForUIThread();
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
   EXPECT_TRUE(CefClearCrossOriginWhitelist());
   WaitForUIThread();
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Same as above but origin whitelist matches sub-domains.
 TEST(SchemeHandlerTest, CustomStandardXHRDifferentOriginWithWhitelistSync3) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "a.test2.foo");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "a.test2.foo");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://a.test2.foo/xhr.html";
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
   EXPECT_TRUE(CefAddCrossOriginWhitelistEntry("customstd://test1", "customstd",
                                               "test2.foo", true));
   WaitForUIThread();
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
   EXPECT_TRUE(CefClearCrossOriginWhitelist());
   WaitForUIThread();
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can generate cross-domain XHR requests
 // when using the cross-origin whitelist.
 TEST(SchemeHandlerTest, CustomStandardXHRDifferentOriginWithWhitelistAsync1) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://test2/xhr.html";
   settings.synchronous = false;
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
   EXPECT_TRUE(CefAddCrossOriginWhitelistEntry("customstd://test1", "customstd",
                                               "test2", false));
   WaitForUIThread();
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
   EXPECT_TRUE(CefClearCrossOriginWhitelist());
   WaitForUIThread();
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Same as above but origin whitelist matches any domain.
 TEST(SchemeHandlerTest, CustomStandardXHRDifferentOriginWithWhitelistAsync2) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://test2/xhr.html";
   settings.synchronous = false;
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
   EXPECT_TRUE(CefAddCrossOriginWhitelistEntry("customstd://test1", "customstd",
                                               CefString(), true));
   WaitForUIThread();
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
   EXPECT_TRUE(CefClearCrossOriginWhitelist());
   WaitForUIThread();
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Same as above but origin whitelist matches sub-domains.
 TEST(SchemeHandlerTest, CustomStandardXHRDifferentOriginWithWhitelistAsync3) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "a.test2.foo");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "a.test2.foo");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://a.test2.foo/xhr.html";
   settings.synchronous = false;
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
   EXPECT_TRUE(CefAddCrossOriginWhitelistEntry("customstd://test1", "customstd",
                                               "test2.foo", true));
   WaitForUIThread();
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
   EXPECT_TRUE(CefClearCrossOriginWhitelist());
   WaitForUIThread();
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
+}
+
+// Test that a custom standard scheme can generate cross-domain Fetch requests
+// when using the cross-origin whitelist.
+TEST(SchemeHandlerTest, CustomStandardFetchDifferentOriginWithWhitelist1) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstdfetch", "test1");
+  RegisterTestScheme(&test_results, "customstdfetch", "test2");
+
+  FetchTestSettings settings;
+  settings.url = "customstdfetch://test1/run.html";
+  settings.sub_url = "customstdfetch://test2/fetch.html";
+  SetUpFetch(&test_results, settings);
+
+  EXPECT_TRUE(CefAddCrossOriginWhitelistEntry(
+      "customstdfetch://test1", "customstdfetch", "test2", false));
+  WaitForUIThread();
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
+
+  EXPECT_TRUE(CefClearCrossOriginWhitelist());
+  WaitForUIThread();
+
+  ClearTestSchemes(&test_results);
+}
+
+// Same as above but origin whitelist matches any domain.
+TEST(SchemeHandlerTest, CustomStandardFetchDifferentOriginWithWhitelist2) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstdfetch", "test1");
+  RegisterTestScheme(&test_results, "customstdfetch", "test2");
+
+  FetchTestSettings settings;
+  settings.url = "customstdfetch://test1/run.html";
+  settings.sub_url = "customstdfetch://test2/fetch.html";
+  SetUpFetch(&test_results, settings);
+
+  EXPECT_TRUE(CefAddCrossOriginWhitelistEntry(
+      "customstdfetch://test1", "customstdfetch", CefString(), true));
+  WaitForUIThread();
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
+
+  EXPECT_TRUE(CefClearCrossOriginWhitelist());
+  WaitForUIThread();
+
+  ClearTestSchemes(&test_results);
+}
+
+// Same as above but origin whitelist matches sub-domains.
+TEST(SchemeHandlerTest, CustomStandardFetchDifferentOriginWithWhitelist3) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstdfetch", "test1");
+  RegisterTestScheme(&test_results, "customstdfetch", "a.test2.foo");
+
+  FetchTestSettings settings;
+  settings.url = "customstdfetch://test1/run.html";
+  settings.sub_url = "customstdfetch://a.test2.foo/fetch.html";
+  SetUpFetch(&test_results, settings);
+
+  EXPECT_TRUE(CefAddCrossOriginWhitelistEntry(
+      "customstdfetch://test1", "customstdfetch", "test2.foo", true));
+  WaitForUIThread();
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
+
+  EXPECT_TRUE(CefClearCrossOriginWhitelist());
+  WaitForUIThread();
+
+  ClearTestSchemes(&test_results);
 }
 
 // Test that an HTTP scheme can generate cross-domain XHR requests when setting
 // the Access-Control-Allow-Origin header.
 TEST(SchemeHandlerTest, HttpXHRDifferentOriginWithHeaderSync) {
-  RegisterTestScheme("http", "test1");
-  RegisterTestScheme("http", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "https", "test1");
+  RegisterTestScheme(&test_results, "https", "test2");
 
   XHRTestSettings settings;
-  settings.url = "http://test1/run.html";
-  settings.sub_url = "http://test2/xhr.html";
-  settings.sub_allow_origin = "http://test1";
-  SetUpXHR(settings);
+  settings.url = "https://test1/run.html";
+  settings.sub_url = "https://test2/xhr.html";
+  settings.sub_allow_origin = "https://test1";
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that an HTTP scheme can generate cross-domain XHR requests when setting
 // the Access-Control-Allow-Origin header.
 TEST(SchemeHandlerTest, HttpXHRDifferentOriginWithHeaderAsync) {
-  RegisterTestScheme("http", "test1");
-  RegisterTestScheme("http", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "https", "test1");
+  RegisterTestScheme(&test_results, "https", "test2");
 
   XHRTestSettings settings;
-  settings.url = "http://test1/run.html";
-  settings.sub_url = "http://test2/xhr.html";
-  settings.sub_allow_origin = "http://test1";
+  settings.url = "https://test1/run.html";
+  settings.sub_url = "https://test2/xhr.html";
+  settings.sub_allow_origin = "https://test1";
   settings.synchronous = false;
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
+}
+
+// Test that an HTTP scheme can generate cross-domain XHR requests when setting
+// the Access-Control-Allow-Origin header.
+TEST(SchemeHandlerTest, HttpFetchDifferentOriginWithHeader) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "https", "test1");
+  RegisterTestScheme(&test_results, "https", "test2");
+
+  FetchTestSettings settings;
+  settings.url = "https://test1/run.html";
+  settings.sub_url = "https://test2/fetch.html";
+  settings.sub_allow_origin = "https://test1";
+  SetUpFetch(&test_results, settings);
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
+
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can generate cross-domain XSS requests
 // when using document.domain.
 TEST(SchemeHandlerTest, CustomStandardXSSDifferentOriginWithDomain) {
-  RegisterTestScheme("customstd", "a.test.com");
-  RegisterTestScheme("customstd", "b.test.com");
-  SetUpXSS("customstd://a.test.com/run.html",
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "a.test.com");
+  RegisterTestScheme(&test_results, "customstd", "b.test.com");
+  SetUpXSS(&test_results, "customstd://a.test.com/run.html",
            "customstd://b.test.com/iframe.html", "test.com");
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that an HTTP scheme can generate cross-domain XSS requests when using
 // document.domain.
 TEST(SchemeHandlerTest, HttpXSSDifferentOriginWithDomain) {
-  RegisterTestScheme("http", "a.test.com");
-  RegisterTestScheme("http", "b.test.com");
-  SetUpXSS("http://a.test.com/run.html", "http://b.test.com/iframe.html",
-           "test.com");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "https", "a.test.com");
+  RegisterTestScheme(&test_results, "https", "b.test.com");
+  SetUpXSS(&test_results, "https://a.test.com/run.html",
+           "https://b.test.com/iframe.html", "test.com");
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme cannot generate cross-domain XHR requests
 // that perform redirects.
 TEST(SchemeHandlerTest, CustomStandardXHRDifferentOriginRedirectSync) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://test2/xhr.html";
   settings.sub_redirect_url = "customstd://test1/xhr.html";
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  test_results.console_messages.push_back(
+      "Access to XMLHttpRequest at 'customstd://test2/xhr.html' (redirected "
+      "from 'customstd://test1/xhr.html') from origin 'customstd://test1' has "
+      "been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is "
+      "present on the requested resource.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_redirect);
-  EXPECT_FALSE(g_TestResults.got_sub_request);
-  EXPECT_FALSE(g_TestResults.got_sub_read);
-  EXPECT_FALSE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_redirect);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_FALSE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme cannot generate cross-domain XHR requests
 // that perform redirects.
 TEST(SchemeHandlerTest, CustomStandardXHRDifferentOriginRedirectAsync) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://test2/xhr.html";
   settings.sub_redirect_url = "customstd://test1/xhr.html";
   settings.synchronous = false;
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  test_results.console_messages.push_back(
+      "Access to XMLHttpRequest at 'customstd://test2/xhr.html' (redirected "
+      "from 'customstd://test1/xhr.html') from origin 'customstd://test1' has "
+      "been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is "
+      "present on the requested resource.");
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_redirect);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_FALSE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_redirect);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_FALSE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
-// Test that a custom standard scheme cannot generate cross-domain XHR requests
-// that perform redirects when using the cross-origin whitelist. This is due to
-// an explicit check in SyncResourceHandler::OnRequestRedirected() and does not
-// represent ideal behavior.
-TEST(SchemeHandlerTest,
-     CustomStandardXHRDifferentOriginRedirectWithWhitelistSync) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
+// Test that a custom standard scheme cannot generate cross-domain Fetch
+// requests that perform redirects.
+TEST(SchemeHandlerTest, CustomStandardFetchDifferentOriginRedirect) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstdfetch", "test1");
+  RegisterTestScheme(&test_results, "customstdfetch", "test2");
 
-  XHRTestSettings settings;
-  settings.url = "customstd://test1/run.html";
-  settings.sub_url = "customstd://test2/xhr.html";
-  settings.sub_redirect_url = "customstd://test1/xhr.html";
-  SetUpXHR(settings);
+  FetchTestSettings settings;
+  settings.url = "customstdfetch://test1/run.html";
+  settings.sub_url = "customstdfetch://test2/fetch.html";
+  settings.sub_redirect_url = "customstdfetch://test1/fetch.html";
+  SetUpFetch(&test_results, settings);
 
-  EXPECT_TRUE(CefAddCrossOriginWhitelistEntry("customstd://test1", "customstd",
-                                              "test2", false));
-  WaitForUIThread();
+  test_results.console_messages.push_back(
+      "Access to fetch at 'customstdfetch://test2/fetch.html' (redirected from "
+      "'customstdfetch://test1/fetch.html') from origin "
+      "'customstdfetch://test1' has been blocked by CORS policy: No "
+      "'Access-Control-Allow-Origin' header is present on the requested "
+      "resource.");
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_redirect);
-  EXPECT_FALSE(g_TestResults.got_sub_request);
-  EXPECT_FALSE(g_TestResults.got_sub_read);
-  EXPECT_FALSE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_redirect);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_FALSE(test_results.got_sub_read);
+  EXPECT_FALSE(test_results.git_exit_success);
 
-  EXPECT_TRUE(CefClearCrossOriginWhitelist());
-  WaitForUIThread();
-
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Test that a custom standard scheme can generate cross-domain XHR requests
-// that perform redirects when using the cross-origin whitelist. This is
-// because we add an "Access-Control-Allow-Origin" header internally in
-// CefResourceDispatcherHostDelegate::OnRequestRedirected() for the redirect
-// request.
+// that perform redirects when using the cross-origin whitelist.
+TEST(SchemeHandlerTest,
+     CustomStandardXHRDifferentOriginRedirectWithWhitelistSync) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
+
+  XHRTestSettings settings;
+  settings.url = "customstd://test1/run.html";
+  settings.sub_url = "customstd://test2/xhr.html";
+  settings.sub_redirect_url = "customstd://test1/xhr.html";
+  SetUpXHR(&test_results, settings);
+
+  EXPECT_TRUE(CefAddCrossOriginWhitelistEntry("customstd://test1", "customstd",
+                                              "test2", false));
+  WaitForUIThread();
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_redirect);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
+
+  EXPECT_TRUE(CefClearCrossOriginWhitelist());
+  WaitForUIThread();
+
+  ClearTestSchemes(&test_results);
+}
+
+// Test that a custom standard scheme can generate cross-domain XHR requests
+// that perform redirects when using the cross-origin whitelist.
 TEST(SchemeHandlerTest,
      CustomStandardXHRDifferentOriginRedirectWithWhitelistAsync1) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://test2/xhr.html";
   settings.sub_redirect_url = "customstd://test1/xhr.html";
   settings.synchronous = false;
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
   EXPECT_TRUE(CefAddCrossOriginWhitelistEntry("customstd://test1", "customstd",
                                               "test2", false));
   WaitForUIThread();
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_redirect);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_redirect);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
   EXPECT_TRUE(CefClearCrossOriginWhitelist());
   WaitForUIThread();
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Same as above but origin whitelist matches any domain.
 TEST(SchemeHandlerTest,
      CustomStandardXHRDifferentOriginRedirectWithWhitelistAsync2) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "test2");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "test2");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://test2/xhr.html";
   settings.sub_redirect_url = "customstd://test1/xhr.html";
   settings.synchronous = false;
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
   EXPECT_TRUE(CefAddCrossOriginWhitelistEntry("customstd://test1", "customstd",
                                               CefString(), true));
   WaitForUIThread();
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_redirect);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_redirect);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
   EXPECT_TRUE(CefClearCrossOriginWhitelist());
   WaitForUIThread();
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
 // Same as above but origin whitelist matches sub-domains.
 TEST(SchemeHandlerTest,
      CustomStandardXHRDifferentOriginRedirectWithWhitelistAsync3) {
-  RegisterTestScheme("customstd", "test1");
-  RegisterTestScheme("customstd", "a.test2.foo");
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstd", "test1");
+  RegisterTestScheme(&test_results, "customstd", "a.test2.foo");
 
   XHRTestSettings settings;
   settings.url = "customstd://test1/run.html";
   settings.sub_url = "customstd://a.test2.foo/xhr.html";
   settings.sub_redirect_url = "customstd://test1/xhr.html";
   settings.synchronous = false;
-  SetUpXHR(settings);
+  SetUpXHR(&test_results, settings);
 
   EXPECT_TRUE(CefAddCrossOriginWhitelistEntry("customstd://test1", "customstd",
                                               "test2.foo", true));
   WaitForUIThread();
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
-  EXPECT_TRUE(g_TestResults.got_sub_redirect);
-  EXPECT_TRUE(g_TestResults.got_sub_request);
-  EXPECT_TRUE(g_TestResults.got_sub_read);
-  EXPECT_TRUE(g_TestResults.got_sub_success);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_redirect);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
   EXPECT_TRUE(CefClearCrossOriginWhitelist());
   WaitForUIThread();
 
-  ClearTestSchemes();
+  ClearTestSchemes(&test_results);
 }
 
-// Test per-browser setting of Accept-Language.
-TEST(SchemeHandlerTest, AcceptLanguage) {
-  RegisterTestScheme("customstd", "test");
-  g_TestResults.url = "customstd://test/run.html";
-  g_TestResults.html =
-      "<html><head></head><body><h1>Success!</h1></body></html>";
-  g_TestResults.status_code = 200;
+// Test that a custom standard scheme can generate cross-domain Fetch requests
+// that perform redirects when using the cross-origin whitelist.
+TEST(SchemeHandlerTest,
+     CustomStandardFetchDifferentOriginRedirectWithWhitelist1) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstdfetch", "test1");
+  RegisterTestScheme(&test_results, "customstdfetch", "test2");
 
-  // Value that will be set via CefBrowserSettings.accept_language in
-  // PopulateBrowserSettings().
-  g_TestResults.accept_language = "uk";
+  FetchTestSettings settings;
+  settings.url = "customstdfetch://test1/run.html";
+  settings.sub_url = "customstdfetch://test2/fetch.html";
+  settings.sub_redirect_url = "customstdfetch://test1/fetch.html";
+  SetUpFetch(&test_results, settings);
 
-  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&g_TestResults);
+  EXPECT_TRUE(CefAddCrossOriginWhitelistEntry(
+      "customstdfetch://test1", "customstdfetch", "test2", false));
+  WaitForUIThread();
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 
-  EXPECT_TRUE(g_TestResults.got_request);
-  EXPECT_TRUE(g_TestResults.got_read);
-  EXPECT_TRUE(g_TestResults.got_output);
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_redirect);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
 
-  ClearTestSchemes();
+  EXPECT_TRUE(CefClearCrossOriginWhitelist());
+  WaitForUIThread();
+
+  ClearTestSchemes(&test_results);
+}
+
+// Same as above but origin whitelist matches any domain.
+TEST(SchemeHandlerTest,
+     CustomStandardFetchDifferentOriginRedirectWithWhitelist2) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstdfetch", "test1");
+  RegisterTestScheme(&test_results, "customstdfetch", "test2");
+
+  FetchTestSettings settings;
+  settings.url = "customstdfetch://test1/run.html";
+  settings.sub_url = "customstdfetch://test2/fetch.html";
+  settings.sub_redirect_url = "customstdfetch://test1/fetch.html";
+  SetUpFetch(&test_results, settings);
+
+  EXPECT_TRUE(CefAddCrossOriginWhitelistEntry(
+      "customstdfetch://test1", "customstdfetch", CefString(), true));
+  WaitForUIThread();
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_redirect);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
+
+  EXPECT_TRUE(CefClearCrossOriginWhitelist());
+  WaitForUIThread();
+
+  ClearTestSchemes(&test_results);
+}
+
+// Same as above but origin whitelist matches sub-domains.
+TEST(SchemeHandlerTest,
+     CustomStandardFetchDifferentOriginRedirectWithWhitelist3) {
+  TestResults test_results;
+  RegisterTestScheme(&test_results, "customstdfetch", "test1");
+  RegisterTestScheme(&test_results, "customstdfetch", "a.test2.foo");
+
+  FetchTestSettings settings;
+  settings.url = "customstdfetch://test1/run.html";
+  settings.sub_url = "customstdfetch://a.test2.foo/fetch.html";
+  settings.sub_redirect_url = "customstdfetch://test1/fetch.html";
+  SetUpFetch(&test_results, settings);
+
+  EXPECT_TRUE(CefAddCrossOriginWhitelistEntry(
+      "customstdfetch://test1", "customstdfetch", "test2.foo", true));
+  WaitForUIThread();
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.got_sub_redirect);
+  EXPECT_TRUE(test_results.got_sub_request);
+  EXPECT_TRUE(test_results.got_sub_read);
+  EXPECT_TRUE(test_results.git_exit_success);
+
+  EXPECT_TRUE(CefClearCrossOriginWhitelist());
+  WaitForUIThread();
+
+  ClearTestSchemes(&test_results);
+}
+
+// Test that CefRequestContextSettings.accept_language_list configures both
+// the Accept-Language request header and `navigator.language` JS attribute.
+TEST(SchemeHandlerTest, AcceptLanguage) {
+  TestResults test_results;
+
+  // Value that will be set via CefRequestContextSettings.accept_language_list.
+  test_results.accept_language = "uk";
+
+  // Create an in-memory request context with custom settings.
+  CefRequestContextSettings settings;
+  CefString(&settings.accept_language_list) = test_results.accept_language;
+  test_results.request_context =
+      CefRequestContext::CreateContext(settings, nullptr);
+
+  RegisterTestScheme(&test_results, "customstd", "test");
+  test_results.url = "customstd://test/run.html";
+  test_results.html =
+      "<html><head></head><body>"
+      "<script>"
+      "if (navigator.language == 'uk') {"
+      "  result = 'SUCCESS';"
+      "} else {"
+      "  result = 'FAILURE';"
+      "  console.log('navigator.language: '+navigator.language+' != uk');"
+      "}"
+      "document.location = 'https://tests/exit?result='+result;"
+      "</script>"
+      "</body></html>";
+  test_results.exit_url = "https://tests/exit";
+
+  CefRefPtr<TestSchemeHandler> handler = new TestSchemeHandler(&test_results);
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+
+  EXPECT_TRUE(test_results.got_request);
+  EXPECT_TRUE(test_results.got_read);
+  EXPECT_TRUE(test_results.got_output);
+  EXPECT_TRUE(test_results.git_exit_success);
+
+  ClearTestSchemes(&test_results);
+}
+
+namespace {
+
+// Test that CefSchemeHandlerFactory::Create receives the correct frame URL
+// for sub-resource requests. This is a regression test for issue #4034 where
+// frame->GetUrl() returned "about:blank" instead of the actual frame URL
+// during resource loading.
+class FrameUrlTestSchemeHandlerFactory : public CefSchemeHandlerFactory {
+ public:
+  explicit FrameUrlTestSchemeHandlerFactory(
+      const std::string& expected_frame_url,
+      const std::string& main_html,
+      const std::string& sub_html,
+      const std::string& sub_url,
+      TrackCallback* got_factory_create_for_main,
+      TrackCallback* got_factory_create_for_sub,
+      TrackCallback* got_correct_frame_url_for_sub)
+      : expected_frame_url_(expected_frame_url),
+        main_html_(main_html),
+        sub_html_(sub_html),
+        sub_url_(sub_url),
+        got_factory_create_for_main_(got_factory_create_for_main),
+        got_factory_create_for_sub_(got_factory_create_for_sub),
+        got_correct_frame_url_for_sub_(got_correct_frame_url_for_sub) {}
+
+  FrameUrlTestSchemeHandlerFactory(const FrameUrlTestSchemeHandlerFactory&) =
+      delete;
+  FrameUrlTestSchemeHandlerFactory& operator=(
+      const FrameUrlTestSchemeHandlerFactory&) = delete;
+
+  CefRefPtr<CefResourceHandler> Create(CefRefPtr<CefBrowser> browser,
+                                       CefRefPtr<CefFrame> frame,
+                                       const CefString& scheme_name,
+                                       CefRefPtr<CefRequest> request) override {
+    EXPECT_TRUE(CefCurrentlyOn(TID_IO));
+
+    const std::string& url = request->GetURL();
+    const std::string& frame_url = frame ? frame->GetURL().ToString() : "";
+
+    if (url == expected_frame_url_) {
+      // This is the main page request.
+      got_factory_create_for_main_->yes();
+      return new CefStreamResourceHandler(
+          200, "OK", "text/html", CefResponse::HeaderMap(),
+          CefStreamReader::CreateForData(
+              static_cast<void*>(const_cast<char*>(main_html_.data())),
+              main_html_.size()));
+    } else if (url == sub_url_) {
+      // This is the sub-resource request.
+      got_factory_create_for_sub_->yes();
+
+      // Verify that frame->GetUrl() returns the main page URL, not
+      // "about:blank". This is the core fix verified by issue #4034.
+      if (frame_url == expected_frame_url_) {
+        got_correct_frame_url_for_sub_->yes();
+      } else {
+        ADD_FAILURE() << "Expected frame URL: " << expected_frame_url_
+                      << ", got: " << frame_url;
+      }
+
+      // Return a simple response for the sub-resource.
+      return new CefStreamResourceHandler(
+          200, "OK", "text/html", CefResponse::HeaderMap(),
+          CefStreamReader::CreateForData(
+              static_cast<void*>(const_cast<char*>(sub_html_.data())),
+              sub_html_.size()));
+    }
+
+    return nullptr;
+  }
+
+ private:
+  const std::string expected_frame_url_;
+  const std::string main_html_;
+  const std::string sub_html_;
+  const std::string sub_url_;
+  TrackCallback* const got_factory_create_for_main_;
+  TrackCallback* const got_factory_create_for_sub_;
+  TrackCallback* const got_correct_frame_url_for_sub_;
+
+  IMPLEMENT_REFCOUNTING(FrameUrlTestSchemeHandlerFactory);
+};
+
+class FrameUrlTestHandler : public TestHandler {
+ public:
+  FrameUrlTestHandler() = default;
+
+  FrameUrlTestHandler(const FrameUrlTestHandler&) = delete;
+  FrameUrlTestHandler& operator=(const FrameUrlTestHandler&) = delete;
+
+  void RunTest() override {
+    // Main page URL.
+    main_url_ = "customstd://test/main.html";
+    // Sub-resource URL that will be fetched via XHR.
+    sub_url_ = "customstd://test/sub.html";
+
+    // HTML for main page - uses XHR to request the sub-resource.
+    // After the XHR completes, it navigates to an exit URL.
+    std::stringstream ss;
+    ss << "<html><head></head><body>"
+       << "<script>"
+       << "var xhr = new XMLHttpRequest();"
+       << "xhr.open('GET', '" << sub_url_ << "', true);"
+       << "xhr.onload = function() {"
+       << "  if (xhr.status === 200) {"
+       << "    document.location = 'https://tests/exit?result=SUCCESS';"
+       << "  } else {"
+       << "    document.location = 'https://tests/exit?result=FAILURE';"
+       << "  }"
+       << "};"
+       << "xhr.onerror = function() {"
+       << "  document.location = 'https://tests/exit?result=FAILURE';"
+       << "};"
+       << "xhr.send();"
+       << "</script>"
+       << "</body></html>";
+    main_html_ = ss.str();
+
+    // Simple content for sub-resource.
+    sub_html_ = "SUB_RESOURCE_CONTENT";
+
+    // Register the custom scheme handler factory.
+    CefRefPtr<FrameUrlTestSchemeHandlerFactory> factory =
+        new FrameUrlTestSchemeHandlerFactory(
+            main_url_, main_html_, sub_html_, sub_url_,
+            &got_factory_create_for_main_, &got_factory_create_for_sub_,
+            &got_correct_frame_url_for_sub_);
+
+    EXPECT_TRUE(CefRegisterSchemeHandlerFactory("customstd", "test", factory));
+    WaitForIOThread();
+
+    // Create browser to load the main page.
+    CreateBrowser(main_url_);
+
+    SetTestTimeout();
+  }
+
+  cef_return_value_t OnBeforeResourceLoad(
+      CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame,
+      CefRefPtr<CefRequest> request,
+      CefRefPtr<CefCallback> callback) override {
+    const std::string& url = request->GetURL();
+
+    // Cancel exit URL requests and complete the test.
+    if (url.find("https://tests/exit") != std::string::npos) {
+      if (url.find("SUCCESS") != std::string::npos) {
+        got_exit_success_.yes();
+      }
+      DestroyTest();
+      return RV_CANCEL;
+    }
+
+    return RV_CONTINUE;
+  }
+
+  void DestroyTest() override {
+    // Verify all expected callbacks were triggered.
+    EXPECT_TRUE(got_factory_create_for_main_);
+    EXPECT_TRUE(got_factory_create_for_sub_);
+    EXPECT_TRUE(got_correct_frame_url_for_sub_);
+    EXPECT_TRUE(got_exit_success_);
+
+    TestHandler::DestroyTest();
+  }
+
+  void ClearSchemeFactory() {
+    // Unregister the scheme handler factory.
+    EXPECT_TRUE(CefRegisterSchemeHandlerFactory("customstd", "test", nullptr));
+    WaitForIOThread();
+  }
+
+ private:
+  std::string main_url_;
+  std::string sub_url_;
+  std::string main_html_;
+  std::string sub_html_;
+
+  TrackCallback got_factory_create_for_main_;
+  TrackCallback got_factory_create_for_sub_;
+  TrackCallback got_correct_frame_url_for_sub_;
+  TrackCallback got_exit_success_;
+
+  IMPLEMENT_REFCOUNTING(FrameUrlTestHandler);
+};
+
+}  // namespace
+
+// Test that CefSchemeHandlerFactory::Create receives the correct frame URL
+// for sub-resource requests (fixes issue #4034).
+TEST(SchemeHandlerTest, FactoryCreateFrameUrl) {
+  CefRefPtr<FrameUrlTestHandler> handler = new FrameUrlTestHandler();
+  handler->ExecuteTest();
+  handler->ClearSchemeFactory();
+  ReleaseAndWaitForDestructor(handler);
 }
 
 // Entry point for registering custom schemes.
 // Called from client_app_delegates.cc.
 void RegisterSchemeHandlerCustomSchemes(
-    CefRawPtr<CefSchemeRegistrar> registrar,
-    std::vector<CefString>& cookiable_schemes) {
+    CefRawPtr<CefSchemeRegistrar> registrar) {
+  // Registering the custom standard schemes as secure because requests from
+  // non-secure origins to the loopback address will be blocked by
+  // https://chromestatus.com/feature/5436853517811712.
+
   // Add a custom standard scheme.
-  registrar->AddCustomScheme("customstd", true, false, false, false, true,
-                             false);
-  // Ad a custom non-standard scheme.
-  registrar->AddCustomScheme("customnonstd", false, false, false, false, false,
-                             false);
+  registrar->AddCustomScheme("customstd", CEF_SCHEME_OPTION_STANDARD |
+                                              CEF_SCHEME_OPTION_SECURE |
+                                              CEF_SCHEME_OPTION_CORS_ENABLED);
+  // Also used in cors_unittest.cc.
+  registrar->AddCustomScheme(
+      "customstdfetch", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_SECURE |
+                            CEF_SCHEME_OPTION_CORS_ENABLED |
+                            CEF_SCHEME_OPTION_FETCH_ENABLED);
+  // Add a custom non-standard scheme.
+  registrar->AddCustomScheme("customnonstd", CEF_SCHEME_OPTION_NONE);
+  registrar->AddCustomScheme("customnonstdfetch",
+                             CEF_SCHEME_OPTION_FETCH_ENABLED);
+}
+
+// Entry point for registering cookieable schemes.
+// Called from client_app_delegates.cc.
+void RegisterSchemeHandlerCookieableSchemes(
+    std::vector<std::string>& cookieable_schemes) {
+  cookieable_schemes.push_back("customstd");
+  // Also used in cors_unittest.cc.
+  cookieable_schemes.push_back("customstdfetch");
 }

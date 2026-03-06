@@ -11,7 +11,7 @@ using client::ClientAppRenderer;
 
 namespace {
 
-const char* kTestUrl = "http://tests/DOMTest.Test";
+const char* kTestUrl = "https://tests/DOMTest.Test";
 const char* kTestMessage = "DOMTest.Message";
 
 enum DOMTestType {
@@ -59,7 +59,8 @@ class TestDOMVisitor : public CefDOMVisitor {
     EXPECT_FALSE(textNode->HasChildren());
   }
 
-  void TestBodyNodeStructure(CefRefPtr<CefDOMNode> bodyNode) {
+  void TestBodyNodeStructure(CefRefPtr<CefDOMNode> bodyNode,
+                             float devicePixelRatio) {
     EXPECT_TRUE(bodyNode.get());
     EXPECT_TRUE(bodyNode->IsElement());
     EXPECT_FALSE(bodyNode->IsText());
@@ -133,11 +134,14 @@ class TestDOMVisitor : public CefDOMVisitor {
     EXPECT_TRUE(divNode.get());
     EXPECT_TRUE(divNode->IsElement());
     EXPECT_FALSE(divNode->IsText());
+
+    // Returned bounds are in device pixels.
     CefRect divRect = divNode->GetElementBounds();
-    EXPECT_EQ(divRect.width, 50);
-    EXPECT_EQ(divRect.height, 25);
-    EXPECT_EQ(divRect.x, 150);
-    EXPECT_EQ(divRect.y, 100);
+    EXPECT_NEAR(divRect.width, 50.0 * devicePixelRatio, 1);
+    EXPECT_NEAR(divRect.height, 25.0 * devicePixelRatio, 1);
+    EXPECT_NEAR(divRect.x, 150.0 * devicePixelRatio, 1);
+    EXPECT_NEAR(divRect.y, 100.0 * devicePixelRatio, 1);
+
     EXPECT_FALSE(divNode->GetNextSibling().get());
   }
 
@@ -145,7 +149,7 @@ class TestDOMVisitor : public CefDOMVisitor {
   void TestStructure(CefRefPtr<CefDOMDocument> document) {
     EXPECT_EQ(document->GetTitle(), "The Title");
     EXPECT_EQ(document->GetBaseURL(), kTestUrl);
-    EXPECT_EQ(document->GetCompleteURL("foo.html"), "http://tests/foo.html");
+    EXPECT_EQ(document->GetCompleteURL("foo.html"), "https://tests/foo.html");
 
     // Navigate the complete document structure.
     CefRefPtr<CefDOMNode> docNode = document->GetDocument();
@@ -166,8 +170,10 @@ class TestDOMVisitor : public CefDOMVisitor {
     CefRefPtr<CefDOMNode> headNode = htmlNode->GetFirstChild();
     TestHeadNodeStructure(headNode);
 
+    const float devicePixelRatio = GetDevicePixelRatio();
+
     CefRefPtr<CefDOMNode> bodyNode = headNode->GetNextSibling();
-    TestBodyNodeStructure(bodyNode);
+    TestBodyNodeStructure(bodyNode, devicePixelRatio);
 
     // Retrieve the head node directly.
     headNode = document->GetHead();
@@ -175,7 +181,7 @@ class TestDOMVisitor : public CefDOMVisitor {
 
     // Retrieve the body node directly.
     bodyNode = document->GetBody();
-    TestBodyNodeStructure(bodyNode);
+    TestBodyNodeStructure(bodyNode, devicePixelRatio);
   }
 
   // Test document modification by changing the H1 tag.
@@ -205,10 +211,11 @@ class TestDOMVisitor : public CefDOMVisitor {
   }
 
   void Visit(CefRefPtr<CefDOMDocument> document) override {
-    if (test_type_ == DOM_TEST_STRUCTURE)
+    if (test_type_ == DOM_TEST_STRUCTURE) {
       TestStructure(document);
-    else if (test_type_ == DOM_TEST_MODIFY)
+    } else if (test_type_ == DOM_TEST_MODIFY) {
       TestModify(document);
+    }
 
     DestroyTest();
   }
@@ -223,7 +230,29 @@ class TestDOMVisitor : public CefDOMVisitor {
     CefRefPtr<CefProcessMessage> return_msg =
         CefProcessMessage::Create(kTestMessage);
     EXPECT_TRUE(return_msg->GetArgumentList()->SetBool(0, result));
-    EXPECT_TRUE(browser_->SendProcessMessage(PID_BROWSER, return_msg));
+    browser_->GetMainFrame()->SendProcessMessage(PID_BROWSER, return_msg);
+  }
+
+  // Used to convert between device pixels and CSS pixels.
+  float GetDevicePixelRatio() {
+    auto context = browser_->GetMainFrame()->GetV8Context();
+    EXPECT_TRUE(context);
+
+    CefRefPtr<CefV8Value> retval;
+    CefRefPtr<CefV8Exception> exception;
+    EXPECT_TRUE(context->Eval("window.devicePixelRatio", CefString(), 0, retval,
+                              exception));
+    if (exception) {
+      ADD_FAILURE() << exception->GetMessage();
+      return 1.0;
+    }
+
+    if (retval->IsValid() && retval->IsDouble()) {
+      return static_cast<float>(retval->GetDoubleValue());
+    }
+
+    ADD_FAILURE() << "Failed to retrieve devicePixelRatio";
+    return 1.0;
   }
 
   CefRefPtr<CefBrowser> browser_;
@@ -235,10 +264,11 @@ class TestDOMVisitor : public CefDOMVisitor {
 // Used in the render process.
 class DOMRendererTest : public ClientAppRenderer::Delegate {
  public:
-  DOMRendererTest() {}
+  DOMRendererTest() = default;
 
   bool OnProcessMessageReceived(CefRefPtr<ClientAppRenderer> app,
                                 CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override {
     if (message->GetName() == kTestMessage) {
@@ -262,6 +292,7 @@ class TestDOMHandler : public TestHandler {
   explicit TestDOMHandler(DOMTestType test) : test_type_(test) {}
 
   void RunTest() override {
+    // Specified values are in CSS pixels.
     std::stringstream mainHtml;
     mainHtml << "<html>"
                 "<head><title>The Title</title></head>"
@@ -288,19 +319,21 @@ class TestDOMHandler : public TestHandler {
       CefRefPtr<CefProcessMessage> message(
           CefProcessMessage::Create(kTestMessage));
       message->GetArgumentList()->SetInt(0, test_type_);
-      EXPECT_TRUE(browser->SendProcessMessage(PID_RENDERER, message));
+      frame->SendProcessMessage(PID_RENDERER, message);
     }
   }
 
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override {
     EXPECT_STREQ(message->GetName().ToString().c_str(), kTestMessage);
 
     got_message_.yes();
 
-    if (message->GetArgumentList()->GetBool(0))
+    if (message->GetArgumentList()->GetBool(0)) {
       got_success_.yes();
+    }
 
     // Test is complete.
     DestroyTest();
@@ -339,8 +372,186 @@ TEST(DOMTest, Modify) {
   ReleaseAndWaitForDestructor(handler);
 }
 
+// Test OnFocusedNodeChanged callback
+namespace {
+
+const char kFocusedNodeTestUrl[] = "https://tests/DOMTest.FocusedNode";
+const char kFocusedNodeTestMsg[] = "DOMTest.FocusedNode";
+
+// Renderer side test for OnFocusedNodeChanged
+class FocusedNodeRendererTest : public ClientAppRenderer::Delegate,
+                                public CefLoadHandler {
+ public:
+  FocusedNodeRendererTest() = default;
+
+  FocusedNodeRendererTest(const FocusedNodeRendererTest&) = delete;
+  FocusedNodeRendererTest& operator=(const FocusedNodeRendererTest&) = delete;
+
+  void OnBrowserCreated(CefRefPtr<ClientAppRenderer> app,
+                        CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefDictionaryValue> extra_info) override {
+    if (extra_info && extra_info->HasKey(kFocusedNodeTestMsg)) {
+      run_test_ = true;
+    }
+  }
+
+  CefRefPtr<CefLoadHandler> GetLoadHandler(
+      CefRefPtr<ClientAppRenderer> app) override {
+    if (run_test_) {
+      return this;
+    }
+    return nullptr;
+  }
+
+  void OnLoadEnd(CefRefPtr<CefBrowser> browser,
+                 CefRefPtr<CefFrame> frame,
+                 int httpStatusCode) override {
+    if (!run_test_ || !frame->IsMain()) {
+      return;
+    }
+
+    // Start the focus test by focusing on the first input
+    frame->ExecuteJavaScript("document.getElementById('input1').focus();",
+                             frame->GetURL(), 0);
+  }
+
+  void OnFocusedNodeChanged(CefRefPtr<ClientAppRenderer> app,
+                            CefRefPtr<CefBrowser> browser,
+                            CefRefPtr<CefFrame> frame,
+                            CefRefPtr<CefDOMNode> node) override {
+    if (!run_test_) {
+      return;
+    }
+
+    std::string node_id;
+    if (node) {
+      if (node->IsElement()) {
+        node_id = node->GetElementAttribute("id");
+      }
+    }
+
+    // Track the focus changes
+    if (node_id == "input1") {
+      got_input1_focus_ = true;
+      // Focus the textarea next
+      browser->GetMainFrame()->ExecuteJavaScript(
+          "document.getElementById('textarea1').focus();",
+          browser->GetMainFrame()->GetURL(), 0);
+    } else if (node_id == "textarea1") {
+      got_textarea_focus_ = true;
+      // Focus the button next
+      browser->GetMainFrame()->ExecuteJavaScript(
+          "document.getElementById('button1').focus();",
+          browser->GetMainFrame()->GetURL(), 0);
+    } else if (node_id == "button1") {
+      got_button_focus_ = true;
+      // Remove focus from all elements
+      browser->GetMainFrame()->ExecuteJavaScript(
+          "document.activeElement.blur();", browser->GetMainFrame()->GetURL(),
+          0);
+    } else if (!node) {
+      // Focus was removed (node is nullptr)
+      got_blur_ = true;
+      // All tests complete, send results to browser process
+      SendTestResults(browser);
+    }
+  }
+
+  void SendTestResults(CefRefPtr<CefBrowser> browser) {
+    EXPECT_TRUE(got_input1_focus_);
+    EXPECT_TRUE(got_textarea_focus_);
+    EXPECT_TRUE(got_button_focus_);
+    EXPECT_TRUE(got_blur_);
+
+    bool success = got_input1_focus_ && got_textarea_focus_ &&
+                   got_button_focus_ && got_blur_;
+
+    CefRefPtr<CefProcessMessage> message =
+        CefProcessMessage::Create(kFocusedNodeTestMsg);
+    message->GetArgumentList()->SetBool(0, success);
+    browser->GetMainFrame()->SendProcessMessage(PID_BROWSER, message);
+  }
+
+ private:
+  bool run_test_ = false;
+  bool got_input1_focus_ = false;
+  bool got_textarea_focus_ = false;
+  bool got_button_focus_ = false;
+  bool got_blur_ = false;
+
+  IMPLEMENT_REFCOUNTING(FocusedNodeRendererTest);
+};
+
+// Browser side test handler
+class FocusedNodeTestHandler : public TestHandler {
+ public:
+  FocusedNodeTestHandler() = default;
+
+  FocusedNodeTestHandler(const FocusedNodeTestHandler&) = delete;
+  FocusedNodeTestHandler& operator=(const FocusedNodeTestHandler&) = delete;
+
+  void RunTest() override {
+    const std::string html =
+        "<html>"
+        "<head><title>Focused Node Test</title></head>"
+        "<body>"
+        "<input id='input1' type='text' value='Input 1'>"
+        "<textarea id='textarea1'>Textarea 1</textarea>"
+        "<button id='button1'>Button 1</button>"
+        "</body>"
+        "</html>";
+
+    AddResource(kFocusedNodeTestUrl, html, "text/html");
+
+    CefRefPtr<CefDictionaryValue> extra_info = CefDictionaryValue::Create();
+    extra_info->SetBool(kFocusedNodeTestMsg, true);
+
+    CreateBrowser(kFocusedNodeTestUrl, nullptr, extra_info);
+    SetTestTimeout();
+  }
+
+  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
+                                CefProcessId source_process,
+                                CefRefPtr<CefProcessMessage> message) override {
+    if (message->GetName() == kFocusedNodeTestMsg) {
+      got_message_.yes();
+
+      if (message->GetArgumentList()->GetBool(0)) {
+        got_success_.yes();
+      }
+
+      DestroyTest();
+      return true;
+    }
+
+    return false;
+  }
+
+  void DestroyTest() override {
+    EXPECT_TRUE(got_message_);
+    EXPECT_TRUE(got_success_);
+    TestHandler::DestroyTest();
+  }
+
+ private:
+  TrackCallback got_message_;
+  TrackCallback got_success_;
+
+  IMPLEMENT_REFCOUNTING(FocusedNodeTestHandler);
+};
+
+}  // namespace
+
+TEST(DOMTest, OnFocusedNodeChanged) {
+  CefRefPtr<FocusedNodeTestHandler> handler = new FocusedNodeTestHandler();
+  handler->ExecuteTest();
+  ReleaseAndWaitForDestructor(handler);
+}
+
 // Entry point for creating DOM renderer test objects.
 // Called from client_app_delegates.cc.
 void CreateDOMRendererTests(ClientAppRenderer::DelegateSet& delegates) {
   delegates.insert(new DOMRendererTest);
+  delegates.insert(new FocusedNodeRendererTest);
 }

@@ -2,7 +2,8 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
+#include "include/base/cef_callback_helpers.h"
 #include "include/cef_task.h"
 #include "include/cef_thread.h"
 #include "include/wrapper/cef_closure_task.h"
@@ -19,8 +20,11 @@ namespace {
 // Base class for creating and testing threads.
 class ThreadTest : public base::RefCountedThreadSafe<ThreadTest> {
  public:
-  ThreadTest() {}
-  virtual ~ThreadTest() {}
+  ThreadTest() = default;
+  virtual ~ThreadTest() = default;
+
+  ThreadTest(const ThreadTest&) = delete;
+  ThreadTest& operator=(const ThreadTest&) = delete;
 
   // Create the test thread. Should only be called one time.
   void CreateTestThread() {
@@ -60,13 +64,13 @@ class ThreadTest : public base::RefCountedThreadSafe<ThreadTest> {
   // Execute |test_task| on the test thread. After execution |callback| will be
   // posted to |callback_task_runner|.
   void PostOnTestThreadAndCallback(
-      const base::Closure& test_task,
+      base::OnceClosure test_task,
       CefRefPtr<CefTaskRunner> callback_task_runner,
-      const base::Closure& callback) {
+      base::OnceClosure callback) {
     EXPECT_TRUE(thread_.get());
-    thread_task_runner_->PostTask(CefCreateClosureTask(
-        base::Bind(&ThreadTest::ExecuteOnTestThread, this, test_task,
-                   callback_task_runner, callback)));
+    thread_task_runner_->PostTask(CefCreateClosureTask(base::BindOnce(
+        &ThreadTest::ExecuteOnTestThread, this, std::move(test_task),
+        callback_task_runner, std::move(callback))));
   }
 
   CefRefPtr<CefTaskRunner> owner_task_runner() const {
@@ -94,14 +98,14 @@ class ThreadTest : public base::RefCountedThreadSafe<ThreadTest> {
 
  private:
   // Helper for PostOnTestThreadAndCallback().
-  void ExecuteOnTestThread(const base::Closure& test_task,
+  void ExecuteOnTestThread(base::OnceClosure test_task,
                            CefRefPtr<CefTaskRunner> callback_task_runner,
-                           const base::Closure& callback) {
+                           base::OnceClosure callback) {
     AssertTestThread();
 
-    test_task.Run();
+    std::move(test_task).Run();
 
-    callback_task_runner->PostTask(CefCreateClosureTask(callback));
+    callback_task_runner->PostTask(CefCreateClosureTask(std::move(callback)));
   }
 
   CefRefPtr<CefTaskRunner> owner_task_runner_;
@@ -109,8 +113,6 @@ class ThreadTest : public base::RefCountedThreadSafe<ThreadTest> {
   CefRefPtr<CefThread> thread_;
   cef_platform_thread_id_t thread_id_;
   CefRefPtr<CefTaskRunner> thread_task_runner_;
-
-  DISALLOW_COPY_AND_ASSIGN(ThreadTest);
 };
 
 }  // namespace
@@ -130,13 +132,14 @@ namespace {
 class SimpleThreadTest : public ThreadTest {
  public:
   SimpleThreadTest(size_t expected_task_count,
-                   const base::Closure& task_callback,
-                   const base::Closure& done_callback)
+                   base::OnceClosure task_callback,
+                   base::OnceClosure done_callback)
       : expected_task_count_(expected_task_count),
-        task_callback_(task_callback),
-        done_callback_(done_callback),
-        got_task_count_(0U),
-        got_done_count_(0U) {}
+        task_callback_(std::move(task_callback)),
+        done_callback_(std::move(done_callback)) {}
+
+  SimpleThreadTest(const SimpleThreadTest&) = delete;
+  SimpleThreadTest& operator=(const SimpleThreadTest&) = delete;
 
   void RunTest() {
     // Create the test thread.
@@ -144,9 +147,9 @@ class SimpleThreadTest : public ThreadTest {
 
     for (size_t i = 0U; i < expected_task_count_; ++i) {
       // Execute Task() on the test thread and then call Done() on this thread.
-      PostOnTestThreadAndCallback(base::Bind(&SimpleThreadTest::Task, this),
-                                  owner_task_runner(),
-                                  base::Bind(&SimpleThreadTest::Done, this));
+      PostOnTestThreadAndCallback(
+          base::BindOnce(&SimpleThreadTest::Task, this), owner_task_runner(),
+          base::BindOnce(&SimpleThreadTest::Done, this));
     }
   }
 
@@ -162,35 +165,39 @@ class SimpleThreadTest : public ThreadTest {
   void Task() {
     AssertTestThread();
     got_task_count_++;
-    if (!task_callback_.is_null())
-      task_callback_.Run();
+    if (!task_callback_.is_null()) {
+      std::move(task_callback_).Run();
+    }
   }
 
   void Done() {
     AssertOwnerThread();
-    if (++got_done_count_ == expected_task_count_ && !done_callback_.is_null())
-      done_callback_.Run();
+    if (++got_done_count_ == expected_task_count_ &&
+        !done_callback_.is_null()) {
+      std::move(done_callback_).Run();
+    }
   }
 
   const size_t expected_task_count_;
-  base::Closure task_callback_;
-  base::Closure done_callback_;
+  base::OnceClosure task_callback_;
+  base::OnceClosure done_callback_;
 
-  size_t got_task_count_;
-  size_t got_done_count_;
-
-  DISALLOW_COPY_AND_ASSIGN(SimpleThreadTest);
+  size_t got_task_count_ = 0U;
+  size_t got_done_count_ = 0U;
 };
 
 // Test creation/execution of threads in the browser process.
 
-const char kBrowserThreadTestHtml[] = "http://test.com/browserthread.html";
+const char kBrowserThreadTestHtml[] = "https://test.com/browserthread.html";
 
 // Browser side.
 class BrowserThreadTestHandler : public TestHandler {
  public:
   explicit BrowserThreadTestHandler(CefThreadId owner_thread_id)
       : owner_thread_id_(owner_thread_id) {}
+
+  BrowserThreadTestHandler(const BrowserThreadTestHandler&) = delete;
+  BrowserThreadTestHandler& operator=(const BrowserThreadTestHandler&) = delete;
 
   void RunTest() override {
     AddResource(kBrowserThreadTestHtml, "<html><body>Test</body></html>",
@@ -207,23 +214,23 @@ class BrowserThreadTestHandler : public TestHandler {
       // Run the test on the desired owner thread.
       CefPostTask(
           owner_thread_id_,
-          base::Bind(&BrowserThreadTestHandler::RunThreadTestOnOwnerThread,
-                     this));
+          base::BindOnce(&BrowserThreadTestHandler::RunThreadTestOnOwnerThread,
+                         this));
       return;
     }
 
     EXPECT_FALSE(thread_test_.get());
     thread_test_ = new SimpleThreadTest(
-        3, base::Closure(),
-        base::Bind(&BrowserThreadTestHandler::DoneOnOwnerThread, this));
+        3, base::DoNothing(),
+        base::BindOnce(&BrowserThreadTestHandler::DoneOnOwnerThread, this));
     thread_test_->RunTest();
   }
 
   void DoneOnOwnerThread() {
     // Let the call stack unwind before destroying |thread_test_|.
-    CefPostTask(
-        owner_thread_id_,
-        base::Bind(&BrowserThreadTestHandler::DestroyTestOnOwnerThread, this));
+    CefPostTask(owner_thread_id_,
+                base::BindOnce(
+                    &BrowserThreadTestHandler::DestroyTestOnOwnerThread, this));
   }
 
   void DestroyTestOnOwnerThread() {
@@ -239,15 +246,16 @@ class BrowserThreadTestHandler : public TestHandler {
 
     // Call DestroyTest() on the UI thread.
     CefPostTask(TID_UI,
-                base::Bind(&BrowserThreadTestHandler::DestroyTest, this));
+                base::BindOnce(&BrowserThreadTestHandler::DestroyTest, this));
   }
 
   void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
                             bool isLoading,
                             bool canGoBack,
                             bool canGoForward) override {
-    if (!isLoading)
+    if (!isLoading) {
       RunThreadTestOnOwnerThread();
+    }
   }
 
  private:
@@ -264,7 +272,6 @@ class BrowserThreadTestHandler : public TestHandler {
   TrackCallback got_test_done_;
 
   IMPLEMENT_REFCOUNTING(BrowserThreadTestHandler);
-  DISALLOW_COPY_AND_ASSIGN(BrowserThreadTestHandler);
 };
 
 }  // namespace
@@ -287,8 +294,9 @@ TEST(ThreadTest, CreateFromBrowserIOThread) {
 
 // Test creation of new threads from the browser FILE thread.
 TEST(ThreadTest, CreateFromBrowserFILEThread) {
+  // Use a FILE thread that will run tasks relatively quickly.
   CefRefPtr<BrowserThreadTestHandler> handler =
-      new BrowserThreadTestHandler(TID_FILE);
+      new BrowserThreadTestHandler(TID_FILE_USER_VISIBLE);
   handler->ExecuteTest();
   ReleaseAndWaitForDestructor(handler);
 }
@@ -297,13 +305,16 @@ namespace {
 
 // Test creation/execution of threads in the render process.
 
-const char kRenderThreadTestHtml[] = "http://test.com/renderthread.html";
+const char kRenderThreadTestHtml[] = "https://test.com/renderthread.html";
 const char kRenderThreadTestMsg[] = "ThreadTest.RenderThreadTest";
 
 // Browser side.
 class RenderThreadTestHandler : public TestHandler {
  public:
-  RenderThreadTestHandler() {}
+  RenderThreadTestHandler() = default;
+
+  RenderThreadTestHandler(const RenderThreadTestHandler&) = delete;
+  RenderThreadTestHandler& operator=(const RenderThreadTestHandler&) = delete;
 
   void RunTest() override {
     AddResource(kRenderThreadTestHtml, "<html><body>Test</body></html>",
@@ -323,14 +334,16 @@ class RenderThreadTestHandler : public TestHandler {
       // Return the test in the render process.
       CefRefPtr<CefProcessMessage> msg =
           CefProcessMessage::Create(kRenderThreadTestMsg);
-      EXPECT_TRUE(browser->SendProcessMessage(PID_RENDERER, msg));
+      browser->GetMainFrame()->SendProcessMessage(PID_RENDERER, msg);
     }
   }
 
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override {
     EXPECT_TRUE(browser.get());
+    EXPECT_TRUE(frame.get());
     EXPECT_EQ(PID_RENDERER, source_process);
     EXPECT_TRUE(message.get());
     EXPECT_TRUE(message->IsReadOnly());
@@ -340,8 +353,9 @@ class RenderThreadTestHandler : public TestHandler {
 
     got_message_.yes();
 
-    if (message->GetArgumentList()->GetBool(0))
+    if (message->GetArgumentList()->GetBool(0)) {
       got_success_.yes();
+    }
 
     // Test is complete.
     DestroyTest();
@@ -361,24 +375,27 @@ class RenderThreadTestHandler : public TestHandler {
   TrackCallback got_success_;
 
   IMPLEMENT_REFCOUNTING(RenderThreadTestHandler);
-  DISALLOW_COPY_AND_ASSIGN(RenderThreadTestHandler);
 };
 
 // Renderer side.
 class RenderThreadRendererTest : public ClientAppRenderer::Delegate {
  public:
-  RenderThreadRendererTest() {}
+  RenderThreadRendererTest() = default;
+
+  RenderThreadRendererTest(const RenderThreadRendererTest&) = delete;
+  RenderThreadRendererTest& operator=(const RenderThreadRendererTest&) = delete;
 
   bool OnProcessMessageReceived(CefRefPtr<ClientAppRenderer> app,
                                 CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override {
     if (message->GetName().ToString() == kRenderThreadTestMsg) {
       browser_ = browser;
       EXPECT_FALSE(thread_test_.get());
       thread_test_ = new SimpleThreadTest(
-          3, base::Closure(),
-          base::Bind(&RenderThreadRendererTest::Done, this));
+          3, base::DoNothing(),
+          base::BindOnce(&RenderThreadRendererTest::Done, this));
       thread_test_->RunTest();
       return true;
     }
@@ -391,7 +408,7 @@ class RenderThreadRendererTest : public ClientAppRenderer::Delegate {
   void Done() {
     // Let the call stack unwind before destroying |thread_test_|.
     CefPostTask(TID_RENDERER,
-                base::Bind(&RenderThreadRendererTest::DestroyTest, this));
+                base::BindOnce(&RenderThreadRendererTest::DestroyTest, this));
   }
 
   void DestroyTest() {
@@ -408,7 +425,7 @@ class RenderThreadRendererTest : public ClientAppRenderer::Delegate {
     CefRefPtr<CefProcessMessage> return_msg =
         CefProcessMessage::Create(kRenderThreadTestMsg);
     EXPECT_TRUE(return_msg->GetArgumentList()->SetBool(0, result));
-    EXPECT_TRUE(browser_->SendProcessMessage(PID_BROWSER, return_msg));
+    browser_->GetMainFrame()->SendProcessMessage(PID_BROWSER, return_msg);
 
     browser_ = nullptr;
   }
@@ -417,7 +434,6 @@ class RenderThreadRendererTest : public ClientAppRenderer::Delegate {
   scoped_refptr<SimpleThreadTest> thread_test_;
 
   IMPLEMENT_REFCOUNTING(RenderThreadRendererTest);
-  DISALLOW_COPY_AND_ASSIGN(RenderThreadRendererTest);
 };
 
 }  // namespace

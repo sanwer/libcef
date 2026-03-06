@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=969d3fc910749941d45de67f9fd45cb112934186$
+// $hash=36707647b4e248f54a8fbcb3552401cfa4536f91$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_CONTEXT_MENU_PARAMS_CTOCPP_H_
@@ -21,6 +21,7 @@
 #endif
 
 #include <vector>
+
 #include "include/capi/cef_context_menu_handler_capi.h"
 #include "include/cef_context_menu_handler.h"
 #include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
@@ -33,29 +34,34 @@ class CefContextMenuParamsCToCpp
                                  cef_context_menu_params_t> {
  public:
   CefContextMenuParamsCToCpp();
+  virtual ~CefContextMenuParamsCToCpp();
 
   // CefContextMenuParams methods.
-  int GetXCoord() OVERRIDE;
-  int GetYCoord() OVERRIDE;
-  TypeFlags GetTypeFlags() OVERRIDE;
-  CefString GetLinkUrl() OVERRIDE;
-  CefString GetUnfilteredLinkUrl() OVERRIDE;
-  CefString GetSourceUrl() OVERRIDE;
-  bool HasImageContents() OVERRIDE;
-  CefString GetTitleText() OVERRIDE;
-  CefString GetPageUrl() OVERRIDE;
-  CefString GetFrameUrl() OVERRIDE;
-  CefString GetFrameCharset() OVERRIDE;
-  MediaType GetMediaType() OVERRIDE;
-  MediaStateFlags GetMediaStateFlags() OVERRIDE;
-  CefString GetSelectionText() OVERRIDE;
-  CefString GetMisspelledWord() OVERRIDE;
-  bool GetDictionarySuggestions(std::vector<CefString>& suggestions) OVERRIDE;
-  bool IsEditable() OVERRIDE;
-  bool IsSpellCheckEnabled() OVERRIDE;
-  EditStateFlags GetEditStateFlags() OVERRIDE;
-  bool IsCustomMenu() OVERRIDE;
-  bool IsPepperMenu() OVERRIDE;
+  int GetXCoord() override;
+  int GetYCoord() override;
+  TypeFlags GetTypeFlags() override;
+  CefString GetLinkUrl() override;
+  CefString GetUnfilteredLinkUrl() override;
+  CefString GetSourceUrl() override;
+  bool HasImageContents() override;
+  CefString GetTitleText() override;
+  CefString GetPageUrl() override;
+  CefString GetFrameUrl() override;
+  CefString GetFrameCharset() override;
+  MediaType GetMediaType() override;
+  MediaStateFlags GetMediaStateFlags() override;
+  CefString GetSelectionText() override;
+  CefString GetMisspelledWord() override;
+  bool GetDictionarySuggestions(std::vector<CefString>& suggestions) override;
+  bool IsEditable() override;
+  bool IsSpellCheckEnabled() override;
+  EditStateFlags GetEditStateFlags() override;
+  bool IsCustomMenu() override;
 };
+
+constexpr auto CefContextMenuParamsCToCpp_Wrap =
+    CefContextMenuParamsCToCpp::Wrap;
+constexpr auto CefContextMenuParamsCToCpp_Unwrap =
+    CefContextMenuParamsCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_CONTEXT_MENU_PARAMS_CTOCPP_H_

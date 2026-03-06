@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=059ca5c1913a9d6f8677191bd454592f7ec3dfc1$
+// $hash=9633dd7df652acb4539b2d8065ab1cec20e6d97e$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_ACCESSIBILITY_HANDLER_CPPTOC_H_
@@ -32,6 +32,12 @@ class CefAccessibilityHandlerCppToC
                                  cef_accessibility_handler_t> {
  public:
   CefAccessibilityHandlerCppToC();
+  virtual ~CefAccessibilityHandlerCppToC();
 };
+
+constexpr auto CefAccessibilityHandlerCppToC_Wrap =
+    CefAccessibilityHandlerCppToC::Wrap;
+constexpr auto CefAccessibilityHandlerCppToC_Unwrap =
+    CefAccessibilityHandlerCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_ACCESSIBILITY_HANDLER_CPPTOC_H_

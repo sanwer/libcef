@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=365c6d4385b860543225e086dc973609fbfdedc8$
+// $hash=146d002de995737b314d4de8508b770cae757f49$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_FOCUS_HANDLER_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_FOCUS_HANDLER_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_browser_capi.h"
@@ -50,36 +54,39 @@ extern "C" {
 #endif
 
 ///
-// Implement this structure to handle events related to focus. The functions of
-// this structure will be called on the UI thread.
+/// Implement this structure to handle events related to focus. The functions of
+/// this structure will be called on the UI thread.
+///
+/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_focus_handler_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Called when the browser component is about to loose focus. For instance, if
-  // focus was on the last HTML element and the user pressed the TAB key. |next|
-  // will be true (1) if the browser is giving focus to the next component and
-  // false (0) if the browser is giving focus to the previous component.
+  /// Called when the browser component is about to loose focus. For instance,
+  /// if focus was on the last HTML element and the user pressed the TAB key.
+  /// |next| will be true (1) if the browser is giving focus to the next
+  /// component and false (0) if the browser is giving focus to the previous
+  /// component.
   ///
   void(CEF_CALLBACK* on_take_focus)(struct _cef_focus_handler_t* self,
                                     struct _cef_browser_t* browser,
                                     int next);
 
   ///
-  // Called when the browser component is requesting focus. |source| indicates
-  // where the focus request is originating from. Return false (0) to allow the
-  // focus to be set or true (1) to cancel setting the focus.
+  /// Called when the browser component is requesting focus. |source| indicates
+  /// where the focus request is originating from. Return false (0) to allow the
+  /// focus to be set or true (1) to cancel setting the focus.
   ///
   int(CEF_CALLBACK* on_set_focus)(struct _cef_focus_handler_t* self,
                                   struct _cef_browser_t* browser,
                                   cef_focus_source_t source);
 
   ///
-  // Called when the browser component has received focus.
+  /// Called when the browser component has received focus.
   ///
   void(CEF_CALLBACK* on_got_focus)(struct _cef_focus_handler_t* self,
                                    struct _cef_browser_t* browser);

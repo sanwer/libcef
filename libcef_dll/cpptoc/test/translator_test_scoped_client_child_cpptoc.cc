@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=5d31c4599ba16ec1c7cacdf15ced73e18a6f73cd$
+// $hash=984675c12f5f8ac550ecd1de33ab78d6808f8df7$
 //
 
 #include "libcef_dll/cpptoc/test/translator_test_scoped_client_child_cpptoc.h"
@@ -23,8 +23,9 @@ int CEF_CALLBACK translator_test_scoped_client_child_get_other_value(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
 
   // Execute
   int _retval =
@@ -39,8 +40,9 @@ int CEF_CALLBACK translator_test_scoped_client_child_get_value(
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
 
   // Execute
   int _retval =
@@ -63,6 +65,11 @@ CefTranslatorTestScopedClientChildCppToC::
   GetStruct()->base.get_value = translator_test_scoped_client_child_get_value;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefTranslatorTestScopedClientChildCppToC::
+    ~CefTranslatorTestScopedClientChildCppToC() {}
+
 template <>
 CefOwnPtr<CefTranslatorTestScopedClientChild>
 CefCppToCScoped<CefTranslatorTestScopedClientChildCppToC,
@@ -70,8 +77,8 @@ CefCppToCScoped<CefTranslatorTestScopedClientChildCppToC,
                 cef_translator_test_scoped_client_child_t>::
     UnwrapDerivedOwn(CefWrapperType type,
                      cef_translator_test_scoped_client_child_t* s) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return CefOwnPtr<CefTranslatorTestScopedClientChild>();
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
 
 template <>
@@ -81,17 +88,9 @@ CefCppToCScoped<CefTranslatorTestScopedClientChildCppToC,
                 cef_translator_test_scoped_client_child_t>::
     UnwrapDerivedRaw(CefWrapperType type,
                      cef_translator_test_scoped_client_child_t* s) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCScoped<
-    CefTranslatorTestScopedClientChildCppToC,
-    CefTranslatorTestScopedClientChild,
-    cef_translator_test_scoped_client_child_t>::DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType

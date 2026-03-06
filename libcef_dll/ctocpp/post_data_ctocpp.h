@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=e809e02c1b00aa3ee2914102ce865fcda89cc3ea$
+// $hash=c5bb667de5dc7124d16664458194b6924e7c5e08$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_POST_DATA_CTOCPP_H_
@@ -31,15 +31,19 @@ class CefPostDataCToCpp : public CefCToCppRefCounted<CefPostDataCToCpp,
                                                      cef_post_data_t> {
  public:
   CefPostDataCToCpp();
+  virtual ~CefPostDataCToCpp();
 
   // CefPostData methods.
-  bool IsReadOnly() OVERRIDE;
-  bool HasExcludedElements() OVERRIDE;
-  size_t GetElementCount() OVERRIDE;
-  void GetElements(ElementVector& elements) OVERRIDE;
-  bool RemoveElement(CefRefPtr<CefPostDataElement> element) OVERRIDE;
-  bool AddElement(CefRefPtr<CefPostDataElement> element) OVERRIDE;
-  void RemoveElements() OVERRIDE;
+  bool IsReadOnly() override;
+  bool HasExcludedElements() override;
+  size_t GetElementCount() override;
+  void GetElements(ElementVector& elements) override;
+  bool RemoveElement(CefRefPtr<CefPostDataElement> element) override;
+  bool AddElement(CefRefPtr<CefPostDataElement> element) override;
+  void RemoveElements() override;
 };
+
+constexpr auto CefPostDataCToCpp_Wrap = CefPostDataCToCpp::Wrap;
+constexpr auto CefPostDataCToCpp_Unwrap = CefPostDataCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_POST_DATA_CTOCPP_H_

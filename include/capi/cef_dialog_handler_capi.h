@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=ddf4110dadc49faf08ac2744d851511c41ca403f$
+// $hash=bae4bbaafafd8392fc3664c22a22920263c3d18a$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_DIALOG_HANDLER_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_DIALOG_HANDLER_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_browser_capi.h"
@@ -48,55 +52,62 @@ extern "C" {
 #endif
 
 ///
-// Callback structure for asynchronous continuation of file dialog requests.
+/// Callback structure for asynchronous continuation of file dialog requests.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_file_dialog_callback_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Continue the file selection. |selected_accept_filter| should be the 0-based
-  // index of the value selected from the accept filters array passed to
-  // cef_dialog_handler_t::OnFileDialog. |file_paths| should be a single value
-  // or a list of values depending on the dialog mode. An NULL |file_paths|
-  // value is treated the same as calling cancel().
+  /// Continue the file selection. |file_paths| should be a single value or a
+  /// list of values depending on the dialog mode. An NULL |file_paths| value is
+  /// treated the same as calling cancel().
   ///
   void(CEF_CALLBACK* cont)(struct _cef_file_dialog_callback_t* self,
-                           int selected_accept_filter,
                            cef_string_list_t file_paths);
 
   ///
-  // Cancel the file selection.
+  /// Cancel the file selection.
   ///
   void(CEF_CALLBACK* cancel)(struct _cef_file_dialog_callback_t* self);
 } cef_file_dialog_callback_t;
 
 ///
-// Implement this structure to handle dialog events. The functions of this
-// structure will be called on the browser process UI thread.
+/// Implement this structure to handle dialog events. The functions of this
+/// structure will be called on the browser process UI thread.
+///
+/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_dialog_handler_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Called to run a file chooser dialog. |mode| represents the type of dialog
-  // to display. |title| to the title to be used for the dialog and may be NULL
-  // to show the default title ("Open" or "Save" depending on the mode).
-  // |default_file_path| is the path with optional directory and/or file name
-  // component that should be initially selected in the dialog. |accept_filters|
-  // are used to restrict the selectable file types and may any combination of
-  // (a) valid lower-cased MIME types (e.g. "text/*" or "image/*"), (b)
-  // individual file extensions (e.g. ".txt" or ".png"), or (c) combined
-  // description and file extension delimited using "|" and ";" (e.g. "Image
-  // Types|.png;.gif;.jpg"). |selected_accept_filter| is the 0-based index of
-  // the filter that should be selected by default. To display a custom dialog
-  // return true (1) and execute |callback| either inline or at a later time. To
-  // display the default dialog return false (0).
+  /// Called to run a file chooser dialog. |mode| represents the type of dialog
+  /// to display. |title| to the title to be used for the dialog and may be NULL
+  /// to show the default title ("Open" or "Save" depending on the mode).
+  /// |default_file_path| is the path with optional directory and/or file name
+  /// component that should be initially selected in the dialog.
+  /// |accept_filters| are used to restrict the selectable file types and may be
+  /// any combination of valid lower-cased MIME types (e.g. "text/*" or
+  /// "image/*") and individual file extensions (e.g. ".txt" or ".png").
+  /// |accept_extensions| provides the semicolon-delimited expansion of MIME
+  /// types to file extensions (if known, or NULL string otherwise).
+  /// |accept_descriptions| provides the descriptions for MIME types (if known,
+  /// or NULL string otherwise). For example, the "image/*" mime type might have
+  /// extensions ".png;.jpg;.bmp;..." and description "Image Files".
+  /// |accept_filters|, |accept_extensions| and |accept_descriptions| will all
+  /// be the same size. To display a custom dialog return true (1) and execute
+  /// |callback| either inline or at a later time. To display the default dialog
+  /// return false (0). If this function returns false (0) it may be called an
+  /// additional time for the same dialog (both before and after MIME type
+  /// expansion).
   ///
   int(CEF_CALLBACK* on_file_dialog)(
       struct _cef_dialog_handler_t* self,
@@ -105,7 +116,8 @@ typedef struct _cef_dialog_handler_t {
       const cef_string_t* title,
       const cef_string_t* default_file_path,
       cef_string_list_t accept_filters,
-      int selected_accept_filter,
+      cef_string_list_t accept_extensions,
+      cef_string_list_t accept_descriptions,
       struct _cef_file_dialog_callback_t* callback);
 } cef_dialog_handler_t;
 

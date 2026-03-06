@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=b3e58d825a17ffd3f410cbae8774e1d18577751a$
+// $hash=5291f26db65531e1f9d6c619157142d42250cebc$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_APP_CPPTOC_H_
@@ -30,6 +30,10 @@ class CefAppCppToC
     : public CefCppToCRefCounted<CefAppCppToC, CefApp, cef_app_t> {
  public:
   CefAppCppToC();
+  virtual ~CefAppCppToC();
 };
+
+constexpr auto CefAppCppToC_Wrap = CefAppCppToC::Wrap;
+constexpr auto CefAppCppToC_Unwrap = CefAppCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_APP_CPPTOC_H_

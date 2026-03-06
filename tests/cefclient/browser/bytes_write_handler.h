@@ -14,29 +14,31 @@ namespace client {
 class BytesWriteHandler : public CefWriteHandler {
  public:
   explicit BytesWriteHandler(size_t grow);
-  ~BytesWriteHandler();
+  ~BytesWriteHandler() override;
 
-  size_t Write(const void* ptr, size_t size, size_t n) OVERRIDE;
-  int Seek(int64 offset, int whence) OVERRIDE;
-  int64 Tell() OVERRIDE;
-  int Flush() OVERRIDE;
-  bool MayBlock() OVERRIDE { return false; }
+  BytesWriteHandler(const BytesWriteHandler&) = delete;
+  BytesWriteHandler& operator=(const BytesWriteHandler&) = delete;
+
+  size_t Write(const void* ptr, size_t size, size_t n) override;
+  int Seek(int64_t offset, int whence) override;
+  int64_t Tell() override;
+  int Flush() override;
+  bool MayBlock() override { return false; }
 
   void* GetData() { return data_; }
-  int64 GetDataSize() { return offset_; }
+  int64_t GetDataSize() { return offset_; }
 
  private:
   size_t Grow(size_t size);
 
   size_t grow_;
   void* data_;
-  int64 datasize_;
-  int64 offset_;
+  int64_t datasize_;
+  int64_t offset_ = 0;
 
   base::Lock lock_;
 
   IMPLEMENT_REFCOUNTING(BytesWriteHandler);
-  DISALLOW_COPY_AND_ASSIGN(BytesWriteHandler);
 };
 
 }  // namespace client

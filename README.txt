@@ -1,15 +1,15 @@
 Chromium Embedded Framework (CEF) Standard Binary Distribution for Windows
 -------------------------------------------------------------------------------
 
-Date:             August 29, 2018
+Date:             March 06, 2026
 
-CEF Version:      3.3440.1806.g65046b7
-CEF URL:          https://bitbucket.org/chromiumembedded/cef.git
-                  @65046b745b52fbca82c989eb537b0fc57ab896be
+CEF Version:      145.0.28+g51162e8+chromium-145.0.7632.160
+CEF URL:          https://github.com/chromiumembedded/cef.git
+                  @51162e83c6f21779c0a3bc110589aff9ead2af33
 
-Chromium Version: 68.0.3440.106
+Chromium Version: 145.0.7632.160
 Chromium URL:     https://chromium.googlesource.com/chromium/src.git
-                  @6e80b8a378765b0e699e6f23ad6dd2588e060b02
+                  @662e0d7961bd91ebe77fe6c52f369e45647af51c
 
 This distribution contains all components necessary to build and distribute an
 application using CEF on the Windows platform. Please see the LICENSING
@@ -18,6 +18,8 @@ section of this document for licensing terms and conditions.
 
 CONTENTS
 --------
+
+bazel       Contains Bazel configuration files shared by all targets.
 
 cmake       Contains CMake configuration files shared by all targets.
 
@@ -52,6 +54,9 @@ tests/      Directory of tests that demonstrate CEF usage.
 
   ceftests  Contains unit tests that exercise the CEF APIs.
 
+  gmock     Contains the Google C++ Mocking Framework used by the ceftests
+            target.
+
   gtest     Contains the Google C++ Testing Framework used by the ceftests
             target.
 
@@ -64,6 +69,28 @@ USAGE
 Building using CMake:
   CMake can be used to generate project files in many different formats. See
   usage instructions at the top of the CMakeLists.txt file.
+
+Building using Bazel:
+  Bazel can be used to build CEF-based applications. CEF support for Bazel is
+  considered experimental. For current development status see
+  https://github.com/chromiumembedded/cef/issues/3757.
+
+  To build the bundled cefclient sample application using Bazel:
+
+  1. Install Bazelisk [https://github.com/bazelbuild/bazelisk/blob/master/README.md]
+  2. Build using Bazel:
+     $ bazel build //tests/cefclient
+  3. Run using Bazel:
+     $ bazel run //tests/cefclient/win:cefclient.exe
+
+  Other sample applications (cefsimple, ceftests) can be built in the same way.
+
+  Additional notes:
+  - To generate a Debug build add `-c dbg` (both `build` and `run`
+    command-line).
+  - To pass arguments using the `run` command add `-- [...]` at the end.
+  - Windows x86 and ARM64 builds using Bazel may be broken, see
+    https://github.com/bazelbuild/bazel/issues/22164.
 
 Please visit the CEF Website for additional usage information.
 
@@ -89,8 +116,6 @@ The following components are required. CEF will not function without them.
   * icudtl.dat
 
 * V8 snapshot data.
-  * natives_blob.bin
-  * snapshot_blob.bin
   * v8_context_snapshot.bin
 
 Optional components:
@@ -115,35 +140,40 @@ run but any related functionality may become broken or disabled.
   CefSettings.pack_loading_disabled. The resources directory path can be
   customized using CefSettings.resources_dir_path.
 
-  * cef.pak
-  * cef_100_percent.pak
-  * cef_200_percent.pak
+  * chrome_100_percent.pak
+  * chrome_200_percent.pak
+  * resources.pak
     These files contain non-localized resources used by CEF, Chromium and Blink.
     Without these files arbitrary Web components may display incorrectly.
 
-  * cef_extensions.pak
-    This file contains non-localized resources required for extension loading.
-    Pass the `--disable-extensions` command-line flag to disable use of this
-    file. Without this file components that depend on the extension system,
-    such as the PDF viewer, will not function.
+* Direct3D support.
+  * d3dcompiler_47.dll
+  Support for GPU accelerated rendering of HTML5 content like 2D canvas, 3D CSS
+  and WebGL. Without this file the aforementioned capabilities may fail when GPU
+  acceleration is enabled (default in most cases). Use of this bundled version
+  is recommended instead of relying on the possibly old and untested system
+  installed version.
 
-  * devtools_resources.pak
-    This file contains non-localized resources required for Chrome Developer
-    Tools. Without this file Chrome Developer Tools will not function.
+* DirectX compiler support (x64 only).
+  * dxil.dll
+  * dxcompiler.dll
+  Support for DirectX rendering of WebGPU. Without these files the
+  aforementioned capabilities may fail.
 
-* Angle and Direct3D support.
-  * d3dcompiler_43.dll (required for Windows XP)
-  * d3dcompiler_47.dll (required for Windows Vista and newer)
+* ANGLE support.
   * libEGL.dll
   * libGLESv2.dll
-  Without these files HTML5 accelerated content like 2D canvas, 3D CSS and WebGL
-  will not function.
+  Support for rendering of HTML5 content like 2D canvas, 3D CSS and WebGL.
+  Without these files the aforementioned capabilities may fail.
 
-* SwiftShader support.
-  * swiftshader/libEGL.dll
-  * swiftshader/libGLESv2.dll
-  Without these files WebGL will not function in software-only mode when the GPU
-  is not available or disabled.
+* SwANGLE support.
+  * vk_swiftshader.dll
+  * vk_swiftshader_icd.json
+  * vulkan-1.dll
+  Support for software rendering of HTML5 content like 2D canvas, 3D CSS and
+  WebGL using SwiftShader's Vulkan library as ANGLE's Vulkan backend. Without
+  these files the aforementioned capabilities may fail when GPU acceleration is
+  disabled or unavailable.
 
 
 LICENSING
@@ -151,6 +181,6 @@ LICENSING
 
 The CEF project is BSD licensed. Please read the LICENSE.txt file included with
 this binary distribution for licensing terms and conditions. Other software
-included in this distribution is provided under other licenses. Please visit
-"about:credits" in a CEF-based application for complete Chromium and third-party
-licensing information.
+included in this distribution is provided under other licenses. Please see the
+CREDITS.html file or visit "about:credits" in a CEF-based application for
+complete Chromium and third-party licensing information.

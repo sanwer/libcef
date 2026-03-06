@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4a0b88818c8f98954b1f1f9c2dd17fb51451b1e0$
+// $hash=76e4acf9b80c8f33f42c3ef5a07a55458113ae72$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_POST_DATA_ELEMENT_CTOCPP_H_
@@ -32,16 +32,21 @@ class CefPostDataElementCToCpp
                                  cef_post_data_element_t> {
  public:
   CefPostDataElementCToCpp();
+  virtual ~CefPostDataElementCToCpp();
 
   // CefPostDataElement methods.
-  bool IsReadOnly() OVERRIDE;
-  void SetToEmpty() OVERRIDE;
-  void SetToFile(const CefString& fileName) OVERRIDE;
-  void SetToBytes(size_t size, const void* bytes) OVERRIDE;
-  Type GetType() OVERRIDE;
-  CefString GetFile() OVERRIDE;
-  size_t GetBytesCount() OVERRIDE;
-  size_t GetBytes(size_t size, void* bytes) OVERRIDE;
+  bool IsReadOnly() override;
+  void SetToEmpty() override;
+  void SetToFile(const CefString& fileName) override;
+  void SetToBytes(size_t size, const void* bytes) override;
+  Type GetType() override;
+  CefString GetFile() override;
+  size_t GetBytesCount() override;
+  size_t GetBytes(size_t size, void* bytes) override;
 };
+
+constexpr auto CefPostDataElementCToCpp_Wrap = CefPostDataElementCToCpp::Wrap;
+constexpr auto CefPostDataElementCToCpp_Unwrap =
+    CefPostDataElementCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_POST_DATA_ELEMENT_CTOCPP_H_

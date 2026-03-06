@@ -2,36 +2,26 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#ifndef CEF_TESTS_UNITTESTS_TEST_HANDLER_H_
-#define CEF_TESTS_UNITTESTS_TEST_HANDLER_H_
+#ifndef CEF_TESTS_CEFTESTS_TEST_HANDLER_H_
+#define CEF_TESTS_CEFTESTS_TEST_HANDLER_H_
 #pragma once
 
+#include <atomic>
 #include <list>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 
-#include "include/base/cef_bind.h"
-#include "include/base/cef_scoped_ptr.h"
+#include "include/base/cef_callback.h"
 #include "include/cef_browser.h"
 #include "include/cef_client.h"
 #include "include/cef_frame.h"
 #include "include/cef_task.h"
 #include "include/cef_waitable_event.h"
 #include "tests/ceftests/thread_helper.h"
+#include "tests/ceftests/track_callback.h"
 #include "tests/gtest/include/gtest/gtest.h"
-
-class TrackCallback {
- public:
-  TrackCallback() : gotit_(false) {}
-  void yes() { gotit_ = true; }
-  bool isSet() { return gotit_; }
-  void reset() { gotit_ = false; }
-  operator bool() const { return gotit_; }
-
- protected:
-  bool gotit_;
-};
 
 class ResourceContent {
  public:
@@ -58,11 +48,11 @@ class TestHandler : public CefClient,
                     public CefDialogHandler,
                     public CefDisplayHandler,
                     public CefDownloadHandler,
-                    public CefDragHandler,
                     public CefJSDialogHandler,
                     public CefLifeSpanHandler,
                     public CefLoadHandler,
-                    public CefRequestHandler {
+                    public CefRequestHandler,
+                    public CefResourceRequestHandler {
  public:
   // Tracks the completion state of related test runs.
   class CompletionState {
@@ -83,7 +73,7 @@ class TestHandler : public CefClient,
 
    private:
     int total_;
-    int count_;
+    int count_ = 0;
 
     // Handle used to notify when the test is complete
     CefRefPtr<CefWaitableEvent> event_;
@@ -127,20 +117,24 @@ class TestHandler : public CefClient,
     // be executed only if TestHandler::DestroyTest has not yet been called.
     // For example:
     //    GetUIThreadHelper()->PostTask(
-    //        base::Bind(&TestHandler::DoSomething, base::Unretained(this)));
-    void PostTask(const base::Closure& task);
-    void PostDelayedTask(const base::Closure& task, int delay_ms);
+    //        base::BindOnce(&TestHandler::DoSomething,
+    //        base::Unretained(this)));
+    void PostTask(base::OnceClosure task);
+    void PostDelayedTask(base::OnceClosure task, int delay_ms);
 
    private:
-    void TaskHelper(const base::Closure& task);
+    void TaskHelper(base::OnceClosure task);
 
     // Must be the last member.
     base::WeakPtrFactory<UIThreadHelper> weak_ptr_factory_;
   };
 
   // The |completion_state| object if specified must outlive this class.
-  explicit TestHandler(CompletionState* completion_state = NULL);
+  explicit TestHandler(CompletionState* completion_state = nullptr);
   ~TestHandler() override;
+
+  TestHandler(const TestHandler&) = delete;
+  TestHandler& operator=(const TestHandler&) = delete;
 
   // Implement this method to set up the test. Only used in combination with a
   // Collection. Call SetupComplete() once the setup is complete.
@@ -154,40 +148,48 @@ class TestHandler : public CefClient,
   CefRefPtr<CefDialogHandler> GetDialogHandler() override { return this; }
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefDownloadHandler> GetDownloadHandler() override { return this; }
-  CefRefPtr<CefDragHandler> GetDragHandler() override { return this; }
   CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override { return this; }
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
   CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
 
-  // CefDownloadHandler methods
-  void OnBeforeDownload(
-      CefRefPtr<CefBrowser> browser,
-      CefRefPtr<CefDownloadItem> download_item,
-      const CefString& suggested_name,
-      CefRefPtr<CefBeforeDownloadCallback> callback) override {}
-
-  // CefDragHandler methods
-  void OnDraggableRegionsChanged(
-      CefRefPtr<CefBrowser> browser,
-      const std::vector<CefDraggableRegion>& regions) override {}
+  // CefDisplayHandler methods
+  bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
+                        cef_log_severity_t level,
+                        const CefString& message,
+                        const CefString& source,
+                        int line) override;
 
   // CefLifeSpanHandler methods
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
   // CefRequestHandler methods
+  CefRefPtr<CefResourceRequestHandler> GetResourceRequestHandler(
+      CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame,
+      CefRefPtr<CefRequest> request,
+      bool is_navigation,
+      bool is_download,
+      const CefString& request_initiator,
+      bool& disable_default_handling) override {
+    return this;
+  }
+
+  // CefResourceRequestHandler methods
   CefRefPtr<CefResourceHandler> GetResourceHandler(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
       CefRefPtr<CefRequest> request) override;
 
   void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
-                                 TerminationStatus status) override;
+                                 TerminationStatus status,
+                                 int error_code,
+                                 const CefString& error_string) override;
 
   // These methods should only be used if at most one non-popup browser exists.
-  CefRefPtr<CefBrowser> GetBrowser();
-  int GetBrowserId();
+  CefRefPtr<CefBrowser> GetBrowser() const;
+  int GetBrowserId() const;
 
   // Copies the map of all the currently existing browsers into |map|. Must be
   // called on the UI thread.
@@ -210,77 +212,143 @@ class TestHandler : public CefClient,
     destroy_test_expected_ = expected;
   }
 
-  // Returns true if a browser currently exists.
-  static bool HasBrowser() { return browser_count_ > 0; }
+  // Called from TestWindowDelegate when Views is enabled.
+  void OnWindowCreated(int browser_id);
+  void OnWindowDestroyed(int browser_id);
+
+  // Returns the count of TestHandlers the currently exist.
+  static size_t GetTestHandlerCount() {
+    return test_handler_count_.load(std::memory_order_relaxed);
+  }
+
+  std::string debug_string_prefix() const { return debug_string_prefix_; }
+  bool use_alloy_style_browser() const { return use_alloy_style_browser_; }
+  bool use_alloy_style_window() const { return use_alloy_style_window_; }
 
  protected:
   // Indicate that test setup is complete. Only used in combination with a
   // Collection.
   virtual void SetupComplete();
 
-  // Close any existing non-popup browsers. Test completion will be signaled
-  // once all the browsers have closed if
-  // |signal_completion_when_all_browsers_close_| is true (default value).
-  // If no browsers exist then this method will do nothing and
-  // TestComplete() must be called manually.
+  // Close any remaining browsers. This may result in a call to TestComplete(),
+  // depending on the configuration of SetSignalCompletionCount().
   virtual void DestroyTest();
 
   // Called on the UI thread if the test times out as a result of calling
   // SetTestTimeout(). Calls DestroyTest() by default.
   virtual void OnTestTimeout(int timeout_ms, bool treat_as_error);
 
-  // Called from CreateBrowser() to optionally set per-browser settings.
-  virtual void PopulateBrowserSettings(CefBrowserSettings* settings) {}
-
   void CreateBrowser(const CefString& url,
-                     CefRefPtr<CefRequestContext> request_context = NULL);
+                     CefRefPtr<CefRequestContext> request_context = nullptr,
+                     CefRefPtr<CefDictionaryValue> extra_info = nullptr);
+  void CreateBrowserWithSettings(
+      const CefString& url,
+      const CefBrowserSettings& settings,
+      CefRefPtr<CefRequestContext> request_context = nullptr,
+      CefRefPtr<CefDictionaryValue> extra_info = nullptr);
+
   static void CloseBrowser(CefRefPtr<CefBrowser> browser, bool force_close);
 
   void AddResource(const std::string& url,
                    const std::string& content,
-                   const std::string& mime_type);
-
-  void AddResource(const std::string& url,
-                   const std::string& content,
                    const std::string& mime_type,
-                   const ResourceContent::HeaderMap& header_map);
+                   const ResourceContent::HeaderMap& header_map = {});
 
   void AddResourceEx(const std::string& url, const ResourceContent& content);
 
   void ClearResources();
 
-  void SetSignalCompletionWhenAllBrowsersClose(bool val) {
-    signal_completion_when_all_browsers_close_ = val;
-  }
-  bool SignalCompletionWhenAllBrowsersClose() const {
-    return signal_completion_when_all_browsers_close_;
-  }
+  // Specify the number of times that SignalTestCompletion() needs to be
+  // explicitly called for test completion. Must be configured during test
+  // initialization before any browsers are created.
+  // - If the test creates browsers and does not explicitly call
+  //   SignalTestCompletion() then the default value (0) can be used.
+  // - If the test creates browsers and explicitly calls SignalTestCompletion()
+  //   then set a value >= 1.
+  // - If the test does not create browsers then it must explicitly call
+  //   SignalTestCompletion() and set a value >= 1.
+  void SetSignalTestCompletionCount(size_t count);
+
+  // Explicitly signal test completion a single time. Used in combination with
+  // SetSignalTestCompletionCount(). Results in a call to TestComplete() if
+  // all browsers have closed and this method has been called the expected
+  // number of times.
+  void SignalTestCompletion();
+
+  // Returns true if SignalTestCompletion() has been called the necessary
+  // number of times (may be 0), in which case TestComplete() will be called
+  // automatically when all browsers have closed. Must be called on the
+  // UI thread.
+  bool AllowTestCompletionWhenAllBrowsersClose() const;
+
+  // Returns true if all browsers have closed. Must be called on the UI
+  // thread.
+  bool AllBrowsersClosed() const;
 
   // Call OnTestTimeout() after the specified amount of time.
   void SetTestTimeout(int timeout_ms = 5000, bool treat_as_error = true);
 
-  // Signal that the test is complete. This will be called automatically when
-  // all existing non-popup browsers are closed if
-  // |signal_completion_when_all_browsers_close_| is true (default value). It
-  // is an error to call this method before all browsers have closed.
-  void TestComplete();
+  // Call prior to CreateBrowser() to configure whether browsers and windows
+  // will be created as Views-hosted. Defaults to false unless the `--use-views`
+  // command-line flag is specified.
+  void SetUseViews(bool use_views);
+
+  // Call prior to CreateBrowser() to configure whether browsers (and windows
+  // with Views) will be created as Alloy style or Chrome style. Alloy style
+  // optional. Defaults to false unless the `--use-alloy-style` command-line
+  // flag is specified.
+  void SetUseAlloyStyle(bool use_alloy_style_browser,
+                        bool use_alloy_style_window);
 
   // Returns the single UIThreadHelper instance, creating it if necessary. Must
   // be called on the UI thread.
   UIThreadHelper* GetUIThreadHelper();
 
  private:
+  void MaybeTestComplete();
+
+  // Complete the test. It is an error to call this method before all browsers
+  // have closed.
+  void TestComplete();
+
+  enum NotifyType {
+    NT_BROWSER,
+    NT_WINDOW,
+  };
+  void OnCreated(int browser_id, NotifyType type, bool views_hosted);
+  void OnClosed(int browser_id, NotifyType type);
+
+  std::string MakeDebugStringPrefix() const;
+  const std::string debug_string_prefix_;
+
   // Used to notify when the test is complete. Can be accessed on any thread.
   CompletionState* completion_state_;
   bool completion_state_owned_;
 
-  // Map browser ID to browser object for non-popup browsers. Only accessed on
-  // the UI thread.
+  bool use_views_;
+  bool use_alloy_style_browser_;
+  bool use_alloy_style_window_;
+
+  // Map of browser ID to browser object. Only accessed on the UI thread.
   BrowserMap browser_map_;
+
+  struct NotifyStatus {
+    // True if this particular browser window is Views-hosted (see SetUseViews).
+    // Some tests create popup or DevTools windows with default handling (e.g.
+    // not Views-hosted).
+    bool views_hosted;
+
+    // Keyed by NotifyType.
+    TrackCallback got_created[2];
+    TrackCallback got_closed[2];
+  };
+
+  // Map of browser ID to current status. Only accessed on the UI thread.
+  std::map<int, NotifyStatus> browser_status_map_;
 
   // Values for the first created browser. Modified on the UI thread but can be
   // accessed on any thread.
-  int first_browser_id_;
+  int first_browser_id_ = 0;
   CefRefPtr<CefBrowser> first_browser_;
 
   // Map of resources that can be automatically loaded. Only accessed on the
@@ -288,21 +356,22 @@ class TestHandler : public CefClient,
   typedef std::map<std::string, ResourceContent> ResourceMap;
   ResourceMap resource_map_;
 
-  // If true test completion will be signaled when all browsers have closed.
-  bool signal_completion_when_all_browsers_close_;
+  // Number of times that SignalTestCompletion() must be called.
+  size_t signal_completion_count_ = 0U;
 
   CefRefPtr<CefWaitableEvent> destroy_event_;
 
+  // Tracks whether OnTestTimeout() has been called.
+  bool test_timeout_called_ = false;
+
   // Tracks whether DestroyTest() is expected or has been called.
-  bool destroy_test_expected_;
-  bool destroy_test_called_;
+  bool destroy_test_expected_ = true;
+  bool destroy_test_called_ = false;
 
-  scoped_ptr<UIThreadHelper> ui_thread_helper_;
+  std::unique_ptr<UIThreadHelper> ui_thread_helper_;
 
-  // Used to track the number of currently existing browser windows.
-  static int browser_count_;
-
-  DISALLOW_COPY_AND_ASSIGN(TestHandler);
+  // Used to track the number of currently existing TestHandlers.
+  static std::atomic<size_t> test_handler_count_;
 };
 
 // Release |handler| and wait for the destructor to be called.
@@ -314,12 +383,12 @@ void ReleaseAndWaitForDestructor(CefRefPtr<T>& handler, int delay_ms = 2000) {
       CefWaitableEvent::CreateWaitableEvent(true, false);
   handler->SetDestroyEvent(event);
   T* _handler_ptr = handler.get();
-  handler = NULL;
+  handler = nullptr;
   bool handler_destructed = event->TimedWait(delay_ms);
   EXPECT_TRUE(handler_destructed);
   if (!handler_destructed) {
     // |event| is a stack variable so clear the reference before returning.
-    _handler_ptr->SetDestroyEvent(NULL);
+    _handler_ptr->SetDestroyEvent(nullptr);
   }
 }
 
@@ -356,4 +425,4 @@ bool TestFailed();
   GTEST_TEST_BOOLEAN_(!(__result), #condition, true, false, \
                       GTEST_NONFATAL_FAILURE_)
 
-#endif  // CEF_TESTS_UNITTESTS_TEST_HANDLER_H_
+#endif  // CEF_TESTS_CEFTESTS_TEST_HANDLER_H_

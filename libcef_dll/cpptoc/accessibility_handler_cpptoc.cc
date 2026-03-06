@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,11 +9,13 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d5ddc6f7db9b2daa7fb5b24c28acf362fb18d9e5$
+// $hash=601e3db23f8a51b653c3ce78f77c52705d0ac981$
 //
 
 #include "libcef_dll/cpptoc/accessibility_handler_cpptoc.h"
+
 #include "libcef_dll/ctocpp/value_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -22,37 +24,45 @@ namespace {
 void CEF_CALLBACK accessibility_handler_on_accessibility_tree_change(
     struct _cef_accessibility_handler_t* self,
     struct _cef_value_t* value) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: value; type: refptr_diff
   DCHECK(value);
-  if (!value)
+  if (!value) {
     return;
+  }
 
   // Execute
   CefAccessibilityHandlerCppToC::Get(self)->OnAccessibilityTreeChange(
-      CefValueCToCpp::Wrap(value));
+      CefValueCToCpp_Wrap(value));
 }
 
 void CEF_CALLBACK accessibility_handler_on_accessibility_location_change(
     struct _cef_accessibility_handler_t* self,
     struct _cef_value_t* value) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return;
+  }
   // Verify param: value; type: refptr_diff
   DCHECK(value);
-  if (!value)
+  if (!value) {
     return;
+  }
 
   // Execute
   CefAccessibilityHandlerCppToC::Get(self)->OnAccessibilityLocationChange(
-      CefValueCToCpp::Wrap(value));
+      CefValueCToCpp_Wrap(value));
 }
 
 }  // namespace
@@ -66,6 +76,12 @@ CefAccessibilityHandlerCppToC::CefAccessibilityHandlerCppToC() {
       accessibility_handler_on_accessibility_location_change;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefAccessibilityHandlerCppToC::~CefAccessibilityHandlerCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefAccessibilityHandler> CefCppToCRefCounted<
     CefAccessibilityHandlerCppToC,
@@ -73,17 +89,9 @@ CefRefPtr<CefAccessibilityHandler> CefCppToCRefCounted<
     cef_accessibility_handler_t>::UnwrapDerived(CefWrapperType type,
                                                 cef_accessibility_handler_t*
                                                     s) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<
-    CefAccessibilityHandlerCppToC,
-    CefAccessibilityHandler,
-    cef_accessibility_handler_t>::DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefAccessibilityHandlerCppToC,

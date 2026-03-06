@@ -4,13 +4,12 @@
 
 #include "tests/cefclient/browser/browser_window.h"
 
-#include "include/base/cef_bind.h"
+#include "include/base/cef_callback.h"
 #include "tests/shared/browser/main_message_loop.h"
 
 namespace client {
 
-BrowserWindow::BrowserWindow(Delegate* delegate)
-    : delegate_(delegate), is_closing_(false) {
+BrowserWindow::BrowserWindow(Delegate* delegate) : delegate_(delegate) {
   DCHECK(delegate_);
 }
 
@@ -30,6 +29,10 @@ bool BrowserWindow::IsClosing() const {
   return is_closing_;
 }
 
+bool BrowserWindow::UseAlloyStyle() const {
+  return delegate_->UseAlloyStyle();
+}
+
 void BrowserWindow::OnBrowserCreated(CefRefPtr<CefBrowser> browser) {
   REQUIRE_MAIN_THREAD();
   DCHECK(!browser_);
@@ -42,17 +45,19 @@ void BrowserWindow::OnBrowserClosing(CefRefPtr<CefBrowser> browser) {
   REQUIRE_MAIN_THREAD();
   DCHECK_EQ(browser->GetIdentifier(), browser_->GetIdentifier());
   is_closing_ = true;
+
+  delegate_->OnBrowserWindowClosing();
 }
 
 void BrowserWindow::OnBrowserClosed(CefRefPtr<CefBrowser> browser) {
   REQUIRE_MAIN_THREAD();
   if (browser_.get()) {
     DCHECK_EQ(browser->GetIdentifier(), browser_->GetIdentifier());
-    browser_ = NULL;
+    browser_ = nullptr;
   }
 
   client_handler_->DetachDelegate();
-  client_handler_ = NULL;
+  client_handler_ = nullptr;
 
   // |this| may be deleted.
   delegate_->OnBrowserWindowDestroyed();
@@ -76,6 +81,16 @@ void BrowserWindow::OnSetFullscreen(bool fullscreen) {
 void BrowserWindow::OnAutoResize(const CefSize& new_size) {
   REQUIRE_MAIN_THREAD();
   delegate_->OnAutoResize(new_size);
+}
+
+void BrowserWindow::OnContentsBounds(const CefRect& new_bounds) {
+  REQUIRE_MAIN_THREAD();
+  delegate_->OnContentsBounds(new_bounds);
+}
+
+bool BrowserWindow::GetRootWindowScreenRect(CefRect& rect) {
+  CEF_REQUIRE_UI_THREAD();
+  return delegate_->GetRootWindowScreenRect(rect);
 }
 
 void BrowserWindow::OnSetLoadingState(bool isLoading,

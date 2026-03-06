@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=8490680cb8c20b5f39fe22c648ce880aefde118e$
+// $hash=4ed2057ec6d08eaac085b7233d4170581cd72b92$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_SELECT_CLIENT_CERTIFICATE_CALLBACK_CTOCPP_H_
@@ -32,9 +32,15 @@ class CefSelectClientCertificateCallbackCToCpp
                                  cef_select_client_certificate_callback_t> {
  public:
   CefSelectClientCertificateCallbackCToCpp();
+  virtual ~CefSelectClientCertificateCallbackCToCpp();
 
   // CefSelectClientCertificateCallback methods.
-  void Select(CefRefPtr<CefX509Certificate> cert) OVERRIDE;
+  void Select(CefRefPtr<CefX509Certificate> cert) override;
 };
+
+constexpr auto CefSelectClientCertificateCallbackCToCpp_Wrap =
+    CefSelectClientCertificateCallbackCToCpp::Wrap;
+constexpr auto CefSelectClientCertificateCallbackCToCpp_Unwrap =
+    CefSelectClientCertificateCallbackCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_SELECT_CLIENT_CERTIFICATE_CALLBACK_CTOCPP_H_

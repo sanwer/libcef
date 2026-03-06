@@ -3,6 +3,7 @@
 // can be found in the LICENSE file.
 
 #include "tests/ceftests/routing_test_handler.h"
+
 #include "tests/shared/renderer/client_app_renderer.h"
 
 using client::ClientAppRenderer;
@@ -17,7 +18,7 @@ void SetRouterConfig(CefMessageRouterConfig& config) {
 // Handle the renderer side of the routing implementation.
 class RoutingRenderDelegate : public ClientAppRenderer::Delegate {
  public:
-  RoutingRenderDelegate() {}
+  RoutingRenderDelegate() = default;
 
   void OnWebKitInitialized(CefRefPtr<ClientAppRenderer> app) override {
     // Create the renderer-side router for query handling.
@@ -42,10 +43,11 @@ class RoutingRenderDelegate : public ClientAppRenderer::Delegate {
 
   bool OnProcessMessageReceived(CefRefPtr<ClientAppRenderer> app,
                                 CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override {
-    return message_router_->OnProcessMessageReceived(browser, source_process,
-                                                     message);
+    return message_router_->OnProcessMessageReceived(browser, frame,
+                                                     source_process, message);
   }
 
  private:
@@ -56,7 +58,8 @@ class RoutingRenderDelegate : public ClientAppRenderer::Delegate {
 
 }  // namespace
 
-RoutingTestHandler::RoutingTestHandler() {}
+RoutingTestHandler::RoutingTestHandler(CompletionState* completion_state)
+    : TestHandler(completion_state) {}
 
 void RoutingTestHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   if (!message_router_.get()) {
@@ -76,7 +79,9 @@ void RoutingTestHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
 
 void RoutingTestHandler::OnRenderProcessTerminated(
     CefRefPtr<CefBrowser> browser,
-    TerminationStatus status) {
+    TerminationStatus status,
+    int error_code,
+    const CefString& error_string) {
   message_router_->OnRenderProcessTerminated(browser);
 }
 
@@ -91,10 +96,11 @@ bool RoutingTestHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
 
 bool RoutingTestHandler::OnProcessMessageReceived(
     CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
     CefProcessId source_process,
     CefRefPtr<CefProcessMessage> message) {
-  return message_router_->OnProcessMessageReceived(browser, source_process,
-                                                   message);
+  return message_router_->OnProcessMessageReceived(browser, frame,
+                                                   source_process, message);
 }
 
 // Entry point for creating the test delegate.

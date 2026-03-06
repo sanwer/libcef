@@ -20,20 +20,18 @@ class ClientAppRenderer : public ClientApp, public CefRenderProcessHandler {
   // constructor. See CefRenderProcessHandler for documentation.
   class Delegate : public virtual CefBaseRefCounted {
    public:
-    virtual void OnRenderThreadCreated(CefRefPtr<ClientAppRenderer> app,
-                                       CefRefPtr<CefListValue> extra_info) {}
-
     virtual void OnWebKitInitialized(CefRefPtr<ClientAppRenderer> app) {}
 
     virtual void OnBrowserCreated(CefRefPtr<ClientAppRenderer> app,
-                                  CefRefPtr<CefBrowser> browser) {}
+                                  CefRefPtr<CefBrowser> browser,
+                                  CefRefPtr<CefDictionaryValue> extra_info) {}
 
     virtual void OnBrowserDestroyed(CefRefPtr<ClientAppRenderer> app,
                                     CefRefPtr<CefBrowser> browser) {}
 
     virtual CefRefPtr<CefLoadHandler> GetLoadHandler(
         CefRefPtr<ClientAppRenderer> app) {
-      return NULL;
+      return nullptr;
     }
 
     virtual void OnContextCreated(CefRefPtr<ClientAppRenderer> app,
@@ -65,6 +63,7 @@ class ClientAppRenderer : public ClientApp, public CefRenderProcessHandler {
     virtual bool OnProcessMessageReceived(
         CefRefPtr<ClientAppRenderer> app,
         CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefFrame> frame,
         CefProcessId source_process,
         CefRefPtr<CefProcessMessage> message) {
       return false;
@@ -75,46 +74,49 @@ class ClientAppRenderer : public ClientApp, public CefRenderProcessHandler {
 
   ClientAppRenderer();
 
+  ClientAppRenderer(const ClientAppRenderer&) = delete;
+  ClientAppRenderer& operator=(const ClientAppRenderer&) = delete;
+
  private:
   // Creates all of the Delegate objects. Implemented by cefclient in
   // client_app_delegates_renderer.cc
   static void CreateDelegates(DelegateSet& delegates);
 
   // CefApp methods.
-  CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() OVERRIDE {
+  CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override {
     return this;
   }
 
   // CefRenderProcessHandler methods.
-  void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info) OVERRIDE;
-  void OnWebKitInitialized() OVERRIDE;
-  void OnBrowserCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  void OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE;
+  void OnWebKitInitialized() override;
+  void OnBrowserCreated(CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefDictionaryValue> extra_info) override;
+  void OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) override;
+  CefRefPtr<CefLoadHandler> GetLoadHandler() override;
   void OnContextCreated(CefRefPtr<CefBrowser> browser,
                         CefRefPtr<CefFrame> frame,
-                        CefRefPtr<CefV8Context> context) OVERRIDE;
+                        CefRefPtr<CefV8Context> context) override;
   void OnContextReleased(CefRefPtr<CefBrowser> browser,
                          CefRefPtr<CefFrame> frame,
-                         CefRefPtr<CefV8Context> context) OVERRIDE;
+                         CefRefPtr<CefV8Context> context) override;
   void OnUncaughtException(CefRefPtr<CefBrowser> browser,
                            CefRefPtr<CefFrame> frame,
                            CefRefPtr<CefV8Context> context,
                            CefRefPtr<CefV8Exception> exception,
-                           CefRefPtr<CefV8StackTrace> stackTrace) OVERRIDE;
+                           CefRefPtr<CefV8StackTrace> stackTrace) override;
   void OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser,
                             CefRefPtr<CefFrame> frame,
-                            CefRefPtr<CefDOMNode> node) OVERRIDE;
+                            CefRefPtr<CefDOMNode> node) override;
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
-                                CefRefPtr<CefProcessMessage> message) OVERRIDE;
+                                CefRefPtr<CefProcessMessage> message) override;
 
  private:
   // Set of supported Delegates.
   DelegateSet delegates_;
 
   IMPLEMENT_REFCOUNTING(ClientAppRenderer);
-  DISALLOW_COPY_AND_ASSIGN(ClientAppRenderer);
 };
 
 }  // namespace client

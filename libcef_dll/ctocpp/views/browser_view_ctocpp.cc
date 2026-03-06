@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,14 +9,16 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=0057708082664103c2e7c9a4f6f2af44cba7a4a5$
+// $hash=04a9834eaa43ff5255b30f23e5e215ce245b6ca4$
 //
 
 #include "libcef_dll/ctocpp/views/browser_view_ctocpp.h"
+
 #include "libcef_dll/cpptoc/client_cpptoc.h"
 #include "libcef_dll/cpptoc/views/browser_view_delegate_cpptoc.h"
 #include "libcef_dll/cpptoc/views/view_delegate_cpptoc.h"
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
+#include "libcef_dll/ctocpp/dictionary_value_ctocpp.h"
 #include "libcef_dll/ctocpp/request_context_ctocpp.h"
 #include "libcef_dll/ctocpp/views/button_ctocpp.h"
 #include "libcef_dll/ctocpp/views/panel_ctocpp.h"
@@ -24,66 +26,102 @@
 #include "libcef_dll/ctocpp/views/textfield_ctocpp.h"
 #include "libcef_dll/ctocpp/views/view_ctocpp.h"
 #include "libcef_dll/ctocpp/views/window_ctocpp.h"
+#include "libcef_dll/shutdown_checker.h"
 
 // STATIC METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefBrowserView> CefBrowserView::CreateBrowserView(
     CefRefPtr<CefClient> client,
     const CefString& url,
     const CefBrowserSettings& settings,
+    CefRefPtr<CefDictionaryValue> extra_info,
     CefRefPtr<CefRequestContext> request_context,
     CefRefPtr<CefBrowserViewDelegate> delegate) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
-  // Unverified params: client, url, request_context, delegate
+  // Unverified params: client, url, extra_info, request_context, delegate
 
   // Execute
-  cef_browser_view_t* _retval = cef_browser_view_create(
-      CefClientCppToC::Wrap(client), url.GetStruct(), &settings,
-      CefRequestContextCToCpp::Unwrap(request_context),
-      CefBrowserViewDelegateCppToC::Wrap(delegate));
+  auto* _retval = cef_browser_view_create(
+      CefClientCppToC_Wrap(client), url.GetStruct(), &settings,
+      CefDictionaryValueCToCpp_Unwrap(extra_info),
+      CefRequestContextCToCpp_Unwrap(request_context),
+      CefBrowserViewDelegateCppToC_Wrap(delegate));
 
   // Return type: refptr_same
-  return CefBrowserViewCToCpp::Wrap(_retval);
+  return CefBrowserViewCToCpp_Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefBrowserView> CefBrowserView::GetForBrowser(
     CefRefPtr<CefBrowser> browser) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: browser; type: refptr_same
   DCHECK(browser.get());
-  if (!browser.get())
-    return NULL;
+  if (!browser.get()) {
+    return nullptr;
+  }
 
   // Execute
-  cef_browser_view_t* _retval =
-      cef_browser_view_get_for_browser(CefBrowserCToCpp::Unwrap(browser));
+  auto* _retval =
+      cef_browser_view_get_for_browser(CefBrowserCToCpp_Unwrap(browser));
 
   // Return type: refptr_same
-  return CefBrowserViewCToCpp::Wrap(_retval);
+  return CefBrowserViewCToCpp_Wrap(_retval);
 }
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefBrowser> CefBrowserViewCToCpp::GetBrowser() {
-  cef_browser_view_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, get_browser))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_browser) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_browser_t* _retval = _struct->get_browser(_struct);
+  auto* _retval = _struct->get_browser(_struct);
 
   // Return type: refptr_same
-  return CefBrowserCToCpp::Wrap(_retval);
+  return CefBrowserCToCpp_Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
+CefRefPtr<CefView> CefBrowserViewCToCpp::GetChromeToolbar() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_chrome_toolbar) {
+    return nullptr;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  auto* _retval = _struct->get_chrome_toolbar(_struct);
+
+  // Return type: refptr_same
+  return CefViewCToCpp_Wrap(_retval);
+}
+
+NO_SANITIZE("cfi-icall")
 void CefBrowserViewCToCpp::SetPreferAccelerators(bool prefer_accelerators) {
-  cef_browser_view_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, set_prefer_accelerators))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->set_prefer_accelerators) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -91,80 +129,119 @@ void CefBrowserViewCToCpp::SetPreferAccelerators(bool prefer_accelerators) {
   _struct->set_prefer_accelerators(_struct, prefer_accelerators);
 }
 
+NO_SANITIZE("cfi-icall")
+cef_runtime_style_t CefBrowserViewCToCpp::GetRuntimeStyle() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->get_runtime_style) {
+    return CEF_RUNTIME_STYLE_DEFAULT;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_runtime_style_t _retval = _struct->get_runtime_style(_struct);
+
+  // Return type: simple
+  return _retval;
+}
+
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefBrowserView> CefBrowserViewCToCpp::AsBrowserView() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, as_browser_view))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->as_browser_view) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_browser_view_t* _retval = _struct->as_browser_view(_struct);
+  auto* _retval = _struct->as_browser_view(_struct);
 
   // Return type: refptr_same
-  return CefBrowserViewCToCpp::Wrap(_retval);
+  return CefBrowserViewCToCpp_Wrap(_retval);
 }
 
-CefRefPtr<CefButton> CefBrowserViewCToCpp::AsButton() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, as_button))
-    return NULL;
+NO_SANITIZE("cfi-icall") CefRefPtr<CefButton> CefBrowserViewCToCpp::AsButton() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->as_button) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_button_t* _retval = _struct->as_button(_struct);
+  auto* _retval = _struct->as_button(_struct);
 
   // Return type: refptr_same
-  return CefButtonCToCpp::Wrap(_retval);
+  return CefButtonCToCpp_Wrap(_retval);
 }
 
-CefRefPtr<CefPanel> CefBrowserViewCToCpp::AsPanel() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, as_panel))
-    return NULL;
+NO_SANITIZE("cfi-icall") CefRefPtr<CefPanel> CefBrowserViewCToCpp::AsPanel() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->as_panel) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_panel_t* _retval = _struct->as_panel(_struct);
+  auto* _retval = _struct->as_panel(_struct);
 
   // Return type: refptr_same
-  return CefPanelCToCpp::Wrap(_retval);
+  return CefPanelCToCpp_Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefScrollView> CefBrowserViewCToCpp::AsScrollView() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, as_scroll_view))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->as_scroll_view) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_scroll_view_t* _retval = _struct->as_scroll_view(_struct);
+  auto* _retval = _struct->as_scroll_view(_struct);
 
   // Return type: refptr_same
-  return CefScrollViewCToCpp::Wrap(_retval);
+  return CefScrollViewCToCpp_Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefTextfield> CefBrowserViewCToCpp::AsTextfield() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, as_textfield))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->as_textfield) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_textfield_t* _retval = _struct->as_textfield(_struct);
+  auto* _retval = _struct->as_textfield(_struct);
 
   // Return type: refptr_same
-  return CefTextfieldCToCpp::Wrap(_retval);
+  return CefTextfieldCToCpp_Wrap(_retval);
 }
 
-CefString CefBrowserViewCToCpp::GetTypeString() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_type_string))
+NO_SANITIZE("cfi-icall") CefString CefBrowserViewCToCpp::GetTypeString() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_type_string) {
     return CefString();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -177,10 +254,14 @@ CefString CefBrowserViewCToCpp::GetTypeString() {
   return _retvalStr;
 }
 
+NO_SANITIZE("cfi-icall")
 CefString CefBrowserViewCToCpp::ToString(bool include_children) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, to_string))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->to_string) {
     return CefString();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -193,10 +274,13 @@ CefString CefBrowserViewCToCpp::ToString(bool include_children) {
   return _retvalStr;
 }
 
-bool CefBrowserViewCToCpp::IsValid() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_valid))
+NO_SANITIZE("cfi-icall") bool CefBrowserViewCToCpp::IsValid() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_valid) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -207,10 +291,13 @@ bool CefBrowserViewCToCpp::IsValid() {
   return _retval ? true : false;
 }
 
-bool CefBrowserViewCToCpp::IsAttached() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_attached))
+NO_SANITIZE("cfi-icall") bool CefBrowserViewCToCpp::IsAttached() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_attached) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -221,57 +308,73 @@ bool CefBrowserViewCToCpp::IsAttached() {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefBrowserViewCToCpp::IsSame(CefRefPtr<CefView> that) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_same))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_same) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: that; type: refptr_same
   DCHECK(that.get());
-  if (!that.get())
+  if (!that.get()) {
     return false;
+  }
 
   // Execute
-  int _retval = _struct->is_same(_struct, CefViewCToCpp::Unwrap(that));
+  int _retval = _struct->is_same(_struct, CefViewCToCpp_Unwrap(that));
 
   // Return type: bool
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefViewDelegate> CefBrowserViewCToCpp::GetDelegate() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_delegate))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_delegate) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_view_delegate_t* _retval = _struct->get_delegate(_struct);
+  auto* _retval = _struct->get_delegate(_struct);
 
   // Return type: refptr_diff
-  return CefViewDelegateCppToC::Unwrap(_retval);
+  return CefViewDelegateCppToC_Unwrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefWindow> CefBrowserViewCToCpp::GetWindow() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_window))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_window) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_window_t* _retval = _struct->get_window(_struct);
+  auto* _retval = _struct->get_window(_struct);
 
   // Return type: refptr_same
-  return CefWindowCToCpp::Wrap(_retval);
+  return CefWindowCToCpp_Wrap(_retval);
 }
 
-int CefBrowserViewCToCpp::GetID() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_id))
+NO_SANITIZE("cfi-icall") int CefBrowserViewCToCpp::GetID() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_id) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -282,10 +385,13 @@ int CefBrowserViewCToCpp::GetID() {
   return _retval;
 }
 
-void CefBrowserViewCToCpp::SetID(int id) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_id))
+NO_SANITIZE("cfi-icall") void CefBrowserViewCToCpp::SetID(int id) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_id) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -293,10 +399,13 @@ void CefBrowserViewCToCpp::SetID(int id) {
   _struct->set_id(_struct, id);
 }
 
-int CefBrowserViewCToCpp::GetGroupID() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_group_id))
+NO_SANITIZE("cfi-icall") int CefBrowserViewCToCpp::GetGroupID() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_group_id) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -307,10 +416,13 @@ int CefBrowserViewCToCpp::GetGroupID() {
   return _retval;
 }
 
-void CefBrowserViewCToCpp::SetGroupID(int group_id) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_group_id))
+NO_SANITIZE("cfi-icall") void CefBrowserViewCToCpp::SetGroupID(int group_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_group_id) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -318,38 +430,50 @@ void CefBrowserViewCToCpp::SetGroupID(int group_id) {
   _struct->set_group_id(_struct, group_id);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefView> CefBrowserViewCToCpp::GetParentView() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_parent_view))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_parent_view) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_view_t* _retval = _struct->get_parent_view(_struct);
+  auto* _retval = _struct->get_parent_view(_struct);
 
   // Return type: refptr_same
-  return CefViewCToCpp::Wrap(_retval);
+  return CefViewCToCpp_Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 CefRefPtr<CefView> CefBrowserViewCToCpp::GetViewForID(int id) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_view_for_id))
-    return NULL;
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_view_for_id) {
+    return nullptr;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
-  cef_view_t* _retval = _struct->get_view_for_id(_struct, id);
+  auto* _retval = _struct->get_view_for_id(_struct, id);
 
   // Return type: refptr_same
-  return CefViewCToCpp::Wrap(_retval);
+  return CefViewCToCpp_Wrap(_retval);
 }
 
+NO_SANITIZE("cfi-icall")
 void CefBrowserViewCToCpp::SetBounds(const CefRect& bounds) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_bounds))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_bounds) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -357,10 +481,13 @@ void CefBrowserViewCToCpp::SetBounds(const CefRect& bounds) {
   _struct->set_bounds(_struct, &bounds);
 }
 
-CefRect CefBrowserViewCToCpp::GetBounds() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_bounds))
+NO_SANITIZE("cfi-icall") CefRect CefBrowserViewCToCpp::GetBounds() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_bounds) {
     return CefRect();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -371,10 +498,13 @@ CefRect CefBrowserViewCToCpp::GetBounds() {
   return _retval;
 }
 
-CefRect CefBrowserViewCToCpp::GetBoundsInScreen() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_bounds_in_screen))
+NO_SANITIZE("cfi-icall") CefRect CefBrowserViewCToCpp::GetBoundsInScreen() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_bounds_in_screen) {
     return CefRect();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -385,10 +515,14 @@ CefRect CefBrowserViewCToCpp::GetBoundsInScreen() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefBrowserViewCToCpp::SetSize(const CefSize& size) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_size))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_size) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -396,10 +530,13 @@ void CefBrowserViewCToCpp::SetSize(const CefSize& size) {
   _struct->set_size(_struct, &size);
 }
 
-CefSize CefBrowserViewCToCpp::GetSize() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_size))
+NO_SANITIZE("cfi-icall") CefSize CefBrowserViewCToCpp::GetSize() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_size) {
     return CefSize();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -410,10 +547,14 @@ CefSize CefBrowserViewCToCpp::GetSize() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefBrowserViewCToCpp::SetPosition(const CefPoint& position) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_position))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_position) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -421,10 +562,13 @@ void CefBrowserViewCToCpp::SetPosition(const CefPoint& position) {
   _struct->set_position(_struct, &position);
 }
 
-CefPoint CefBrowserViewCToCpp::GetPosition() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_position))
+NO_SANITIZE("cfi-icall") CefPoint CefBrowserViewCToCpp::GetPosition() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_position) {
     return CefPoint();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -435,10 +579,45 @@ CefPoint CefBrowserViewCToCpp::GetPosition() {
   return _retval;
 }
 
-CefSize CefBrowserViewCToCpp::GetPreferredSize() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_preferred_size))
+NO_SANITIZE("cfi-icall")
+void CefBrowserViewCToCpp::SetInsets(const CefInsets& insets) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_insets) {
+    return;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  _struct->set_insets(_struct, &insets);
+}
+
+NO_SANITIZE("cfi-icall") CefInsets CefBrowserViewCToCpp::GetInsets() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_insets) {
+    return CefInsets();
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_insets_t _retval = _struct->get_insets(_struct);
+
+  // Return type: simple
+  return _retval;
+}
+
+NO_SANITIZE("cfi-icall") CefSize CefBrowserViewCToCpp::GetPreferredSize() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_preferred_size) {
     return CefSize();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -449,10 +628,13 @@ CefSize CefBrowserViewCToCpp::GetPreferredSize() {
   return _retval;
 }
 
-void CefBrowserViewCToCpp::SizeToPreferredSize() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, size_to_preferred_size))
+NO_SANITIZE("cfi-icall") void CefBrowserViewCToCpp::SizeToPreferredSize() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->size_to_preferred_size) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -460,10 +642,13 @@ void CefBrowserViewCToCpp::SizeToPreferredSize() {
   _struct->size_to_preferred_size(_struct);
 }
 
-CefSize CefBrowserViewCToCpp::GetMinimumSize() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_minimum_size))
+NO_SANITIZE("cfi-icall") CefSize CefBrowserViewCToCpp::GetMinimumSize() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_minimum_size) {
     return CefSize();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -474,10 +659,13 @@ CefSize CefBrowserViewCToCpp::GetMinimumSize() {
   return _retval;
 }
 
-CefSize CefBrowserViewCToCpp::GetMaximumSize() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_maximum_size))
+NO_SANITIZE("cfi-icall") CefSize CefBrowserViewCToCpp::GetMaximumSize() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_maximum_size) {
     return CefSize();
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -488,10 +676,14 @@ CefSize CefBrowserViewCToCpp::GetMaximumSize() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
 int CefBrowserViewCToCpp::GetHeightForWidth(int width) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_height_for_width))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_height_for_width) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -502,10 +694,13 @@ int CefBrowserViewCToCpp::GetHeightForWidth(int width) {
   return _retval;
 }
 
-void CefBrowserViewCToCpp::InvalidateLayout() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, invalidate_layout))
+NO_SANITIZE("cfi-icall") void CefBrowserViewCToCpp::InvalidateLayout() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->invalidate_layout) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -513,10 +708,13 @@ void CefBrowserViewCToCpp::InvalidateLayout() {
   _struct->invalidate_layout(_struct);
 }
 
-void CefBrowserViewCToCpp::SetVisible(bool visible) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_visible))
+NO_SANITIZE("cfi-icall") void CefBrowserViewCToCpp::SetVisible(bool visible) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_visible) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -524,10 +722,13 @@ void CefBrowserViewCToCpp::SetVisible(bool visible) {
   _struct->set_visible(_struct, visible);
 }
 
-bool CefBrowserViewCToCpp::IsVisible() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_visible))
+NO_SANITIZE("cfi-icall") bool CefBrowserViewCToCpp::IsVisible() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_visible) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -538,10 +739,13 @@ bool CefBrowserViewCToCpp::IsVisible() {
   return _retval ? true : false;
 }
 
-bool CefBrowserViewCToCpp::IsDrawn() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_drawn))
+NO_SANITIZE("cfi-icall") bool CefBrowserViewCToCpp::IsDrawn() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_drawn) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -552,10 +756,13 @@ bool CefBrowserViewCToCpp::IsDrawn() {
   return _retval ? true : false;
 }
 
-void CefBrowserViewCToCpp::SetEnabled(bool enabled) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_enabled))
+NO_SANITIZE("cfi-icall") void CefBrowserViewCToCpp::SetEnabled(bool enabled) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_enabled) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -563,10 +770,13 @@ void CefBrowserViewCToCpp::SetEnabled(bool enabled) {
   _struct->set_enabled(_struct, enabled);
 }
 
-bool CefBrowserViewCToCpp::IsEnabled() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_enabled))
+NO_SANITIZE("cfi-icall") bool CefBrowserViewCToCpp::IsEnabled() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_enabled) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -577,10 +787,14 @@ bool CefBrowserViewCToCpp::IsEnabled() {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 void CefBrowserViewCToCpp::SetFocusable(bool focusable) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_focusable))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_focusable) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -588,10 +802,13 @@ void CefBrowserViewCToCpp::SetFocusable(bool focusable) {
   _struct->set_focusable(_struct, focusable);
 }
 
-bool CefBrowserViewCToCpp::IsFocusable() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_focusable))
+NO_SANITIZE("cfi-icall") bool CefBrowserViewCToCpp::IsFocusable() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_focusable) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -602,10 +819,13 @@ bool CefBrowserViewCToCpp::IsFocusable() {
   return _retval ? true : false;
 }
 
-bool CefBrowserViewCToCpp::IsAccessibilityFocusable() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, is_accessibility_focusable))
+NO_SANITIZE("cfi-icall") bool CefBrowserViewCToCpp::IsAccessibilityFocusable() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->is_accessibility_focusable) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -616,10 +836,30 @@ bool CefBrowserViewCToCpp::IsAccessibilityFocusable() {
   return _retval ? true : false;
 }
 
-void CefBrowserViewCToCpp::RequestFocus() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, request_focus))
+NO_SANITIZE("cfi-icall") bool CefBrowserViewCToCpp::HasFocus() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->has_focus) {
+    return false;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  int _retval = _struct->has_focus(_struct);
+
+  // Return type: bool
+  return _retval ? true : false;
+}
+
+NO_SANITIZE("cfi-icall") void CefBrowserViewCToCpp::RequestFocus() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->request_focus) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -627,10 +867,14 @@ void CefBrowserViewCToCpp::RequestFocus() {
   _struct->request_focus(_struct);
 }
 
+NO_SANITIZE("cfi-icall")
 void CefBrowserViewCToCpp::SetBackgroundColor(cef_color_t color) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, set_background_color))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->set_background_color) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -638,10 +882,14 @@ void CefBrowserViewCToCpp::SetBackgroundColor(cef_color_t color) {
   _struct->set_background_color(_struct, color);
 }
 
+NO_SANITIZE("cfi-icall")
 cef_color_t CefBrowserViewCToCpp::GetBackgroundColor() {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, get_background_color))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_background_color) {
     return 0;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -652,10 +900,32 @@ cef_color_t CefBrowserViewCToCpp::GetBackgroundColor() {
   return _retval;
 }
 
+NO_SANITIZE("cfi-icall")
+cef_color_t CefBrowserViewCToCpp::GetThemeColor(int color_id) {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->get_theme_color) {
+    return 0;
+  }
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_color_t _retval = _struct->get_theme_color(_struct, color_id);
+
+  // Return type: simple
+  return _retval;
+}
+
+NO_SANITIZE("cfi-icall")
 bool CefBrowserViewCToCpp::ConvertPointToScreen(CefPoint& point) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, convert_point_to_screen))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->convert_point_to_screen) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -666,10 +936,14 @@ bool CefBrowserViewCToCpp::ConvertPointToScreen(CefPoint& point) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefBrowserViewCToCpp::ConvertPointFromScreen(CefPoint& point) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, convert_point_from_screen))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->convert_point_from_screen) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -680,10 +954,14 @@ bool CefBrowserViewCToCpp::ConvertPointFromScreen(CefPoint& point) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefBrowserViewCToCpp::ConvertPointToWindow(CefPoint& point) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, convert_point_to_window))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->convert_point_to_window) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -694,10 +972,14 @@ bool CefBrowserViewCToCpp::ConvertPointToWindow(CefPoint& point) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefBrowserViewCToCpp::ConvertPointFromWindow(CefPoint& point) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, convert_point_from_window))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->convert_point_from_window) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -708,43 +990,53 @@ bool CefBrowserViewCToCpp::ConvertPointFromWindow(CefPoint& point) {
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefBrowserViewCToCpp::ConvertPointToView(CefRefPtr<CefView> view,
                                               CefPoint& point) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, convert_point_to_view))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->convert_point_to_view) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: view; type: refptr_same
   DCHECK(view.get());
-  if (!view.get())
+  if (!view.get()) {
     return false;
+  }
 
   // Execute
   int _retval = _struct->convert_point_to_view(
-      _struct, CefViewCToCpp::Unwrap(view), &point);
+      _struct, CefViewCToCpp_Unwrap(view), &point);
 
   // Return type: bool
   return _retval ? true : false;
 }
 
+NO_SANITIZE("cfi-icall")
 bool CefBrowserViewCToCpp::ConvertPointFromView(CefRefPtr<CefView> view,
                                                 CefPoint& point) {
-  cef_view_t* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
-  if (CEF_MEMBER_MISSING(_struct, convert_point_from_view))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = reinterpret_cast<cef_view_t*>(GetStruct());
+  if (!_struct->convert_point_from_view) {
     return false;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: view; type: refptr_same
   DCHECK(view.get());
-  if (!view.get())
+  if (!view.get()) {
     return false;
+  }
 
   // Execute
   int _retval = _struct->convert_point_from_view(
-      _struct, CefViewCToCpp::Unwrap(view), &point);
+      _struct, CefViewCToCpp_Unwrap(view), &point);
 
   // Return type: bool
   return _retval ? true : false;
@@ -754,21 +1046,19 @@ bool CefBrowserViewCToCpp::ConvertPointFromView(CefRefPtr<CefView> view,
 
 CefBrowserViewCToCpp::CefBrowserViewCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefBrowserViewCToCpp::~CefBrowserViewCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 cef_browser_view_t*
 CefCToCppRefCounted<CefBrowserViewCToCpp, CefBrowserView, cef_browser_view_t>::
     UnwrapDerived(CefWrapperType type, CefBrowserView* c) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCToCppRefCounted<CefBrowserViewCToCpp,
-                                         CefBrowserView,
-                                         cef_browser_view_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefBrowserViewCToCpp,

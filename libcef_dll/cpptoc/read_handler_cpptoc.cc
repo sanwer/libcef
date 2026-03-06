@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,10 +9,12 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=220b230275444cd613b0c933179cf50211371468$
+// $hash=c8029db1688aec943d2b5a2ab76f8785df1bd5c3$
 //
 
 #include "libcef_dll/cpptoc/read_handler_cpptoc.h"
+
+#include "libcef_dll/shutdown_checker.h"
 
 namespace {
 
@@ -22,15 +24,19 @@ size_t CEF_CALLBACK read_handler_read(struct _cef_read_handler_t* self,
                                       void* ptr,
                                       size_t size,
                                       size_t n) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
   // Verify param: ptr; type: simple_byaddr
   DCHECK(ptr);
-  if (!ptr)
+  if (!ptr) {
     return 0;
+  }
 
   // Execute
   size_t _retval = CefReadHandlerCppToC::Get(self)->Read(ptr, size, n);
@@ -40,13 +46,16 @@ size_t CEF_CALLBACK read_handler_read(struct _cef_read_handler_t* self,
 }
 
 int CEF_CALLBACK read_handler_seek(struct _cef_read_handler_t* self,
-                                   int64 offset,
+                                   int64_t offset,
                                    int whence) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
 
   // Execute
   int _retval = CefReadHandlerCppToC::Get(self)->Seek(offset, whence);
@@ -55,26 +64,32 @@ int CEF_CALLBACK read_handler_seek(struct _cef_read_handler_t* self,
   return _retval;
 }
 
-int64 CEF_CALLBACK read_handler_tell(struct _cef_read_handler_t* self) {
+int64_t CEF_CALLBACK read_handler_tell(struct _cef_read_handler_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
 
   // Execute
-  int64 _retval = CefReadHandlerCppToC::Get(self)->Tell();
+  int64_t _retval = CefReadHandlerCppToC::Get(self)->Tell();
 
   // Return type: simple
   return _retval;
 }
 
 int CEF_CALLBACK read_handler_eof(struct _cef_read_handler_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
 
   // Execute
   int _retval = CefReadHandlerCppToC::Get(self)->Eof();
@@ -84,11 +99,14 @@ int CEF_CALLBACK read_handler_eof(struct _cef_read_handler_t* self) {
 }
 
 int CEF_CALLBACK read_handler_may_block(struct _cef_read_handler_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
-  if (!self)
+  if (!self) {
     return 0;
+  }
 
   // Execute
   bool _retval = CefReadHandlerCppToC::Get(self)->MayBlock();
@@ -109,21 +127,19 @@ CefReadHandlerCppToC::CefReadHandlerCppToC() {
   GetStruct()->may_block = read_handler_may_block;
 }
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefReadHandlerCppToC::~CefReadHandlerCppToC() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 CefRefPtr<CefReadHandler>
 CefCppToCRefCounted<CefReadHandlerCppToC, CefReadHandler, cef_read_handler_t>::
     UnwrapDerived(CefWrapperType type, cef_read_handler_t* s) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCppToCRefCounted<CefReadHandlerCppToC,
-                                         CefReadHandler,
-                                         cef_read_handler_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCppToCRefCounted<CefReadHandlerCppToC,

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,18 +9,24 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d94ac0fccb71faab9bfbf75432f0609b8a3bcc2a$
+// $hash=e6554eef047a176d686bd9477a0f96871bc2b9ea$
 //
 
 #include "libcef_dll/ctocpp/before_download_callback_ctocpp.h"
 
+#include "libcef_dll/shutdown_checker.h"
+
 // VIRTUAL METHODS - Body may be edited by hand.
 
+NO_SANITIZE("cfi-icall")
 void CefBeforeDownloadCallbackCToCpp::Continue(const CefString& download_path,
                                                bool show_dialog) {
-  cef_before_download_callback_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, cont))
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->cont) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -34,6 +40,12 @@ void CefBeforeDownloadCallbackCToCpp::Continue(const CefString& download_path,
 
 CefBeforeDownloadCallbackCToCpp::CefBeforeDownloadCallbackCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefBeforeDownloadCallbackCToCpp::~CefBeforeDownloadCallbackCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 cef_before_download_callback_t* CefCToCppRefCounted<
     CefBeforeDownloadCallbackCToCpp,
@@ -41,17 +53,9 @@ cef_before_download_callback_t* CefCToCppRefCounted<
     cef_before_download_callback_t>::UnwrapDerived(CefWrapperType type,
                                                    CefBeforeDownloadCallback*
                                                        c) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCToCppRefCounted<
-    CefBeforeDownloadCallbackCToCpp,
-    CefBeforeDownloadCallback,
-    cef_before_download_callback_t>::DebugObjCt ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType

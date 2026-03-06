@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,14 +33,19 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=5f8cd4eb4e6215cb0f6161b916dc51197e345204$
+// $hash=e9d9fc8cbfe301047e2e45397c98f750881a15bd$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_PROCESS_MESSAGE_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_PROCESS_MESSAGE_CAPI_H_
 #pragma once
 
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
+
 #include "include/capi/cef_base_capi.h"
+#include "include/capi/cef_shared_memory_region_capi.h"
 #include "include/capi/cef_values_capi.h"
 
 #ifdef __cplusplus
@@ -48,48 +53,59 @@ extern "C" {
 #endif
 
 ///
-// Structure representing a message. Can be used on any process and thread.
+/// Structure representing a message. Can be used on any process and thread.
+///
+/// NOTE: This struct is allocated DLL-side.
 ///
 typedef struct _cef_process_message_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Returns true (1) if this object is valid. Do not call any other functions
-  // if this function returns false (0).
+  /// Returns true (1) if this object is valid. Do not call any other functions
+  /// if this function returns false (0).
   ///
   int(CEF_CALLBACK* is_valid)(struct _cef_process_message_t* self);
 
   ///
-  // Returns true (1) if the values of this object are read-only. Some APIs may
-  // expose read-only objects.
+  /// Returns true (1) if the values of this object are read-only. Some APIs may
+  /// expose read-only objects.
   ///
   int(CEF_CALLBACK* is_read_only)(struct _cef_process_message_t* self);
 
   ///
-  // Returns a writable copy of this object.
+  /// Returns a writable copy of this object. Returns nullptr when message
+  /// contains a shared memory region.
   ///
   struct _cef_process_message_t*(CEF_CALLBACK* copy)(
       struct _cef_process_message_t* self);
 
   ///
-  // Returns the message name.
+  /// Returns the message name.
   ///
   // The resulting string must be freed by calling cef_string_userfree_free().
   cef_string_userfree_t(CEF_CALLBACK* get_name)(
       struct _cef_process_message_t* self);
 
   ///
-  // Returns the list of arguments.
+  /// Returns the list of arguments. Returns nullptr when message contains a
+  /// shared memory region.
   ///
   struct _cef_list_value_t*(CEF_CALLBACK* get_argument_list)(
+      struct _cef_process_message_t* self);
+
+  ///
+  /// Returns the shared memory region. Returns nullptr when message contains an
+  /// argument list.
+  ///
+  struct _cef_shared_memory_region_t*(CEF_CALLBACK* get_shared_memory_region)(
       struct _cef_process_message_t* self);
 } cef_process_message_t;
 
 ///
-// Create a new cef_process_message_t object with the specified name.
+/// Create a new cef_process_message_t object with the specified name.
 ///
 CEF_EXPORT cef_process_message_t* cef_process_message_create(
     const cef_string_t* name);

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=70cdb0c1ac3f01e95549e17decae9fedf3ac721f$
+// $hash=82f91810cd47efe0a0213b97a2c83c9691430783$
 //
 
 #ifndef CEF_LIBCEF_DLL_CPPTOC_CONTEXT_MENU_HANDLER_CPPTOC_H_
@@ -32,6 +32,12 @@ class CefContextMenuHandlerCppToC
                                  cef_context_menu_handler_t> {
  public:
   CefContextMenuHandlerCppToC();
+  virtual ~CefContextMenuHandlerCppToC();
 };
+
+constexpr auto CefContextMenuHandlerCppToC_Wrap =
+    CefContextMenuHandlerCppToC::Wrap;
+constexpr auto CefContextMenuHandlerCppToC_Unwrap =
+    CefContextMenuHandlerCppToC::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CPPTOC_CONTEXT_MENU_HANDLER_CPPTOC_H_

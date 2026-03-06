@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=8c80c1d261206c468fdaccb6cf49422f142fcd6d$
+// $hash=be689ce2fcd73cbd8280c6fafce40a9e5a5140b6$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_COMMAND_LINE_CTOCPP_H_
@@ -21,6 +21,7 @@
 #endif
 
 #include <vector>
+
 #include "include/capi/cef_command_line_capi.h"
 #include "include/cef_command_line.h"
 #include "libcef_dll/ctocpp/ctocpp_ref_counted.h"
@@ -32,29 +33,36 @@ class CefCommandLineCToCpp : public CefCToCppRefCounted<CefCommandLineCToCpp,
                                                         cef_command_line_t> {
  public:
   CefCommandLineCToCpp();
+  virtual ~CefCommandLineCToCpp();
 
   // CefCommandLine methods.
-  bool IsValid() OVERRIDE;
-  bool IsReadOnly() OVERRIDE;
-  CefRefPtr<CefCommandLine> Copy() OVERRIDE;
-  void InitFromArgv(int argc, const char* const* argv) OVERRIDE;
-  void InitFromString(const CefString& command_line) OVERRIDE;
-  void Reset() OVERRIDE;
-  void GetArgv(std::vector<CefString>& argv) OVERRIDE;
-  CefString GetCommandLineString() OVERRIDE;
-  CefString GetProgram() OVERRIDE;
-  void SetProgram(const CefString& program) OVERRIDE;
-  bool HasSwitches() OVERRIDE;
-  bool HasSwitch(const CefString& name) OVERRIDE;
-  CefString GetSwitchValue(const CefString& name) OVERRIDE;
-  void GetSwitches(SwitchMap& switches) OVERRIDE;
-  void AppendSwitch(const CefString& name) OVERRIDE;
+  bool IsValid() override;
+  bool IsReadOnly() override;
+  CefRefPtr<CefCommandLine> Copy() override;
+  void InitFromArgv(int argc, const char* const* argv) override;
+  void InitFromString(const CefString& command_line) override;
+  void Reset() override;
+  void GetArgv(std::vector<CefString>& argv) override;
+  CefString GetCommandLineString() override;
+  CefString GetProgram() override;
+  void SetProgram(const CefString& program) override;
+  bool HasSwitches() override;
+  bool HasSwitch(const CefString& name) override;
+  CefString GetSwitchValue(const CefString& name) override;
+  void GetSwitches(SwitchMap& switches) override;
+  void AppendSwitch(const CefString& name) override;
   void AppendSwitchWithValue(const CefString& name,
-                             const CefString& value) OVERRIDE;
-  bool HasArguments() OVERRIDE;
-  void GetArguments(ArgumentList& arguments) OVERRIDE;
-  void AppendArgument(const CefString& argument) OVERRIDE;
-  void PrependWrapper(const CefString& wrapper) OVERRIDE;
+                             const CefString& value) override;
+#if CEF_API_ADDED(14100)
+  void RemoveSwitch(const CefString& name) override;
+#endif
+  bool HasArguments() override;
+  void GetArguments(ArgumentList& arguments) override;
+  void AppendArgument(const CefString& argument) override;
+  void PrependWrapper(const CefString& wrapper) override;
 };
+
+constexpr auto CefCommandLineCToCpp_Wrap = CefCommandLineCToCpp::Wrap;
+constexpr auto CefCommandLineCToCpp_Unwrap = CefCommandLineCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_COMMAND_LINE_CTOCPP_H_

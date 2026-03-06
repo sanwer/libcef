@@ -7,15 +7,28 @@
 
 #if defined(OS_WIN)
 #include <windows.h>
+
 #include <algorithm>
-#include <sstream>
 #elif defined(OS_POSIX)
 #include <errno.h>
+#include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
+#include <time.h>
+#include <unistd.h>
 #endif
 
-#include "include/internal/cef_string_types.h"
+#if defined(OS_APPLE)
+#include <mach/mach_time.h>
+#endif
+
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+
+#include "include/base/cef_immediate_crash.h"
 
 namespace cef {
 namespace logging {
@@ -129,7 +142,285 @@ std::string safe_strerror(int err) {
 }
 #endif  // defined(OS_POSIX)
 
+const internal::Implementation* g_impl_override = nullptr;
+
+#if defined(OS_WIN)
+using SetLogFatalCrashKeyFunc = void (*)(const char* /*file*/,
+                                         int /*line*/,
+                                         const char* /*message*/);
+
+SetLogFatalCrashKeyFunc SetLogFatalCrashKeyFuncGetter() {
+  static SetLogFatalCrashKeyFunc log_fatal_crash_key_func = []() {
+    // Function exported by bootstrap.exe.
+    return reinterpret_cast<SetLogFatalCrashKeyFunc>(
+        GetProcAddress(GetModuleHandle(NULL), "SetLogFatalCrashKey"));
+  }();
+  return log_fatal_crash_key_func;
+}
+
+void SetLogFatalCrashKey(const char* file, int line, const char* message) {
+  if (auto func = SetLogFatalCrashKeyFuncGetter()) {
+    func(file, line, message);
+  }
+}
+#endif  // defined(OS_WIN)
+
+const char* const log_severity_names[] = {"INFO", "WARNING", "ERROR", "FATAL"};
+static_assert(LOG_NUM_SEVERITIES == std::size(log_severity_names),
+              "Incorrect number of log_severity_names");
+
+const char* log_severity_name(int severity) {
+  if (severity >= 0 && severity < LOG_NUM_SEVERITIES) {
+    return log_severity_names[severity];
+  }
+  return "UNKNOWN";
+}
+
+#if defined(OS_WIN)
+#if !defined(NDEBUG)
+bool IsUser32AndGdi32Available() {
+  static const bool is_user32_and_gdi32_available = [] {
+    // If win32k syscalls aren't disabled, then user32 and gdi32 are available.
+    PROCESS_MITIGATION_SYSTEM_CALL_DISABLE_POLICY policy = {};
+    if (::GetProcessMitigationPolicy(GetCurrentProcess(),
+                                     ProcessSystemCallDisablePolicy, &policy,
+                                     sizeof(policy))) {
+      return policy.DisallowWin32kSystemCalls == 0;
+    }
+
+    return true;
+  }();
+  return is_user32_and_gdi32_available;
+}
+
+std::wstring UTF8ToWide(const std::string& utf8) {
+  if (utf8.empty()) {
+    return {};
+  }
+  int size = MultiByteToWideChar(CP_UTF8, 0, utf8.data(),
+                                 static_cast<int>(utf8.size()), nullptr, 0);
+  if (size <= 0) {
+    return {};
+  }
+  std::wstring utf16(size, L'\0');
+  if (MultiByteToWideChar(CP_UTF8, 0, utf8.data(),
+                          static_cast<int>(utf8.size()), &utf16[0],
+                          size) != size) {
+    return {};
+  }
+  return utf16;
+}
+
+// Displays a message box to the user with the error message in it. Used for
+// fatal messages, where we close the app simultaneously. This is for developers
+// only; we don't use this in circumstances (like release builds) where users
+// could see it, since users don't understand these messages anyway.
+void DisplayDebugMessageInDialog(const std::string& message) {
+  if (IsUser32AndGdi32Available()) {
+    MessageBoxW(nullptr, UTF8ToWide(message).c_str(), L"Fatal error",
+                MB_OK | MB_ICONHAND | MB_TOPMOST);
+  } else {
+    OutputDebugStringW(UTF8ToWide(message).c_str());
+  }
+}
+#endif  // !defined(NDEBUG)
+#endif  // defined(OS_WIN)
+
+[[noreturn]] void HandleFatal(const std::string& message) {
+  // Don't display assertions to the user in release mode. The enduser can't do
+  // anything with this information, and displaying message boxes when the
+  // application is hosed can cause additional problems. We intentionally don't
+  // implement a dialog on other platforms. You can just look at stderr.
+#if !defined(NDEBUG) && defined(OS_WIN)
+  if (!::IsDebuggerPresent()) {
+    // Displaying a dialog is unnecessary when debugging and can complicate
+    // debugging.
+    DisplayDebugMessageInDialog(message);
+  }
+#endif
+
+  // Crash the process to generate a dump.
+  base::ImmediateCrash();
+}
+
+uint64_t TickCount() {
+#if defined(OS_WIN)
+  return ::GetTickCount();
+#elif defined(OS_APPLE)
+  return mach_absolute_time();
+#elif defined(OS_POSIX)
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+
+  uint64_t absolute_micro = static_cast<uint64_t>(ts.tv_sec) * 1000000 +
+                            static_cast<uint64_t>(ts.tv_nsec) / 1000;
+
+  return absolute_micro;
+#else
+#error Unsupported platform
+#endif
+}
+
 }  // namespace
+
+namespace internal {
+
+const Implementation* GetImplementation() {
+  if (g_impl_override) {
+    return g_impl_override;
+  }
+  static constexpr Implementation default_impl = {
+      &cef_get_min_log_level, &cef_get_vlog_level, &cef_log};
+  return &default_impl;
+}
+
+ScopedImplementation::~ScopedImplementation() {
+  g_impl_override = previous_;
+}
+
+ScopedImplementation::ScopedImplementation() {
+#if defined(OS_WIN)
+  // Preload the function pointer so that we do minimal work while crashing.
+  SetLogFatalCrashKeyFuncGetter();
+#endif
+}
+
+void ScopedImplementation::Init(const Implementation* impl) {
+  previous_ = g_impl_override;
+  g_impl_override = impl;
+}
+
+}  // namespace internal
+
+ScopedEarlySupport::ScopedEarlySupport(const Config& config)
+    : impl_{{&ScopedEarlySupport::get_min_log_level,
+             &ScopedEarlySupport::get_vlog_level, &ScopedEarlySupport::log},
+            config} {
+  Init(&impl_.ptrs);
+}
+
+// static
+const ScopedEarlySupport::Config& ScopedEarlySupport::GetConfig() {
+  return reinterpret_cast<const ScopedEarlySupport::Impl*>(g_impl_override)
+      ->config;
+}
+
+// static
+int ScopedEarlySupport::get_min_log_level() {
+  return GetConfig().min_log_level;
+}
+
+// static
+int ScopedEarlySupport::get_vlog_level(const char* file_start, size_t N) {
+  return GetConfig().vlog_level;
+}
+
+// static
+void ScopedEarlySupport::log(const char* file,
+                             int line,
+                             int severity,
+                             const char* message) {
+  const Config& config = GetConfig();
+
+  // Most logging initializes `file` from __FILE__. Unfortunately, because we
+  // build from out/Foo we get a `../../` (or \) prefix for all of our
+  // __FILE__s. This isn't true for base::Location::Current() which already does
+  // the stripping (and is used for some logging, especially CHECKs).
+  //
+  // Here we strip the first 6 (../../ or ..\..\) characters if `file` starts
+  // with `.` but defensively clamp to strlen(file) just in case.
+  const std::string_view filename =
+      file[0] == '.' ? std::string_view(file).substr(
+                           std::min(std::size_t{6}, strlen(file)))
+                     : file;
+
+  std::stringstream stream;
+
+  stream << '[';
+  if (config.log_prefix) {
+    stream << config.log_prefix << ':';
+  }
+  if (config.log_process_id) {
+#if defined(OS_WIN)
+    stream << ::GetCurrentProcessId() << ':';
+#elif defined(OS_POSIX)
+    stream << getpid() << ':';
+#else
+#error Unsupported platform
+#endif
+  }
+  if (config.log_thread_id) {
+#if defined(OS_WIN)
+    stream << ::GetCurrentThreadId() << ':';
+#elif defined(OS_APPLE)
+    uint64_t tid;
+    if (pthread_threadid_np(nullptr, &tid) == 0) {
+      stream << tid << ':';
+    }
+#elif defined(OS_POSIX)
+    stream << pthread_self() << ':';
+#else
+#error Unsupported platform
+#endif
+  }
+  if (config.log_timestamp) {
+#if defined(OS_WIN)
+    SYSTEMTIME local_time;
+    GetLocalTime(&local_time);
+    stream << std::setfill('0') << std::setw(2) << local_time.wMonth
+           << std::setw(2) << local_time.wDay << '/' << std::setw(2)
+           << local_time.wHour << std::setw(2) << local_time.wMinute
+           << std::setw(2) << local_time.wSecond << '.' << std::setw(3)
+           << local_time.wMilliseconds << ':';
+#elif defined(OS_POSIX)
+    timeval tv;
+    gettimeofday(&tv, nullptr);
+    time_t t = tv.tv_sec;
+    struct tm local_time;
+    localtime_r(&t, &local_time);
+    struct tm* tm_time = &local_time;
+    stream << std::setfill('0') << std::setw(2) << 1 + tm_time->tm_mon
+           << std::setw(2) << tm_time->tm_mday << '/' << std::setw(2)
+           << tm_time->tm_hour << std::setw(2) << tm_time->tm_min
+           << std::setw(2) << tm_time->tm_sec << '.' << std::setw(6)
+           << tv.tv_usec << ':';
+#else
+#error Unsupported platform
+#endif
+  }
+  if (config.log_tickcount) {
+    stream << TickCount() << ':';
+  }
+  if (severity >= 0) {
+    stream << log_severity_name(severity);
+  } else {
+    stream << "VERBOSE" << -severity;
+  }
+  stream << ":" << filename << ":" << line << "] " << message;
+
+  const std::string& log_line = stream.str();
+
+  if (!config.formatted_log_handler ||
+      !config.formatted_log_handler(log_line.c_str())) {
+    // Log to stderr.
+    std::cerr << log_line << std::endl;
+
+#if !defined(NDEBUG) && defined(OS_WIN)
+    if (severity < LOG_FATAL) {
+      // Log to the debugger console in debug builds.
+      OutputDebugStringW(UTF8ToWide(log_line).c_str());
+    }
+#endif
+  }
+
+  if (severity == LOG_FATAL) {
+#if defined(OS_WIN)
+    SetLogFatalCrashKey(file, line, message);
+#endif
+
+    HandleFatal(log_line);
+  }
+}
 
 // MSVC doesn't like complex extern templates and DLLs.
 #if !defined(COMPILER_MSVC)
@@ -182,16 +473,16 @@ LogMessage::LogMessage(const char* file,
 }
 
 LogMessage::~LogMessage() {
-  stream_ << std::endl;
   std::string str_newline(stream_.str());
-  cef_log(file_, line_, severity_, str_newline.c_str());
+  internal::GetImplementation()->log(file_, line_, severity_,
+                                     str_newline.c_str());
 }
 
 #if defined(OS_WIN)
 // This has already been defined in the header, but defining it again as DWORD
 // ensures that the type used in the header is equivalent to DWORD. If not,
 // the redefinition is a compile error.
-typedef DWORD SystemErrorCode;
+using SystemErrorCode = DWORD;
 #endif
 
 SystemErrorCode GetLastSystemErrorCode() {
@@ -210,12 +501,12 @@ std::string SystemErrorCodeToString(SystemErrorCode error_code) {
   char msgbuf[error_message_buffer_size];
   DWORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
   DWORD len = FormatMessageA(flags, NULL, error_code, 0, msgbuf,
-                             arraysize(msgbuf), NULL);
+                             static_cast<DWORD>(std::size(msgbuf)), NULL);
   std::stringstream ss;
   if (len) {
     std::string s(msgbuf);
     // Messages returned by system end with line breaks.
-    s.erase(std::remove_if(s.begin(), s.end(), ::isspace), s.end());
+    std::erase_if(s, ::isspace);
     ss << s << " (0x" << std::hex << error_code << ")";
   } else {
     ss << "Error (0x" << std::hex << GetLastError()
@@ -253,14 +544,101 @@ ErrnoLogMessage::~ErrnoLogMessage() {
 }
 #endif  // OS_WIN
 
-std::ostream& operator<<(std::ostream& out, const wchar_t* wstr) {
-  cef_string_utf8_t str = {0};
-  std::wstring tmp_str(wstr);
-  cef_string_wide_to_utf8(wstr, tmp_str.size(), &str);
-  out << str.str;
-  cef_string_utf8_clear(&str);
-  return out;
+namespace internal {
+
+#if defined(OS_WIN)
+std::string WideToUTF8Impl(const wchar_t* data, size_t length) {
+  if (length == 0) {
+    return {};
+  }
+  int size = WideCharToMultiByte(CP_UTF8, 0, data, static_cast<int>(length),
+                                 nullptr, 0, nullptr, nullptr);
+  if (size <= 0) {
+    return {};
+  }
+  std::string utf8(size, '\0');
+  if (WideCharToMultiByte(CP_UTF8, 0, data, static_cast<int>(length), &utf8[0],
+                          size, nullptr, nullptr) != size) {
+    return {};
+  }
+  return utf8;
 }
 
+std::string WideToUTF8(std::wstring_view wstr) {
+  return WideToUTF8Impl(wstr.data(), wstr.size());
+}
+
+std::string UTF16ToUTF8(std::u16string_view str16) {
+  // On Windows, char16_t and wchar_t are both 16-bit, so we can cast.
+  return WideToUTF8Impl(reinterpret_cast<const wchar_t*>(str16.data()),
+                        str16.size());
+}
+#else   // !defined(OS_WIN)
+// The standard library's <codecvt> header (with std::codecvt_utf8_utf16 and
+// std::wstring_convert) was deprecated in C++17 and is scheduled for removal
+// in C++26. Use a manual implementation until C++26 is available, at which
+// time std::text_encoding should be provided as a replacement.
+std::string UTF16ToUTF8(std::u16string_view str16) {
+  std::string utf8;
+  // Worst case: 3 UTF-8 bytes per UTF-16 code unit (BMP characters use 1 code
+  // unit and up to 3 bytes; supplementary characters use 2 code units and 4
+  // bytes, so the 3:1 ratio is still safe).
+  utf8.reserve(str16.size() * 3);
+
+  for (size_t i = 0; i < str16.size(); ++i) {
+    char32_t codepoint;
+    char16_t ch = str16[i];
+
+    // Check for surrogate pair.
+    if (ch >= 0xD800 && ch <= 0xDBFF && i + 1 < str16.size()) {
+      char16_t ch2 = str16[i + 1];
+      if (ch2 >= 0xDC00 && ch2 <= 0xDFFF) {
+        // Valid surrogate pair.
+        codepoint = 0x10000 + ((ch - 0xD800) << 10) + (ch2 - 0xDC00);
+        ++i;
+      } else {
+        // Invalid surrogate, use replacement character.
+        codepoint = 0xFFFD;
+      }
+    } else if (ch >= 0xDC00 && ch <= 0xDFFF) {
+      // Lone low surrogate, use replacement character.
+      codepoint = 0xFFFD;
+    } else {
+      codepoint = ch;
+    }
+
+    // Encode as UTF-8.
+    if (codepoint < 0x80) {
+      utf8.push_back(static_cast<char>(codepoint));
+    } else if (codepoint < 0x800) {
+      utf8.push_back(static_cast<char>(0xC0 | (codepoint >> 6)));
+      utf8.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+    } else if (codepoint < 0x10000) {
+      utf8.push_back(static_cast<char>(0xE0 | (codepoint >> 12)));
+      utf8.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
+      utf8.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+    } else {
+      utf8.push_back(static_cast<char>(0xF0 | (codepoint >> 18)));
+      utf8.push_back(static_cast<char>(0x80 | ((codepoint >> 12) & 0x3F)));
+      utf8.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
+      utf8.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+    }
+  }
+
+  return utf8;
+}
+#endif  // !defined(OS_WIN)
+
+}  // namespace internal
 }  // namespace logging
 }  // namespace cef
+
+#if defined(OS_WIN)
+std::ostream& operator<<(std::ostream& out, std::wstring_view wstr) {
+  return out << cef::logging::internal::WideToUTF8(wstr);
+}
+#endif
+
+std::ostream& operator<<(std::ostream& out, std::u16string_view str16) {
+  return out << cef::logging::internal::UTF16ToUTF8(str16);
+}

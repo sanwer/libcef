@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,17 +9,22 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=6bd570227988a1f36469ca22a64444dd1b0ee50f$
+// $hash=fbaa82ed4817286d5e9db16afda93fd11cc73f22$
 //
 
 #include "libcef_dll/ctocpp/print_job_callback_ctocpp.h"
 
+#include "libcef_dll/shutdown_checker.h"
+
 // VIRTUAL METHODS - Body may be edited by hand.
 
-void CefPrintJobCallbackCToCpp::Continue() {
-  cef_print_job_callback_t* _struct = GetStruct();
-  if (CEF_MEMBER_MISSING(_struct, cont))
+NO_SANITIZE("cfi-icall") void CefPrintJobCallbackCToCpp::Continue() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->cont) {
     return;
+  }
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
@@ -31,23 +36,21 @@ void CefPrintJobCallbackCToCpp::Continue() {
 
 CefPrintJobCallbackCToCpp::CefPrintJobCallbackCToCpp() {}
 
+// DESTRUCTOR - Do not edit by hand.
+
+CefPrintJobCallbackCToCpp::~CefPrintJobCallbackCToCpp() {
+  shutdown_checker::AssertNotShutdown();
+}
+
 template <>
 cef_print_job_callback_t* CefCToCppRefCounted<
     CefPrintJobCallbackCToCpp,
     CefPrintJobCallback,
     cef_print_job_callback_t>::UnwrapDerived(CefWrapperType type,
                                              CefPrintJobCallback* c) {
-  NOTREACHED() << "Unexpected class type: " << type;
-  return NULL;
+  CHECK(false) << __func__ << " called with unexpected class type " << type;
+  return nullptr;
 }
-
-#if DCHECK_IS_ON()
-template <>
-base::AtomicRefCount CefCToCppRefCounted<CefPrintJobCallbackCToCpp,
-                                         CefPrintJobCallback,
-                                         cef_print_job_callback_t>::DebugObjCt
-    ATOMIC_DECLARATION;
-#endif
 
 template <>
 CefWrapperType CefCToCppRefCounted<CefPrintJobCallbackCToCpp,

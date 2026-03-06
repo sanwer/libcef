@@ -7,7 +7,18 @@
 namespace client {
 
 ClientHandlerStd::ClientHandlerStd(Delegate* delegate,
+                                   bool with_controls,
                                    const std::string& startup_url)
-    : ClientHandler(delegate, false, startup_url) {}
+    : ClientHandler(delegate, /*is_osr=*/false, with_controls, startup_url) {}
+
+// static
+CefRefPtr<ClientHandlerStd> ClientHandlerStd::GetForClient(
+    CefRefPtr<CefClient> client) {
+  auto base = BaseClientHandler::GetForClient(client);
+  if (base && base->GetTypeKey() == &kTypeKey) {
+    return static_cast<ClientHandlerStd*>(base.get());
+  }
+  return nullptr;
+}
 
 }  // namespace client

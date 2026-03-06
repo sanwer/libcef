@@ -8,8 +8,7 @@
 
 #include "tests/cefclient/browser/window_test_runner.h"
 
-namespace client {
-namespace window_test {
+namespace client::window_test {
 
 // Windows platform implementation. Methods are safe to call on any browser
 // process thread.
@@ -17,17 +16,11 @@ class WindowTestRunnerWin : public WindowTestRunner {
  public:
   WindowTestRunnerWin();
 
-  void SetPos(CefRefPtr<CefBrowser> browser,
-              int x,
-              int y,
-              int width,
-              int height) OVERRIDE;
-  void Minimize(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  void Maximize(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  void Restore(CefRefPtr<CefBrowser> browser) OVERRIDE;
+  void Minimize(CefRefPtr<CefBrowser> browser) override;
+  void Maximize(CefRefPtr<CefBrowser> browser) override;
+  void Restore(CefRefPtr<CefBrowser> browser) override;
 };
 
-}  // namespace window_test
-}  // namespace client
+}  // namespace client::window_test
 
 #endif  // CEF_TESTS_CEFCLIENT_BROWSER_WINDOW_TEST_RUNNER_WIN_H_

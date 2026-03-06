@@ -51,11 +51,28 @@
 #include "include/cef_frame.h"
 
 ///
-// Execute JavaScript with a user gesture to trigger functionality like
-// onbeforeunload handlers that will otherwise be blocked.
+/// Execute JavaScript with a user gesture to trigger functionality like
+/// onbeforeunload handlers that will otherwise be blocked.
 ///
 /*--cef(optional_param=javascript)--*/
 void CefExecuteJavaScriptWithUserGestureForTests(CefRefPtr<CefFrame> frame,
                                                  const CefString& javascript);
+
+///
+/// Set the DIR_SRC_TEST_DATA_ROOT directory used to load test data. Must be
+/// configured when running from a CEF binary distribution. Defaults to the
+/// "chromium/src" directory when running from a local CEF/Chromium build. |dir|
+/// must be an absolute path.
+///
+/*--cef()--*/
+void CefSetDataDirectoryForTests(const CefString& dir);
+
+///
+/// Returns true if |feature_name| is enabled by default, command line or field
+/// trial. This supports a short list of curated values that are queried by unit
+/// tests.
+///
+/*--cef()--*/
+bool CefIsFeatureEnabledForTests(const CefString& feature_name);
 
 #endif  // CEF_INCLUDE_TEST_CEF_TEST_HELPERS_H_

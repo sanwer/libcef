@@ -4,10 +4,9 @@
 
 #include "include/base/cef_weak_ptr.h"
 
-namespace base {
-namespace cef_internal {
+namespace base::cef_internal {
 
-WeakReference::Flag::Flag() : is_valid_(true) {
+WeakReference::Flag::Flag() {
   // Flags only become bound when checked for validity, or invalidated,
   // so that we can check that later validity/invalidation operations on
   // the same Flag take place on the same thread.
@@ -17,55 +16,106 @@ WeakReference::Flag::Flag() : is_valid_(true) {
 void WeakReference::Flag::Invalidate() {
   // The flag being invalidated with a single ref implies that there are no
   // weak pointers in existence. Allow deletion on other thread in this case.
+#if DCHECK_IS_ON()
   DCHECK(thread_checker_.CalledOnValidThread() || HasOneRef())
-      << "WeakPtrs must be invalidated on the same thread.";
-  is_valid_ = false;
+      << "WeakPtrs must be invalidated on the same thread as where "
+      << "they are bound.\n";
+#endif
+  invalidated_.Set();
 }
 
 bool WeakReference::Flag::IsValid() const {
-  DCHECK(thread_checker_.CalledOnValidThread())
-      << "WeakPtrs must be checked on the same thread.";
-  return is_valid_;
+  // WeakPtrs must be checked on the same thread.
+  DCHECK(thread_checker_.CalledOnValidThread());
+  return !invalidated_.IsSet();
 }
 
-WeakReference::Flag::~Flag() {}
-
-WeakReference::WeakReference() {}
-
-WeakReference::WeakReference(const Flag* flag) : flag_(flag) {}
-
-WeakReference::~WeakReference() {}
-
-bool WeakReference::is_valid() const {
-  return flag_.get() && flag_->IsValid();
+bool WeakReference::Flag::MaybeValid() const {
+  return !invalidated_.IsSet();
 }
 
-WeakReferenceOwner::WeakReferenceOwner() {}
+#if DCHECK_IS_ON()
+void WeakReference::Flag::DetachFromThread() {
+  thread_checker_.DetachFromThread();
+}
+
+void WeakReference::Flag::BindToCurrentThread() {
+  thread_checker_.DetachFromThread();
+  DCHECK(thread_checker_.CalledOnValidThread());
+}
+#endif
+
+WeakReference::Flag::~Flag() = default;
+
+WeakReference::WeakReference() = default;
+WeakReference::WeakReference(const scoped_refptr<Flag>& flag) : flag_(flag) {}
+WeakReference::~WeakReference() = default;
+
+WeakReference::WeakReference(const WeakReference& other) = default;
+WeakReference& WeakReference::operator=(const WeakReference& other) = default;
+
+WeakReference::WeakReference(WeakReference&& other) noexcept = default;
+WeakReference& WeakReference::operator=(WeakReference&& other) noexcept =
+    default;
+
+void WeakReference::Reset() {
+  flag_ = nullptr;
+}
+
+bool WeakReference::IsValid() const {
+  return flag_ && flag_->IsValid();
+}
+
+bool WeakReference::MaybeValid() const {
+  return flag_ && flag_->MaybeValid();
+}
+
+WeakReferenceOwner::WeakReferenceOwner()
+    : flag_(MakeRefCounted<WeakReference::Flag>()) {}
 
 WeakReferenceOwner::~WeakReferenceOwner() {
-  Invalidate();
-}
-
-WeakReference WeakReferenceOwner::GetRef() const {
-  // If we hold the last reference to the Flag then create a new one.
-  if (!HasRefs())
-    flag_ = new WeakReference::Flag();
-
-  return WeakReference(flag_.get());
-}
-
-void WeakReferenceOwner::Invalidate() {
-  if (flag_.get()) {
+  if (flag_) {
     flag_->Invalidate();
-    flag_ = NULL;
   }
 }
 
-WeakPtrBase::WeakPtrBase() {}
+WeakReference WeakReferenceOwner::GetRef() const {
+#if DCHECK_IS_ON()
+  DCHECK(flag_);
+  // If we hold the last reference to the Flag then detach the ThreadChecker.
+  if (!HasRefs()) {
+    flag_->DetachFromThread();
+  }
+#endif
 
-WeakPtrBase::~WeakPtrBase() {}
+  return WeakReference(flag_);
+}
 
-WeakPtrBase::WeakPtrBase(const WeakReference& ref) : ref_(ref) {}
+void WeakReferenceOwner::Invalidate() {
+  DCHECK(flag_);
+  flag_->Invalidate();
+  flag_ = MakeRefCounted<WeakReference::Flag>();
+}
 
-}  // namespace cef_internal
-}  // namespace base
+void WeakReferenceOwner::InvalidateAndDoom() {
+  DCHECK(flag_);
+  flag_->Invalidate();
+  flag_.reset();
+}
+
+void WeakReferenceOwner::BindToCurrentThread() {
+#if DCHECK_IS_ON()
+  DCHECK(flag_);
+  flag_->BindToCurrentThread();
+#endif
+}
+
+WeakPtrFactoryBase::WeakPtrFactoryBase(uintptr_t ptr) : ptr_(ptr) {
+  DCHECK(ptr_);
+}
+
+WeakPtrFactoryBase::~WeakPtrFactoryBase() {
+  ptr_ = 0;
+}
+
+}  // namespace base::cef_internal

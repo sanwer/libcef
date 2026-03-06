@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2026 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 //
@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4a56603f0afb73987db9b6faf80831bbfd3d040b$
+// $hash=4c5bdf0b03f8f9abda72996164210975076fe48c$
 //
 
 #ifndef CEF_LIBCEF_DLL_CTOCPP_DOWNLOAD_ITEM_CTOCPP_H_
@@ -31,25 +31,34 @@ class CefDownloadItemCToCpp : public CefCToCppRefCounted<CefDownloadItemCToCpp,
                                                          cef_download_item_t> {
  public:
   CefDownloadItemCToCpp();
+  virtual ~CefDownloadItemCToCpp();
 
   // CefDownloadItem methods.
-  bool IsValid() OVERRIDE;
-  bool IsInProgress() OVERRIDE;
-  bool IsComplete() OVERRIDE;
-  bool IsCanceled() OVERRIDE;
-  int64 GetCurrentSpeed() OVERRIDE;
-  int GetPercentComplete() OVERRIDE;
-  int64 GetTotalBytes() OVERRIDE;
-  int64 GetReceivedBytes() OVERRIDE;
-  CefTime GetStartTime() OVERRIDE;
-  CefTime GetEndTime() OVERRIDE;
-  CefString GetFullPath() OVERRIDE;
-  uint32 GetId() OVERRIDE;
-  CefString GetURL() OVERRIDE;
-  CefString GetOriginalUrl() OVERRIDE;
-  CefString GetSuggestedFileName() OVERRIDE;
-  CefString GetContentDisposition() OVERRIDE;
-  CefString GetMimeType() OVERRIDE;
+  bool IsValid() override;
+  bool IsInProgress() override;
+  bool IsComplete() override;
+  bool IsCanceled() override;
+  bool IsInterrupted() override;
+#if CEF_API_ADDED(14400)
+  bool IsPaused() override;
+#endif
+  cef_download_interrupt_reason_t GetInterruptReason() override;
+  int64_t GetCurrentSpeed() override;
+  int GetPercentComplete() override;
+  int64_t GetTotalBytes() override;
+  int64_t GetReceivedBytes() override;
+  CefBaseTime GetStartTime() override;
+  CefBaseTime GetEndTime() override;
+  CefString GetFullPath() override;
+  uint32_t GetId() override;
+  CefString GetURL() override;
+  CefString GetOriginalUrl() override;
+  CefString GetSuggestedFileName() override;
+  CefString GetContentDisposition() override;
+  CefString GetMimeType() override;
 };
+
+constexpr auto CefDownloadItemCToCpp_Wrap = CefDownloadItemCToCpp::Wrap;
+constexpr auto CefDownloadItemCToCpp_Unwrap = CefDownloadItemCToCpp::Unwrap;
 
 #endif  // CEF_LIBCEF_DLL_CTOCPP_DOWNLOAD_ITEM_CTOCPP_H_

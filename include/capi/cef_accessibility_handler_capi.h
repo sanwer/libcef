@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2026 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,12 +33,16 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=3e20b926af7550a1dc4000bfdf261332222a64b8$
+// $hash=fb9785a8f67dbb37d89ede1c70ce90712b0cd0f7$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_ACCESSIBILITY_HANDLER_CAPI_H_
 #define CEF_INCLUDE_CAPI_CEF_ACCESSIBILITY_HANDLER_CAPI_H_
 #pragma once
+
+#if defined(BUILDING_CEF_SHARED)
+#error This file cannot be included DLL-side
+#endif
 
 #include "include/capi/cef_values_capi.h"
 
@@ -47,27 +51,29 @@ extern "C" {
 #endif
 
 ///
-// Implement this structure to receive accessibility notification when
-// accessibility events have been registered. The functions of this structure
-// will be called on the UI thread.
+/// Implement this structure to receive accessibility notification when
+/// accessibility events have been registered. The functions of this structure
+/// will be called on the UI thread.
+///
+/// NOTE: This struct is allocated client-side.
 ///
 typedef struct _cef_accessibility_handler_t {
   ///
-  // Base structure.
+  /// Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Called after renderer process sends accessibility tree changes to the
-  // browser process.
+  /// Called after renderer process sends accessibility tree changes to the
+  /// browser process.
   ///
   void(CEF_CALLBACK* on_accessibility_tree_change)(
       struct _cef_accessibility_handler_t* self,
       struct _cef_value_t* value);
 
   ///
-  // Called after renderer process sends accessibility location changes to the
-  // browser process.
+  /// Called after renderer process sends accessibility location changes to the
+  /// browser process.
   ///
   void(CEF_CALLBACK* on_accessibility_location_change)(
       struct _cef_accessibility_handler_t* self,
