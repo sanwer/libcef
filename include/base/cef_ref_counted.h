@@ -239,7 +239,7 @@ class RefCountedThreadSafeBase {
     // MakeRefCounted.
     DCHECK(!needs_adopt_ref_);
 #endif
-    CHECK(ref_count_.Increment() != std::numeric_limits<int>::max());
+    CHECK(ref_count_.Increment() != (std::numeric_limits<int>::max)());
   }
 
   ALWAYS_INLINE void AddRefWithCheckImpl() const {
@@ -252,7 +252,7 @@ class RefCountedThreadSafeBase {
 #endif
     int pre_increment_count = ref_count_.Increment();
     CHECK(pre_increment_count > 0);
-    CHECK(pre_increment_count != std::numeric_limits<int>::max());
+    CHECK(pre_increment_count != (std::numeric_limits<int>::max)());
   }
 
   ALWAYS_INLINE bool ReleaseImpl() const {

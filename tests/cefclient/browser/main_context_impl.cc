@@ -18,7 +18,7 @@ namespace client {
 namespace {
 
 // The default URL to load in a browser window.
-const char kDefaultUrl[] = "https://www.google.com";
+const char kDefaultUrl[] = "https://www.baidu.com";
 
 // Returns the ARGB value for |color|.
 cef_color_t ParseColor(const std::string& color) {

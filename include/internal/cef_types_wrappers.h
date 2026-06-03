@@ -81,7 +81,7 @@ class CefStructBase : public traits::struct_type {
     attached_to_ = &source;
 
     // Source structure may be smaller size.
-    const size_t source_size = std::min(source.size, sizeof(struct_type));
+    const size_t source_size = std::min<size_t>(source.size, sizeof(struct_type));
 
     // Reference values from the source structure, and keep the same size.
     memcpy(static_cast<struct_type*>(this), &source, source_size);
@@ -99,7 +99,7 @@ class CefStructBase : public traits::struct_type {
     }
 
     // Target structure may be smaller size.
-    const size_t target_size = std::min(target.size, sizeof(struct_type));
+    const size_t target_size = std::min<size_t>(target.size, sizeof(struct_type));
 
     // Transfer ownership of the values to the target structure.
     memcpy(&target, static_cast<struct_type*>(this), target_size);
@@ -160,7 +160,7 @@ class CefStructBaseSimple : public struct_type {
 
   CefStructBaseSimple& operator=(const struct_type& r) {
     memcpy(static_cast<struct_type*>(this), &r,
-           std::min(r.size, sizeof(struct_type)));
+           std::min<size_t>(r.size, sizeof(struct_type)));
     this->size = sizeof(struct_type);
     return *this;
   }
